@@ -10,12 +10,18 @@ extern "C"
 #ifdef _WIN32
 # include <WinSock2.h>
 # include <WS2tcpip.h>
-#else
-# include <sys/socket.h>
-# include <sys/types.h>
-# include <netdb.h>
 
+#define CLOSE(x) closesock(x)
+
+#else   // Unix
+# include <netdb.h>
+# include <unistd.h>
+# include <string.h>
+# include <sys/socket.h>
+
+#define CLOSE(x) close(x)
 typedef int SOCKET;
+
 #endif
 }
 
@@ -80,10 +86,10 @@ int WebServer::exec()
         if(services)
             response = services->service(request);
 
-        std::cout << "response: "<<response<<std::endl;
+        std::cout << "Response: \n"<<response<<std::endl;
 
         send(SOCKET(connfd), response.c_str(), int(response.size()), 0);
-        closesocket(SOCKET(connfd));
+        CLOSE(SOCKET(connfd));
     }
 
     return 0;
@@ -116,7 +122,7 @@ int WebServer::startListen(const std::string &port)
         if(!bind(SOCKET(listenfd), it->ai_addr, socklen_t(it->ai_addrlen)))
             break;          // Success
 
-        closesocket(SOCKET(listenfd));  // Bind failed, try the next
+        CLOSE(SOCKET(listenfd));  // Bind failed, try the next
     }
 
     // Clean up
@@ -127,7 +133,7 @@ int WebServer::startListen(const std::string &port)
     // Make it a listening socket ready to accpet connection requests
     if(listen(SOCKET(listenfd), LISTENQ) < 0)
     {
-        closesocket(SOCKET(listenfd));
+        CLOSE(SOCKET(listenfd));
         return -1;
     }
 
