@@ -1,0 +1,23 @@
+﻿set(SOURCES
+   src/main.cpp
+
+   src/webserver.h
+   src/webserver.cpp
+
+   src/httpservices.h
+   src/httpservices.cpp
+
+   src/httprequest.h
+   src/httprequest.cpp
+
+   src/httpresponse.h
+   src/httpresponse.cpp
+)
+
+set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
+
+add_executable(TinyWebServer ${SOURCES})
+
+if(WIN32)
+  target_link_libraries(TinyWebServer wsock32 ws2_32)
+endif()
