@@ -3,8 +3,8 @@
 HttpResponse::HttpResponse()
 {
     headers["Server"] = "Tiny Web Server";
-    headers["Content-type"] = "text/html;charset=ASCII";
-    headers["Connection"] = "close";
+    headers["Content-type"] = "text/html";
+    headers["Connection"] = "closed";
 }
 
 std::string HttpResponse::toString()

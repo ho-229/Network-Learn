@@ -1,7 +1,7 @@
 ﻿#include "webserver.h"
 
 #define LISTENQ 1024
-#define BUF_SIZE 512
+#define BUF_SIZE 1024
 
 #include "httpservices.h"
 
@@ -11,7 +11,7 @@ extern "C"
 # include <WinSock2.h>
 # include <WS2tcpip.h>
 
-#define CLOSE(x) closesock(x)
+#define CLOSE(x) closesocket(x)
 
 #else   // Unix
 # include <netdb.h>
@@ -34,6 +34,7 @@ WebServer::WebServer()
 
 WebServer::~WebServer()
 {
+    runnable = false;
 #ifdef _WIN32
     WSACleanup();
 #endif
@@ -89,7 +90,7 @@ int WebServer::exec()
         std::cout << "Response: \n"<<response<<std::endl;
 
         send(SOCKET(connfd), response.c_str(), int(response.size()), 0);
-        CLOSE(SOCKET(connfd));
+        //CLOSE(SOCKET(connfd));
     }
 
     return 0;
