@@ -78,19 +78,18 @@ int WebServer::exec()
         std::cout << "Accepted connection from ("<<hostName<<", "<<port<<")\n";
 
         std::string request, response;
-        //while( > 0)
-            recv(SOCKET(connfd), recvBuf, BUF_SIZE, 0);
-            request.append(recvBuf, BUF_SIZE);
+        const int recvSize = recv(SOCKET(connfd), recvBuf, BUF_SIZE, 0);
+        request.append(recvBuf, size_t(recvSize));
 
         std::cout << "Requset Header: \n"<<request<<std::endl;
 
-        if(services)
-            response = services->service(request);
+        if(services && services->service(request, response))
+        {
+            std::cout << "Response: \n"<<response<<std::endl;
 
-        std::cout << "Response: \n"<<response<<std::endl;
-
-        send(SOCKET(connfd), response.c_str(), int(response.size()), 0);
-        //CLOSE(SOCKET(connfd));
+            send(SOCKET(connfd), response.c_str(), int(response.size()), 0);
+            CLOSE(SOCKET(connfd));
+        }
     }
 
     return 0;

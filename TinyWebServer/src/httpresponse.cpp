@@ -11,12 +11,12 @@ std::string HttpResponse::toString()
 {
     std::string result;
 
-    headers["Content-lenght"] = std::to_string(userData.size());
+    headers["Content-lenght"] = std::to_string(text.size());
 
     result.append(stateString(state));
     for(const auto &[key, value] : headers)
         result.append(key + ": " + value + "\r\n");
-    result.append("\r\n" + userData);
+    result.append("\r\n" + text);
 
     return result;
 }

@@ -14,7 +14,7 @@ public:
 public:
     int state = 0;
 
-    std::string userData;
+    std::string text;
 
     std::map<std::string,   // Name
              std::string>   // Value

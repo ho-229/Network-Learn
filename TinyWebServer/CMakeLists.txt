@@ -12,6 +12,8 @@
 
    src/httpresponse.h
    src/httpresponse.cpp
+
+   src/until.h
 )
 
 set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)

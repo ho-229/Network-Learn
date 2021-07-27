@@ -11,6 +11,8 @@
 
 int main(int argc, char** argv)
 {
+    std::cout << "Welcome to Tiny Web Server.\n";
+
     if(argc != 2)
     {
         std::cerr << "Usage: " << argv[0] << " <port>\n";
@@ -22,22 +24,25 @@ int main(int argc, char** argv)
 
 #ifdef _WIN32
     if(server->initialize())
-        std::cout << "Load socket success.\n";
+        std::cout << "WinSock2 load success.\n";
     else
     {
-        std::cout << "Socket load failed.\n";
+        std::cout << "WinSock2 load failed.\n";
         return -1;
     }
 #endif
 
-    std::cout << "Tiny Web Server is running ...\n\n";
+    std::cout << "Listening port: " << argv[1] << ".\n\n";
 
+    // Adder Service
     services->addService("GET", "/adder", [](HttpRequest* req, HttpResponse* resp) {
         int sum = 0;
         for(const auto& arg : req->urlArgs)
             sum += atoi(arg.second.c_str());
 
-        resp->userData += R"(<html><title>Tiny Web Server</title><body bgcolor"#fffff"><h>Tiny Web Server / Adder</h><p>Result: )" + std::to_string(sum) + R"(</p></body></html>)";
+        resp->text += "<html><title>Tiny Web Server</title><body bgcolor\"#fffff\">"
+                          "<span>Tiny Web Server / Adder</span><p>Result: "
+                          + std::to_string(sum) + "</p></body></html>";
 
         resp->state = 200;
     });
