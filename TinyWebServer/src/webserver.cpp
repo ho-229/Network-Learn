@@ -35,16 +35,19 @@ typedef int SOCKET;
 #include <iostream>
 
 WebServer::WebServer()
+    : m_services(new HttpServices())
 {
 
 }
 
 WebServer::~WebServer()
 {
-    runnable = false;
 #ifdef _WIN32
     WSACleanup();
 #endif
+
+    runnable = false;
+    delete m_services;
 }
 
 #ifdef _WIN32
@@ -91,7 +94,7 @@ int WebServer::exec()
 
             std::cout << "Requset Header: \n"<<request<<std::endl;
 
-            if(services && services->service(request, response))
+            if(m_services->service(request, response))
             {
                 std::cout << "Response: \n"<<response<<std::endl;
 

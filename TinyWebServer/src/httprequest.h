@@ -22,14 +22,22 @@ public:
 
     void parse(const std::string& data);
 
-public:
-    std::string method;
-    std::string uri;
-    std::map<std::string, std::string> headers;     // Unused various
-    std::vector<UrlArg> urlArgs;
+    std::string method() const { return m_method; }
+
+    std::string uri() const { return m_uri; }
+
+    const std::vector<UrlArg>& urlArguments() const { return m_urlArgs; }
 
 private:
     void buildArgs(const std::string& args);
+
+    std::string m_method;
+
+    std::string m_uri;
+
+    std::vector<UrlArg> m_urlArgs;
+
+    //std::map<std::string, std::string> headers;     // Unused various
 };
 
 #endif // HTTPREQUEST_H

@@ -5,8 +5,6 @@
 
 #include "httpservices.h"
 
-#include "until.h"
-
 HttpServices::HttpServices()
 {
 
@@ -31,19 +29,19 @@ bool HttpServices::service(const std::string request, std::string& response)
     auto httpRequest = std::make_shared<HttpRequest>(request);
     auto httpResponse = std::make_shared<HttpResponse>();
 
-    if(m_uriHandlers.find(httpRequest->uri) != m_uriHandlers.end())
+    // Find Uri -> (Method -> Handler)
+    if(m_uriHandlers.find(httpRequest->uri()) != m_uriHandlers.end())
     {
-        auto methodHandler = m_uriHandlers[httpRequest->uri];
-        if(methodHandler.find(httpRequest->method) != methodHandler.end())
+        // Find Method -> Handler
+        auto methodHandler = m_uriHandlers[httpRequest->uri()];
+        if(methodHandler.find(httpRequest->method()) != methodHandler.end())
         {
-            httpResponse->headers["Date"] = Until::currentDateString();
-
-            auto handler = *methodHandler[httpRequest->method].get();
+            auto handler = *methodHandler[httpRequest->method()].get();
             handler(httpRequest.get(), httpResponse.get());
 
-            if(!httpResponse->text.empty())
+            if(!httpResponse->isEmpty())
             {
-                response = httpResponse->toString();
+                httpResponse->toRowData(response);
                 return true;
             }
         }

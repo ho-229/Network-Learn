@@ -6,6 +6,7 @@
 #include <memory>
 #include <iostream>
 
+#include "until.h"
 #include "webserver.h"
 #include "httpservices.h"
 
@@ -32,23 +33,22 @@ int main(int argc, char** argv)
     }
 #endif
 
-    std::cout << "Listening port: " << argv[1] << ".\n\n";
-
     // Adder Service
-    services->addService("GET", "/adder", [](HttpRequest* req, HttpResponse* resp) {
+    server->services()->addService("GET", "/adder",
+                                   [](HttpRequest* req, HttpResponse* resp) {
         int sum = 0;
-        for(const auto& arg : req->urlArgs)
+        for(const auto& arg : req->urlArguments())
             sum += atoi(arg.second.c_str());
 
-        resp->text += "<html><title>Tiny Web Server</title><body bgcolor\"#fffff\">"
-                          "<span>Tiny Web Server / Adder</span><p>Result: "
-                          + std::to_string(sum) + "</p></body></html>";
+        resp->setRowHeader("Date", Until::currentDateString());
 
-        resp->state = 200;
+        resp->setText("<html><title>Tiny Web Server</title><body bgcolor\"#fffff\">"
+                          "<span>Tiny Web Server / Adder</span><p>Result: "
+                      + std::to_string(sum) + "</p></body></html>");
     });
 
     server->port = argv[1];
-    server->services = services.get();
+    std::cout << "Listening port: " << argv[1] << ".\n\n";
 
     return server->exec();
 }

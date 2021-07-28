@@ -22,10 +22,11 @@ public:
 
     int exec();
 
+    HttpServices *services() const { return m_services; }
+
 public:
     std::string port = "8080";
     bool runnable = true;
-    HttpServices *services = nullptr;
 
 private:
     /**
@@ -34,6 +35,8 @@ private:
      * @return Listen fd
      */
     static int startListen(const std::string& port);
+
+    HttpServices *m_services = nullptr;
 
 };
 

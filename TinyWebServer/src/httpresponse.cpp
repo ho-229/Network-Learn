@@ -7,38 +7,41 @@
 
 HttpResponse::HttpResponse()
 {
-    headers["Server"] = "Tiny Web Server";
-    headers["Content-type"] = "text/html";
-    headers["Connection"] = "closed";
+    m_headers["Server"] = "Tiny Web Server";
+    m_headers["Content-type"] = "text/html";
+    m_headers["Connection"] = "close";
 }
 
-std::string HttpResponse::toString()
+void HttpResponse::reset()
 {
-    std::string result;
+    m_body.clear();
 
-    headers["Content-length"] = std::to_string(text.size());
+    m_headers.clear();
+    m_headers["Server"] = "Tiny Web Server";
+    m_headers["Content-type"] = "text/html";
+    m_headers["Connection"] = "close";
 
-    result.append(stateString(state));
-    for(const auto &[key, value] : headers)
-        result.append(key + ": " + value + "\r\n");
-    result.append("\r\n" + text);
-
-    return result;
+    m_httpState = {200, "OK"};
 }
 
-std::string HttpResponse::stateString(int state)
+void HttpResponse::setHttpState(const HttpState &state)
 {
-    switch (state)
-    {
-    case 200:
-        return "HTTP/1.1 200 OK\r\n";
-    case 403:
-        return "HTTP/1.1 403 Forbidden\r\n";
-    case 404:
-        return "HTTP/1.1 404 Not found\r\n";
-    case 501:
-        return "HTTP/1.1 501 Notimplemented\r\n";
-    }
+    if(state.second.empty())
+        return;
 
-    return {};
+    m_httpState = state;
 }
+
+void HttpResponse::toRowData(std::string &response)
+{
+    m_headers["Content-length"] = std::to_string(m_body.size());
+
+    response.append("HTTP/1.1 " + std::to_string(m_httpState.first)
+                    + m_httpState.second + "\r\n");
+
+    for(const auto &[key, value] : m_headers)
+        response.append(key + ": " + value + "\r\n");
+
+    response.append("\r\n" + m_body);
+}
+

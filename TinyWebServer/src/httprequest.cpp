@@ -30,10 +30,10 @@ void HttpRequest::parse(const std::string &data)
             switch(i)
             {
             case 1:
-                method = it.str();
+                m_method = it.str();
                 break;
             case 2:
-                uri = it.str();
+                m_uri = it.str();
                 break;
             case 3:
                 this->buildArgs(it.str());
@@ -55,13 +55,13 @@ void HttpRequest::buildArgs(const std::string &args)
     for(const std::string& it : result)
     {
         if(it.find('=') == std::string::npos)   // Not found "<key>=<value>"
-            urlArgs.push_back({{}, it});
+            m_urlArgs.push_back({{}, it});
         else
         {
             std::regex express("(.*)=(.*)");
             std::smatch result;
             if(std::regex_search(it, result, express))
-                urlArgs.push_back({result[1], result[2]});
+                m_urlArgs.push_back({result[1], result[2]});
         }
     }
 }
