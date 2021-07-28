@@ -14,3 +14,4 @@ mkdir build && cd build
 cmake ..
 make -j8
 ```
+Of course, you can also use IDE to config and build.

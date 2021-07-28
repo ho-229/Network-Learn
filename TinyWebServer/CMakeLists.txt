@@ -25,6 +25,7 @@ add_executable(TinyWebServer ${SOURCES})
 
 if(WIN32)
     target_link_libraries(TinyWebServer wsock32 ws2_32)
-endif()
+else()
     find_package(Threads)
     target_link_libraries(TinyWebServer ${CMAKE_THREAD_LIBS_INIT})
+endif()
