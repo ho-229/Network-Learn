@@ -28,16 +28,21 @@ public:
 
     const std::vector<UrlArg>& urlArguments() const { return m_urlArgs; }
 
+    std::string httpVersion() const { return m_httpVersion; }
+
+    std::string rawHeader(const std::string& name) const { return m_headers.at(name); }
+
 private:
     void buildArgs(const std::string& args);
+    void parseRequestLine(const std::string& data);
 
     std::string m_method;
-
     std::string m_uri;
+    std::string m_httpVersion;
 
     std::vector<UrlArg> m_urlArgs;
 
-    //std::map<std::string, std::string> headers;     // Unused various
+    std::map<std::string, std::string> m_headers;
 };
 
 #endif // HTTPREQUEST_H
