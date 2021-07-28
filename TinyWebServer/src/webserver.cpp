@@ -1,4 +1,9 @@
-﻿#include "webserver.h"
+﻿/**
+ * @author Ho 229
+ * @date 2021/7/26
+ */
+
+#include "webserver.h"
 
 #define LISTENQ 1024
 #define BUF_SIZE 1024
@@ -25,6 +30,8 @@ typedef int SOCKET;
 #endif
 }
 
+#include <thread>
+#include <future>
 #include <iostream>
 
 WebServer::WebServer()
@@ -77,19 +84,22 @@ int WebServer::exec()
 
         std::cout << "Accepted connection from ("<<hostName<<", "<<port<<")\n";
 
-        std::string request, response;
-        const int recvSize = recv(SOCKET(connfd), recvBuf, BUF_SIZE, 0);
-        request.append(recvBuf, size_t(recvSize));
+        auto future = std::async([&] {
+            std::string request, response;
+            const int recvSize = recv(SOCKET(connfd), recvBuf, BUF_SIZE, 0);
+            request.append(recvBuf, size_t(recvSize));
 
-        std::cout << "Requset Header: \n"<<request<<std::endl;
+            std::cout << "Requset Header: \n"<<request<<std::endl;
 
-        if(services && services->service(request, response))
-        {
-            std::cout << "Response: \n"<<response<<std::endl;
+            if(services && services->service(request, response))
+            {
+                std::cout << "Response: \n"<<response<<std::endl;
 
-            send(SOCKET(connfd), response.c_str(), int(response.size()), 0);
+                send(SOCKET(connfd), response.c_str(), int(response.size()), 0);
+            }
+
             CLOSE(SOCKET(connfd));
-        }
+        });
     }
 
     return 0;

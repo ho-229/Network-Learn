@@ -1,4 +1,9 @@
-﻿#include "httpresponse.h"
+﻿/**
+ * @author Ho 229
+ * @date 2021/7/26
+ */
+
+#include "httpresponse.h"
 
 HttpResponse::HttpResponse()
 {
@@ -11,7 +16,7 @@ std::string HttpResponse::toString()
 {
     std::string result;
 
-    headers["Content-lenght"] = std::to_string(text.size());
+    headers["Content-length"] = std::to_string(text.size());
 
     result.append(stateString(state));
     for(const auto &[key, value] : headers)

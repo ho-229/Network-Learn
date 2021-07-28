@@ -1,4 +1,9 @@
-﻿#ifndef HTTPREQUEST_H
+﻿/**
+ * @author Ho 229
+ * @date 2021/7/26
+ */
+
+#ifndef HTTPREQUEST_H
 #define HTTPREQUEST_H
 
 #include <map>

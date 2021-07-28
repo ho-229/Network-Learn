@@ -1,4 +1,9 @@
-﻿#ifndef HTTPRESPONSE_H
+﻿/**
+ * @author Ho 229
+ * @date 2021/7/26
+ */
+
+#ifndef HTTPRESPONSE_H
 #define HTTPRESPONSE_H
 
 #include <map>
