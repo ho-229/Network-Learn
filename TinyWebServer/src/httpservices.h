@@ -28,7 +28,7 @@ public:
 
     void addService(const std::string &method, const std::string& uri, Handler handler);
 
-    bool service(const std::string request, std::string &response);
+    bool service(const std::string &request, std::string &response);
 
 private:
     std::map<std::string,       // URI

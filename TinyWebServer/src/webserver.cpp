@@ -8,6 +8,7 @@
 #define LISTENQ 1024
 #define BUF_SIZE 1024
 
+#include "event.h"
 #include "httpservices.h"
 
 extern "C"
@@ -32,12 +33,16 @@ typedef int SOCKET;
 
 #include <thread>
 #include <future>
-#include <iostream>
 
 WebServer::WebServer()
     : m_services(new HttpServices())
 {
+#ifdef _WIN32
+    WSAData info;
 
+    m_isLoaded = !(WSAStartup(MAKEWORD(2, 2), &info) ||
+                   LOBYTE(info.wVersion) != 2 || HIBYTE(info.wVersion) != 2);
+#endif
 }
 
 WebServer::~WebServer()
@@ -50,31 +55,28 @@ WebServer::~WebServer()
     delete m_services;
 }
 
-#ifdef _WIN32
-bool WebServer::initialize()
-{
-    WSAData info;
-    if(WSAStartup(MAKEWORD(2, 2), &info))
-        return false;
-
-    if(LOBYTE(info.wVersion) != 2 || HIBYTE(info.wVersion) != 2)
-        return false;
-
-    return true;
-}
-#endif
-
 int WebServer::exec()
 {
+    if(!m_isLoaded)
+    {
+        ExceptionEvent event(ExceptionEvent::SocketLoadFailed);
+        m_handler(&event);
+        return -1;
+    }
+
     int listenfd, connfd;
     char hostName[BUF_SIZE], port[BUF_SIZE], recvBuf[BUF_SIZE];
     socklen_t clientLen;
     sockaddr_storage clientAddr;
 
-    listenfd = startListen(this->port);
+    listenfd = startListen(m_port);
 
     if(listenfd < 0)
+    {
+        ExceptionEvent event(ExceptionEvent::ListenFailed);
+        m_handler(&event);
         return -1;      // Start listen failed
+    }
 
     while(runnable)
     {
@@ -85,23 +87,18 @@ int WebServer::exec()
         getnameinfo(reinterpret_cast<sockaddr *>(&clientAddr), clientLen,
                     hostName, BUF_SIZE, port, BUF_SIZE, 0);
 
-        std::cout << "Accepted connection from ("<<hostName<<", "<<port<<")\n";
+        AcceptEvent event(hostName, port);
+        m_handler(&event);
 
         auto future = std::async([&] {
             std::string request, response;
             const int recvSize = recv(SOCKET(connfd), recvBuf, BUF_SIZE, 0);
             request.append(recvBuf, size_t(recvSize));
 
-            std::cout << "Requset Header: \n"<<request<<std::endl;
-
             if(m_services->service(request, response))
-            {
-                std::cout << "Response: \n"<<response<<std::endl;
-
                 send(SOCKET(connfd), response.c_str(), int(response.size()), 0);
-            }
 
-            CLOSE(SOCKET(connfd));
+            //CLOSE(SOCKET(connfd));
         });
     }
 

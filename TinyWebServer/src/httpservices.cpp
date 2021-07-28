@@ -24,7 +24,7 @@ void HttpServices::addService(const std::string &method,
         it->second[method] = std::make_shared<Handler>(handler);
 }
 
-bool HttpServices::service(const std::string request, std::string& response)
+bool HttpServices::service(const std::string& request, std::string& response)
 {
     auto httpRequest = std::make_shared<HttpRequest>(request);
     auto httpResponse = std::make_shared<HttpResponse>();
