@@ -42,6 +42,8 @@ private:
      */
     static int startListen(const std::string& port);
 
+    static void recvAll(int fd, std::string& buffer);
+
     bool m_isLoaded = true;
 
     HttpServices *m_services = nullptr;

@@ -24,28 +24,21 @@ void HttpServices::addService(const std::string &method,
         it->second[method] = std::make_shared<Handler>(handler);
 }
 
-bool HttpServices::service(const std::string& request, std::string& response)
+void HttpServices::service(HttpRequest* httpRequest, HttpResponse* httpResponse)
 {
-    auto httpRequest = std::make_shared<HttpRequest>(request);
-    auto httpResponse = std::make_shared<HttpResponse>();
-
     // Find Uri -> (Method -> Handler)
     if(m_uriHandlers.find(httpRequest->uri()) != m_uriHandlers.end())
     {
         // Find Method -> Handler
-        auto methodHandler = m_uriHandlers[httpRequest->uri()];
+        const auto& methodHandler = m_uriHandlers[httpRequest->uri()];
         if(methodHandler.find(httpRequest->method()) != methodHandler.end())
         {
-            auto handler = *methodHandler[httpRequest->method()].get();
-            handler(httpRequest.get(), httpResponse.get());
-
-            if(!httpResponse->isEmpty())
-            {
-                httpResponse->toRowData(response);
-                return true;
-            }
+            const auto& handler = *methodHandler.at(httpRequest->method()).get();
+            handler(httpRequest, httpResponse);
         }
+        else
+            httpResponse->buildErrorResponse(405, "Method Not Allowed");
     }
-
-    return false;
+    else
+        httpResponse->buildErrorResponse(404, "Not Found");
 }

@@ -4,6 +4,7 @@
  */
 
 #include "httpresponse.h"
+#include "until.h"
 
 HttpResponse::HttpResponse()
 {
@@ -32,7 +33,7 @@ void HttpResponse::setHttpState(const HttpState &state)
     m_httpState = state;
 }
 
-void HttpResponse::toRowData(std::string &response)
+void HttpResponse::toRawData(std::string &response)
 {
     m_headers["Content-length"] = std::to_string(m_body.size());
 
@@ -43,5 +44,14 @@ void HttpResponse::toRowData(std::string &response)
         response.append(key + ": " + value + "\r\n");
 
     response.append("\r\n" + m_body);
+}
+
+void HttpResponse::buildErrorResponse(int state, const std::string &message)
+{
+    this->setRawHeader("Content-type", "text/html; charset=utf-8");
+    this->setRawHeader("Date", Until::currentDateString());
+
+    this->setHttpState({404, "Not found"});
+    m_body = Until::errorHtml(state, message);
 }
 

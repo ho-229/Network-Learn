@@ -34,6 +34,8 @@ typedef int SOCKET;
 #include <thread>
 #include <future>
 
+#include <iostream>
+
 WebServer::WebServer()
     : m_services(new HttpServices())
 {
@@ -65,13 +67,11 @@ int WebServer::exec()
     }
 
     int listenfd, connfd;
-    char hostName[BUF_SIZE], port[BUF_SIZE], recvBuf[BUF_SIZE];
+    char hostName[BUF_SIZE], port[BUF_SIZE];
     socklen_t clientLen;
     sockaddr_storage clientAddr;
 
-    listenfd = startListen(m_port);
-
-    if(listenfd < 0)
+    if((listenfd = startListen(m_port)) < 0)
     {
         ExceptionEvent event(ExceptionEvent::ListenFailed);
         m_handler(&event);
@@ -90,16 +90,27 @@ int WebServer::exec()
         AcceptEvent event(hostName, port);
         m_handler(&event);
 
-        auto future = std::async([&] {
-            std::string request, response;
-            const int recvSize = recv(SOCKET(connfd), recvBuf, BUF_SIZE, 0);
-            request.append(recvBuf, size_t(recvSize));
+        auto future = std::async([this](int connfd) {
+            std::string raw, response;
 
-            if(m_services->service(request, response))
-                send(SOCKET(connfd), response.c_str(), int(response.size()), 0);
+            recvAll(connfd, raw);
 
-            //CLOSE(SOCKET(connfd));
-        });
+            if(raw.empty())
+            {
+                CLOSE(SOCKET(connfd));
+                return;
+            }
+
+            auto httpRequest = std::make_shared<HttpRequest>(raw);
+            auto httpResponse = std::make_shared<HttpResponse>();
+
+            m_services->service(httpRequest.get(), httpResponse.get());
+
+            httpResponse->toRawData(response);
+            send(SOCKET(connfd), response.c_str(), int(response.size()), 0);
+
+            CLOSE(SOCKET(connfd));
+        }, connfd);
     }
 
     return 0;
@@ -148,4 +159,28 @@ int WebServer::startListen(const std::string &port)
     }
 
     return listenfd;
+}
+
+void WebServer::recvAll(int fd, std::string &buffer)
+{
+    int ret = 0;
+    std::shared_ptr<char[]> recvBuf(new char[BUF_SIZE]);
+
+    buffer.clear();
+#ifdef _WIN32
+    do
+    {
+        if((ret = recv(SOCKET(fd), recvBuf.get(), BUF_SIZE, 0)) == WSAEMSGSIZE)
+        {
+            buffer.append(recvBuf.get(), BUF_SIZE);
+            continue;
+        }
+        else if(ret > 0)
+            buffer.append(recvBuf.get(), size_t(ret));
+    }
+    while(false);
+#else
+    while((ret = recv(SOCKET(fd), recvBuf.get(), BUF_SIZE, 0)) > 0)
+        buffer.append(recvBuf.get(), size_t(ret));
+#endif
 }

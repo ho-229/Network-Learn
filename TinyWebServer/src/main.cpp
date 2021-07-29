@@ -11,10 +11,11 @@
 #include "webserver.h"
 #include "httpservices.h"
 
-void test(Event *)
-{
-    std::cout << "On event\n";
-}
+#ifdef _WIN32
+# if _MSC_VER >= 1600
+#  pragma execution_character_set("utf-8")
+# endif
+#endif
 
 int main(int argc, char** argv)
 {
@@ -61,11 +62,11 @@ int main(int argc, char** argv)
         for(const auto& arg : req->urlArguments())
             sum += atoi(arg.second.c_str());
 
-        resp->setRowHeader("Date", Until::currentDateString());
-        resp->setRowHeader("Content-type", "text/html; charset=ascii");
+        resp->setRawHeader("Date", Until::currentDateString());
+        resp->setRawHeader("Content-type", "text/html; charset=utf-8");
 
         resp->setText("<html><title>Tiny Web Server</title><body bgcolor\"#fffff\">"
-                          "<span>Tiny Web Server / Adder</span><p>Result: "
+                          "<h1>Tiny Web Server / Adder</h1><p>Result: "
                       + std::to_string(sum) + "</p></body></html>");
     });
 

@@ -29,11 +29,13 @@ public:
     void setHttpState(const HttpState& state);
     HttpState httpState() const { return m_httpState; }
 
-    void setRowHeader(const std::string& name, const std::string& value)
+    void setRawHeader(const std::string& name, const std::string& value)
     { m_headers[name] = value; }
     std::string rawHeader(const std::string& name) const { return m_headers.at(name); }
 
-    void toRowData(std::string& response);
+    void toRawData(std::string& response);
+
+    void buildErrorResponse(int state, const std::string& message);
 
 private:
     std::pair<int, std::string> m_httpState = {200, "OK"};
