@@ -1,6 +1,5 @@
 # Network-Learn
-A cross-platform network learning demos(Use WinSock and socket)
-
+A cross-platform network learning demos(Use WinSock and socket)  
 Welcome to try it out and leave your comments.
 
 | Name | Description |
@@ -8,7 +7,9 @@ Welcome to try it out and leave your comments.
 | [TinyWebServer](./TinyWebServer) | A tiny `Http` web server |
 
 ## Build
-Use `cmake` to build your project.
+
+Use `cmake` to build your project.  
+Require `C++17` support.
 ```shell
 mkdir build && cd build
 cmake ..
