@@ -6,7 +6,8 @@
 #include "webserver.h"
 
 #define LISTENQ 1024
-#define BUF_SIZE 1024
+#define BUF_SIZE 128
+#define RECV_SIZE 1024
 
 #include "event.h"
 #include "httpservices.h"
@@ -34,8 +35,6 @@ typedef int SOCKET;
 #include <thread>
 #include <future>
 
-#include <iostream>
-
 WebServer::WebServer()
     : m_services(new HttpServices())
 {
@@ -53,7 +52,7 @@ WebServer::~WebServer()
     WSACleanup();
 #endif
 
-    runnable = false;
+    m_runnable = false;
     delete m_services;
 }
 
@@ -66,22 +65,23 @@ int WebServer::exec()
         return -1;
     }
 
-    int listenfd, connfd;
+    int connfd = -1;
     char hostName[BUF_SIZE], port[BUF_SIZE];
     socklen_t clientLen;
     sockaddr_storage clientAddr;
 
-    if((listenfd = startListen(m_port)) < 0)
+    if((m_listenfd = startListen(m_port)) < 0)
     {
         ExceptionEvent event(ExceptionEvent::ListenFailed);
         m_handler(&event);
         return -1;      // Start listen failed
     }
 
-    while(runnable)
+    m_runnable = true;
+    while(m_runnable)
     {
         clientLen = sizeof(clientAddr);
-        connfd = int(accept(SOCKET(listenfd),
+        connfd = int(accept(SOCKET(m_listenfd),
                             reinterpret_cast<sockaddr *>(&clientAddr), &clientLen));
 
         getnameinfo(reinterpret_cast<sockaddr *>(&clientAddr), clientLen,
@@ -114,6 +114,15 @@ int WebServer::exec()
     }
 
     return 0;
+}
+
+void WebServer::exit()
+{
+    if(!m_runnable)
+        return;
+
+    m_runnable = false;
+    CLOSE(SOCKET(m_listenfd));
 }
 
 int WebServer::startListen(const std::string &port)
@@ -164,7 +173,7 @@ int WebServer::startListen(const std::string &port)
 void WebServer::recvAll(int fd, std::string &buffer)
 {
     int ret = 0;
-    std::shared_ptr<char[]> recvBuf(new char[BUF_SIZE]);
+    std::shared_ptr<char[]> recvBuf(new char[RECV_SIZE]);
 
     buffer.clear();
 #ifdef _WIN32
@@ -179,8 +188,12 @@ void WebServer::recvAll(int fd, std::string &buffer)
             buffer.append(recvBuf.get(), size_t(ret));
     }
     while(false);
-#else
-    while((ret = recv(SOCKET(fd), recvBuf.get(), BUF_SIZE, 0)) > 0)
+#else   // Unix
+    do
+    {
+        ret = recv(fd, recvBuf.get(), RECV_SIZE, 0);
         buffer.append(recvBuf.get(), size_t(ret));
+    }
+    while(ret == RECV_SIZE && recvBuf[RECV_SIZE - 1] != '\n');
 #endif
 }

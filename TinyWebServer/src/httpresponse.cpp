@@ -21,8 +21,6 @@ void HttpResponse::reset()
     m_headers["Server"] = "Tiny Web Server";
     m_headers["Content-type"] = "text/html";
     m_headers["Connection"] = "close";
-
-    m_httpState = {200, "OK"};
 }
 
 void HttpResponse::setHttpState(const HttpState &state)

@@ -67,7 +67,7 @@ int main(int argc, char** argv)
 
         resp->setText("<html><title>Tiny Web Server</title><body bgcolor\"#fffff\">"
                           "<h1>Tiny Web Server / Adder</h1><p>Result: "
-                      + std::to_string(sum) + "</p></body></html>");
+                      + std::to_string(sum) + "</p></body></html>\n");
     });
 
     server->setPort(argv[1]);

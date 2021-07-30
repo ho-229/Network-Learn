@@ -17,16 +17,13 @@
 typedef std::function<void(HttpRequest *, HttpResponse *)> Handler;
 typedef std::map<std::string, std::shared_ptr<Handler>> MethodHandler;
 
-typedef std::pair<std::string,  // Response Header
-                  std::string>  // Response Body
-    Response;
-
 class HttpServices
 {
 public:
     explicit HttpServices();
 
-    void addService(const std::string &method, const std::string& uri, Handler handler);
+    void addService(const std::string &method, const std::string& uri,
+                    const Handler& handler);
 
     void service(HttpRequest* httpRequest, HttpResponse* httpResponse);
 

@@ -26,8 +26,8 @@ namespace Until
      */
     inline const std::string currentDateString()
     {
-        auto now = std::chrono::system_clock::now();
-        auto itt = std::chrono::system_clock::to_time_t(now);
+        const auto now = std::chrono::system_clock::now();
+        const auto itt = std::chrono::system_clock::to_time_t(now);
 
         std::ostringstream ss;
         ss << std::put_time(gmtime(&itt), "%a, %d %b %Y %H:%M:%S GMT");
@@ -37,7 +37,7 @@ namespace Until
     inline const std::string errorHtml(int state, const std::string& message)
     {
         return "<h2>Tiny Web Server</h2><h1>" + std::to_string(state)
-               + " " + message + "<br>∑(っ°Д°;)っ<h1>";
+               + " " + message + "<br>∑(っ°Д°;)っ<h1>\n";
     }
 }
 

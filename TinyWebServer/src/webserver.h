@@ -30,9 +30,7 @@ public:
     template <typename Func>
     void installEventHandler(const Func& handler) { m_handler = handler; }
 
-public:
-
-    bool runnable = true;
+    void exit();
 
 private:
     /**
@@ -45,6 +43,9 @@ private:
     static void recvAll(int fd, std::string& buffer);
 
     bool m_isLoaded = true;
+    bool m_runnable = true;
+
+    int m_listenfd = -1;
 
     HttpServices *m_services = nullptr;
     std::string m_port = "8080";

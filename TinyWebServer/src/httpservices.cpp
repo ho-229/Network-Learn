@@ -11,7 +11,7 @@ HttpServices::HttpServices()
 }
 
 void HttpServices::addService(const std::string &method,
-                              const std::string &uri, Handler handler)
+                              const std::string &uri, const Handler &handler)
 {
     auto it = m_uriHandlers.find(uri);
     if(it == m_uriHandlers.end())
@@ -40,5 +40,8 @@ void HttpServices::service(HttpRequest* httpRequest, HttpResponse* httpResponse)
             httpResponse->buildErrorResponse(405, "Method Not Allowed");
     }
     else
+    {
+
         httpResponse->buildErrorResponse(404, "Not Found");
+    }
 }
