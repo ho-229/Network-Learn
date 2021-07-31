@@ -5,7 +5,7 @@ cmake_minimum_required(VERSION 3.5)
 project(Network-Learn)
 
 set(CXX_FLAGS
-   -j
+   -j4
 )
 
 set(CMAKE_CXX_STANDARD 17)

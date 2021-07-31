@@ -7,10 +7,14 @@
 
 #define LISTENQ 1024
 #define BUF_SIZE 128
-#define RECV_SIZE 1024
+#define SOCKET_BUF_SIZE 4096
 
 #include "event.h"
 #include "httpservices.h"
+
+#include <thread>
+#include <future>
+#include <fstream>
 
 extern "C"
 {
@@ -24,6 +28,7 @@ extern "C"
 # include <netdb.h>
 # include <unistd.h>
 # include <string.h>
+# include <signal.h>
 # include <sys/socket.h>
 
 #define CLOSE(x) close(x)
@@ -31,9 +36,6 @@ typedef int SOCKET;
 
 #endif
 }
-
-#include <thread>
-#include <future>
 
 WebServer::WebServer()
     : m_services(new HttpServices())
@@ -43,6 +45,8 @@ WebServer::WebServer()
 
     m_isLoaded = !(WSAStartup(MAKEWORD(2, 2), &info) ||
                    LOBYTE(info.wVersion) != 2 || HIBYTE(info.wVersion) != 2);
+#else   // Unix
+    signal(SIGPIPE, SIG_IGN);       // Ignore SIGPIPE
 #endif
 }
 
@@ -109,6 +113,22 @@ int WebServer::exec()
             httpResponse->toRawData(response);
             send(SOCKET(connfd), response.c_str(), int(response.size()), 0);
 
+            if(httpResponse->bodyType() == HttpResponse::File)
+            {
+                std::shared_ptr<char[]> sendBuf(new char[SOCKET_BUF_SIZE]);
+                std::ifstream out(httpResponse->filePath(), std::ios::binary);
+
+                if(out)
+                {
+                    while(!out.eof())
+                    {
+                        out.read(sendBuf.get(), SOCKET_BUF_SIZE);
+                        if(send(SOCKET(connfd), sendBuf.get(), int(out.gcount()), 0) < 0)
+                            break;
+                    }
+                }
+            }
+
             CLOSE(SOCKET(connfd));
         }, connfd);
     }
@@ -173,15 +193,15 @@ int WebServer::startListen(const std::string &port)
 void WebServer::recvAll(int fd, std::string &buffer)
 {
     int ret = 0;
-    std::shared_ptr<char[]> recvBuf(new char[RECV_SIZE]);
+    std::shared_ptr<char[]> recvBuf(new char[SOCKET_BUF_SIZE]);
 
     buffer.clear();
 #ifdef _WIN32
     do
     {
-        if((ret = recv(SOCKET(fd), recvBuf.get(), BUF_SIZE, 0)) == WSAEMSGSIZE)
+        if((ret = recv(SOCKET(fd), recvBuf.get(), SOCKET_BUF_SIZE, 0)) == WSAEMSGSIZE)
         {
-            buffer.append(recvBuf.get(), BUF_SIZE);
+            buffer.append(recvBuf.get(), SOCKET_BUF_SIZE);
             continue;
         }
         else if(ret > 0)
@@ -191,9 +211,9 @@ void WebServer::recvAll(int fd, std::string &buffer)
 #else   // Unix
     do
     {
-        ret = recv(fd, recvBuf.get(), RECV_SIZE, 0);
+        ret = recv(fd, recvBuf.get(), SOCKET_BUF_SIZE, 0);
         buffer.append(recvBuf.get(), size_t(ret));
     }
-    while(ret == RECV_SIZE && recvBuf[RECV_SIZE - 1] != '\n');
+    while(ret == SOCKET_BUF_SIZE && recvBuf[SOCKET_BUF_SIZE - 1] != '\n');
 #endif
 }

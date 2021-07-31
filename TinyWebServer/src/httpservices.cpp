@@ -5,7 +5,7 @@
 
 #include "httpservices.h"
 
-HttpServices::HttpServices()
+HttpServices::HttpServices() : m_workDir(fs::current_path())
 {
 
 }
@@ -22,6 +22,13 @@ void HttpServices::addService(const std::string &method,
     }
     else
         it->second[method] = std::make_shared<Handler>(handler);
+}
+
+void HttpServices::setWorkDir(const std::filesystem::path &path)
+{
+    const fs::directory_entry entry(path);
+    if(entry.is_directory())
+        m_workDir = path;
 }
 
 void HttpServices::service(HttpRequest* httpRequest, HttpResponse* httpResponse)
@@ -41,7 +48,10 @@ void HttpServices::service(HttpRequest* httpRequest, HttpResponse* httpResponse)
     }
     else
     {
-
-        httpResponse->buildErrorResponse(404, "Not Found");
+        fs::path filePath(m_workDir.string() + httpRequest->uri());
+        if(fs::directory_entry(filePath).is_regular_file())
+            httpResponse->buildFileResponse(filePath);
+        else
+            httpResponse->buildErrorResponse(404, "Not Found");
     }
 }

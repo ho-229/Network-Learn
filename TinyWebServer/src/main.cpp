@@ -21,9 +21,9 @@ int main(int argc, char** argv)
 {
     std::cout << "Welcome to Tiny Web Server.[" << Until::currentDateString() << "]\n";
 
-    if(argc != 2)
+    if(argc < 2 || std::string(argv[1]) == "-help")
     {
-        std::cerr << "Usage: " << argv[0] << " <port>\n";
+        std::cerr << "Usage: " << argv[0] << " <port> [shard-directory]\n";
         return -1;
     }
 
@@ -69,6 +69,12 @@ int main(int argc, char** argv)
                           "<h1>Tiny Web Server / Adder</h1><p>Result: "
                       + std::to_string(sum) + "</p></body></html>\n");
     });
+
+    if(argc > 2)
+    {
+        server->services()->setWorkDir(argv[2]);
+        std::cout << "Shard directory: " << argv[2] << ".\n";
+    }
 
     server->setPort(argv[1]);
     std::cout << "Listening port: " << argv[1] << ".\n\n";
