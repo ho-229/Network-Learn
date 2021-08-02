@@ -115,16 +115,33 @@ int WebServer::exec()
 
             if(httpResponse->bodyType() == HttpResponse::File)
             {
-                std::shared_ptr<char[]> sendBuf(new char[SOCKET_BUF_SIZE]);
+                std::shared_ptr<char[]> sendBuf(new char[SOCKET_BUF_SIZE]());
                 std::ifstream out(httpResponse->filePath(), std::ios::binary);
 
                 if(out)
                 {
-                    while(!out.eof())
+                    const auto range = httpRequest->range();
+
+                    if(range.second > 0)
                     {
-                        out.read(sendBuf.get(), SOCKET_BUF_SIZE);
-                        if(send(SOCKET(connfd), sendBuf.get(), int(out.gcount()), 0) < 0)
-                            break;
+                        out.seekg(range.first);
+                        while(out.tellg() < range.second)
+                        {
+                            out.read(sendBuf.get(),
+                                     out.tellg() + int64_t(SOCKET_BUF_SIZE) > range.second ?
+                                         range.second - out.tellg() : SOCKET_BUF_SIZE);
+                            if(send(SOCKET(connfd), sendBuf.get(), int(out.gcount()), 0) < 0)
+                                break;
+                        }
+                    }
+                    else
+                    {
+                        while(!out.eof())
+                        {
+                            out.read(sendBuf.get(), SOCKET_BUF_SIZE);
+                            if(send(SOCKET(connfd), sendBuf.get(), int(out.gcount()), 0) < 0)
+                                break;
+                        }
                     }
                 }
             }

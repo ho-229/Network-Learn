@@ -32,6 +32,8 @@ public:
 
     std::string rawHeader(const std::string& name) const { return m_headers.at(name); }
 
+    std::pair<int64_t, int64_t> range() const;
+
 private:
     void buildArgs(const std::string& args);
     void parseRequestLine(const std::string& data);

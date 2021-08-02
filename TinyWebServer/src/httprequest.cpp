@@ -39,6 +39,29 @@ void HttpRequest::parse(const std::string &data)
     }
 }
 
+std::pair<int64_t, int64_t> HttpRequest::range() const
+{
+    const auto it = m_headers.find("Range");
+
+    if(it == m_headers.end())
+        return {0, 0};
+
+    std::string value;
+    std::stringstream stream(it->second);
+
+    std::pair<int64_t, int64_t> ret;
+
+    for(int i = 0; std::getline(stream, value, '='); ++i)
+    {
+        if(i == 0)
+            ret.first = size_t(atoll(value.c_str()));
+        else if(i == 1)
+            ret.second = size_t(atoll(value.c_str()));
+    }
+
+    return ret;
+}
+
 void HttpRequest::parseRequestLine(const std::string &data)
 {
     std::regex express("(\\w+)\\s(.+)\\sHTTP\\W(\\S+)");
