@@ -31,7 +31,7 @@ jobs:
       uses: microsoft/setup-msbuild@v1.0.2
 
     - name: Build
+      shell: pwsh
       run: |
         mkdir build && cd build
-        cmake ..
-        make
+        cmake -DCMAEK_INSTALL_PREPIX=${{github.workspace}} ../
