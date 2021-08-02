@@ -113,7 +113,8 @@ int WebServer::exec()
             httpResponse->toRawData(response);
             send(SOCKET(connfd), response.c_str(), int(response.size()), 0);
 
-            if(httpResponse->bodyType() == HttpResponse::File)
+            if(httpResponse->bodyType() == HttpResponse::File
+                && httpRequest->method() == "GET")
             {
                 std::shared_ptr<char[]> sendBuf(new char[SOCKET_BUF_SIZE]());
                 std::ifstream out(httpResponse->filePath(), std::ios::binary);
