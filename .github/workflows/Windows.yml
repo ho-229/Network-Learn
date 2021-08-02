@@ -35,4 +35,4 @@ jobs:
       run: |
         mkdir build && cd build
         cmake ..
-        ls
+        cmake --build . --config Release
