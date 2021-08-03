@@ -1,4 +1,7 @@
 # Network-Learn
+![license](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)
+![windows](https://github.com/ho229v3666/Network-Learn/workflows/Windows/badge.svg?style=flat-square)
+![linux](https://github.com/ho229v3666/Network-Learn/workflows/Linux/badge.svg?style=flat-square)  
 A cross-platform network learning demos(Use WinSock and socket)  
 Welcome to try it out and leave your comments.
 
@@ -13,6 +16,6 @@ Require `C++17` support.
 ```shell
 mkdir build && cd build
 cmake ..
-make -j8
+cmake --build . --config Release
 ```
 Of course, you can also use IDE to config and build.
