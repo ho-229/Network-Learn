@@ -17,7 +17,7 @@ HttpResponse::HttpResponse()
 {
     m_headers["Server"] = "Tiny Web Server";
     m_headers["Connection"] = "close";
-    m_headers["Accept-Ranges"] = "byte";
+    m_headers["Accept-Ranges"] = "bytes";
 }
 
 void HttpResponse::setFilePath(const fs::path &path)
@@ -38,7 +38,7 @@ void HttpResponse::reset()
     m_headers.clear();
     m_headers["Server"] = "Tiny Web Server";
     m_headers["Connection"] = "close";
-    m_headers["Accept-Ranges"] = "byte";
+    m_headers["Accept-Ranges"] = "bytes";
 }
 
 void HttpResponse::setHttpState(const HttpState &state)

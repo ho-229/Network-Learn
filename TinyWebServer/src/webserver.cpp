@@ -123,7 +123,7 @@ int WebServer::exec()
                 {
                     const auto range = httpRequest->range();
 
-                    if(range.second > 0)
+                    if(range.second > 0 && range.first != range.second)
                     {
                         out.seekg(range.first);
                         while(out.tellg() < range.second)

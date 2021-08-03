@@ -46,20 +46,13 @@ std::pair<int64_t, int64_t> HttpRequest::range() const
     if(it == m_headers.end())
         return {0, 0};
 
-    std::string value;
-    std::stringstream stream(it->second);
+    std::regex express("bytes=(\\d+)-(\\d+)");
+    std::smatch result;
 
-    std::pair<int64_t, int64_t> ret;
+    if(!std::regex_match(it->second, result, express))
+        return {0, 0};
 
-    for(int i = 0; std::getline(stream, value, '='); ++i)
-    {
-        if(i == 0)
-            ret.first = size_t(atoll(value.c_str()));
-        else if(i == 1)
-            ret.second = size_t(atoll(value.c_str()));
-    }
-
-    return ret;
+    return {atoll(result[1].str().c_str()), atoll(result[2].str().c_str())};
 }
 
 void HttpRequest::parseRequestLine(const std::string &data)
