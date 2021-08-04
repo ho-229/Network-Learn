@@ -6,7 +6,7 @@ This is a tiny `HTTP` web server.
 
 | Support Headers  | Default Value |
 | ---------------- | ------------- |
-| Accept-Ranges | byte |
+| Accept-Ranges | bytes |
 | Connection | close |
 | Content-Length | \<auto> |
 | Content-Type | \<auto> |
