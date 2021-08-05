@@ -34,8 +34,11 @@ public:
 
     std::pair<int64_t, int64_t> range() const;
 
+    bool isEmpty() const { return m_method.empty() || m_uri.empty() || m_headers.empty(); }
+
 private:
-    void buildArgs(const std::string& args);
+    void parseArguments(const std::string& args);
+
     void parseRequestLine(const std::string& data);
 
     std::string m_method;

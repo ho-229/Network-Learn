@@ -21,9 +21,10 @@ HttpRequest::HttpRequest(const std::string &data)
 void HttpRequest::parse(const std::string &data)
 {
     std::stringstream stream(data);
-    std::regex express("(.+)\\s*:\\s*(.+)");
-    std::smatch result;
     std::string line;
+
+    const std::regex express("(.+)\\s*:\\s*(.+)");
+    std::smatch result;
 
     bool isFirstLine = true;
     while(std::getline(stream, line))
@@ -46,7 +47,7 @@ std::pair<int64_t, int64_t> HttpRequest::range() const
     if(it == m_headers.end())
         return {0, 0};
 
-    std::regex express("bytes=(\\d+)-(\\d+)");
+    const std::regex express("bytes=(\\d+)-(\\d+)");
     std::smatch result;
 
     if(!std::regex_match(it->second, result, express))
@@ -75,7 +76,7 @@ void HttpRequest::parseRequestLine(const std::string &data)
                 if(std::regex_match(str, result, express))
                 {
                     m_uri = result[1];
-                    this->buildArgs(result[2]);
+                    this->parseArguments(result[2]);
                 }
                 else
                     m_uri = str;
@@ -87,21 +88,19 @@ void HttpRequest::parseRequestLine(const std::string &data)
     }
 }
 
-void HttpRequest::buildArgs(const std::string &args)
+void HttpRequest::parseArguments(const std::string &args)
 {
     std::stringstream stream(args);
     std::string line;
 
+    const std::regex express("(.*)=(.*)");
+    std::smatch result;
+
     while(std::getline(stream, line, '&'))
     {
-        if(line.find('=') == std::string::npos)   // Not found "<key>=<value>"
-            m_urlArgs.push_back({{}, line});
+        if(std::regex_search(line, result, express))
+            m_urlArgs.push_back({result[1], result[2]});
         else
-        {
-            std::regex express("(.*)=(.*)");
-            std::smatch result;
-            if(std::regex_search(line, result, express))
-                m_urlArgs.push_back({result[1], result[2]});
-        }
+            m_urlArgs.push_back({{}, line});
     }
 }

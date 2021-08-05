@@ -54,15 +54,20 @@ void HttpResponse::toRawData(std::string &response)
     response.clear();
 
     m_headers["Content-Length"] = std::to_string(
-        m_type == Normal ? m_text.size() : fs::directory_entry(m_filePath).file_size());
+        m_type == Normal ? m_text.size() : fs::directory_entry(m_filePath).file_size() - 1);
 
+    // Response line
     response.append("HTTP/1.1 " + std::to_string(m_httpState.first) + ' '
                     + m_httpState.second + "\r\n");
 
+    // Headers
     for(const auto &[key, value] : m_headers)
         response.append(key + ": " + value + "\r\n");
 
-    response.append("\r\n" + m_text);
+    if(m_type == Normal)
+        response.append("\r\n" + m_text);
+    else
+        response.append("\r\n");
 }
 
 void HttpResponse::buildErrorResponse(int state, const std::string &message)

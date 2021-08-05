@@ -94,61 +94,7 @@ int WebServer::exec()
         AcceptEvent event(hostName, port);
         m_handler(&event);
 
-        auto future = std::async([this](int connfd) {
-            std::string raw, response;
-
-            recvAll(connfd, raw);
-
-            if(raw.empty())
-            {
-                CLOSE(SOCKET(connfd));
-                return;
-            }
-
-            auto httpRequest = std::make_shared<HttpRequest>(raw);
-            auto httpResponse = std::make_shared<HttpResponse>();
-
-            m_services->service(httpRequest.get(), httpResponse.get());
-
-            httpResponse->toRawData(response);
-            send(SOCKET(connfd), response.c_str(), int(response.size()), 0);
-
-            if(httpResponse->bodyType() == HttpResponse::File
-                && httpRequest->method() == "GET")
-            {
-                std::shared_ptr<char[]> sendBuf(new char[SOCKET_BUF_SIZE]());
-                std::ifstream out(httpResponse->filePath(), std::ios::binary);
-
-                if(out)
-                {
-                    const auto range = httpRequest->range();
-
-                    if(range.second > 0 && range.first != range.second)
-                    {
-                        out.seekg(range.first);
-                        while(out.tellg() < range.second)
-                        {
-                            out.read(sendBuf.get(),
-                                     out.tellg() + int64_t(SOCKET_BUF_SIZE) > range.second ?
-                                         range.second - out.tellg() : SOCKET_BUF_SIZE);
-                            if(send(SOCKET(connfd), sendBuf.get(), int(out.gcount()), 0) < 0)
-                                break;
-                        }
-                    }
-                    else
-                    {
-                        while(!out.eof())
-                        {
-                            out.read(sendBuf.get(), SOCKET_BUF_SIZE);
-                            if(send(SOCKET(connfd), sendBuf.get(), int(out.gcount()), 0) < 0)
-                                break;
-                        }
-                    }
-                }
-            }
-
-            CLOSE(SOCKET(connfd));
-        }, connfd);
+        auto future = std::async(&WebServer::session, this, connfd);
     }
 
     return 0;
@@ -234,4 +180,63 @@ void WebServer::recvAll(int fd, std::string &buffer)
     }
     while(ret == SOCKET_BUF_SIZE && recvBuf[SOCKET_BUF_SIZE - 1] != '\n');
 #endif
+}
+
+void WebServer::session(const int connfd)
+{
+    std::string raw, response;
+
+    recvAll(connfd, raw);
+
+    if(raw.empty())
+    {
+        CLOSE(SOCKET(connfd));
+        return;
+    }
+
+    auto httpRequest = std::make_shared<HttpRequest>(raw);
+    auto httpResponse = std::make_shared<HttpResponse>();
+
+    m_services->service(httpRequest.get(), httpResponse.get());
+
+    httpResponse->setRawHeader("Connection", httpRequest->rawHeader("Connection"));
+    httpResponse->toRawData(response);
+
+    send(SOCKET(connfd), response.c_str(), int(response.size()), 0);
+
+    if(httpResponse->bodyType() == HttpResponse::File
+        && httpRequest->method() == "GET")
+    {
+        std::shared_ptr<char[]> sendBuf(new char[SOCKET_BUF_SIZE]());
+        std::ifstream out(httpResponse->filePath(), std::ios::binary);
+
+        if(out)
+        {
+            const auto range = httpRequest->range();
+
+            if(range.second > 0 && range.first != range.second)
+            {
+                out.seekg(range.first);
+                while(out.tellg() < range.second)
+                {
+                    out.read(sendBuf.get(),
+                             out.tellg() + int64_t(SOCKET_BUF_SIZE) > range.second
+                                 ? range.second - out.tellg() : SOCKET_BUF_SIZE);
+                    if(send(SOCKET(connfd), sendBuf.get(), int(out.gcount()), 0) < 0)
+                        break;
+                }
+            }
+            else
+            {
+                while(!out.eof())
+                {
+                    out.read(sendBuf.get(), SOCKET_BUF_SIZE);
+                    if(send(SOCKET(connfd), sendBuf.get(), int(out.gcount()), 0) < 0)
+                        break;
+                }
+            }
+        }
+    }
+
+    CLOSE(SOCKET(connfd));
 }

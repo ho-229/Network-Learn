@@ -42,6 +42,8 @@ private:
 
     static void recvAll(int fd, std::string& buffer);
 
+    void session(const int connfd);
+
     bool m_isLoaded = true;
     bool m_runnable = true;
 
