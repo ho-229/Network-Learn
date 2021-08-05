@@ -199,9 +199,7 @@ void WebServer::session(const int connfd)
 
     m_services->service(httpRequest.get(), httpResponse.get());
 
-    httpResponse->setRawHeader("Connection", httpRequest->rawHeader("Connection"));
     httpResponse->toRawData(response);
-
     send(SOCKET(connfd), response.c_str(), int(response.size()), 0);
 
     if(httpResponse->bodyType() == HttpResponse::File

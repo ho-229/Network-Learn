@@ -69,7 +69,7 @@ public:
     void buildErrorResponse(int state, const std::string& message);
     void buildFileResponse(const fs::path &filePath);
 
-    static auto& PermissibleStaticTypes() { return PermissibleStaticType; }
+    static auto& permissibleStaticTypes() { return PermissibleStaticType; }
 
 private:
     std::pair<int, std::string> m_httpState = {200, "OK"};

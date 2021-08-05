@@ -27,7 +27,7 @@ void HttpRequest::parse(const std::string &data)
     std::smatch result;
 
     bool isFirstLine = true;
-    while(std::getline(stream, line))
+    while(std::getline(stream, line) && line != "\r\n")
     {
         if(isFirstLine)
         {
@@ -38,6 +38,9 @@ void HttpRequest::parse(const std::string &data)
             if(std::regex_search(line, result, express))
                 m_headers[result[1]] = result[2];
     }
+
+    while(!stream.eof())
+        stream >> m_body;
 }
 
 std::pair<int64_t, int64_t> HttpRequest::range() const

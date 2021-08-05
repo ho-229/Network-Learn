@@ -30,11 +30,14 @@ public:
 
     std::string httpVersion() const { return m_httpVersion; }
 
+    std::string body() const { return m_body; }
+
     std::string rawHeader(const std::string& name) const { return m_headers.at(name); }
 
     std::pair<int64_t, int64_t> range() const;
 
-    bool isEmpty() const { return m_method.empty() || m_uri.empty() || m_headers.empty(); }
+    bool isEmpty() const { return m_method.empty() ||
+               m_uri.empty() || m_headers.empty(); }
 
 private:
     void parseArguments(const std::string& args);
@@ -44,6 +47,7 @@ private:
     std::string m_method;
     std::string m_uri;
     std::string m_httpVersion;
+    std::string m_body;
 
     std::vector<UrlArg> m_urlArgs;
 
