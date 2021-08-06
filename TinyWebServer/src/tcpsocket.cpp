@@ -25,7 +25,7 @@ extern "C"
 # include <string.h>
 # include <sys/socket.h>
 
-#define CLOSE(x) close(x)
+#define CLOSE(x) ::close(x)
 #endif
 }
 
