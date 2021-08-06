@@ -10,6 +10,7 @@
 #include <functional>
 
 class Event;
+class TcpSocket;
 class HttpServices;
 
 typedef std::function<void(Event *)> EventHandler;
@@ -42,12 +43,12 @@ private:
 
     static void recvAll(int fd, std::string& buffer);
 
-    void session(const int connfd);
+    void session(TcpSocket *connect);
 
     bool m_isLoaded = true;
     bool m_runnable = true;
 
-    int m_listenfd = -1;
+    TcpSocket *m_listenSocket = nullptr;
 
     HttpServices *m_services = nullptr;
     std::string m_port = "8080";

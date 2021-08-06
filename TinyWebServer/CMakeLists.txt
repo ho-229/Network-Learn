@@ -13,6 +13,11 @@
    src/httpresponse.h
    src/httpresponse.cpp
 
+   src/abstractsocket.h
+
+   src/tcpsocket.h
+   src/tcpsocket.cpp
+
    src/event.h
    src/event.cpp
 
