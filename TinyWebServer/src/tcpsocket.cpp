@@ -3,11 +3,13 @@
  * @date 2021/8/6
  */
 
-#include "tcpsocket.h"
-
 #define LISTENQ 1024
 #define BUF_SIZE 64
 #define SOCKET_BUF_SIZE 4096
+
+#include "tcpsocket.h"
+
+#include <memory>
 
 extern "C"
 {
@@ -59,7 +61,7 @@ void TcpSocket::read(std::string &buffer)
 #else   // Unix
     do
     {
-        ret = recv(fd, recvBuf.get(), SOCKET_BUF_SIZE, 0);
+        ret = recv(m_descriptor, recvBuf.get(), SOCKET_BUF_SIZE, 0);
         buffer.append(recvBuf.get(), size_t(ret));
     }
     while(ret == SOCKET_BUF_SIZE && recvBuf[SOCKET_BUF_SIZE - 1] != '\n');
