@@ -18,6 +18,7 @@ HttpResponse::HttpResponse()
     m_headers["Server"] = "Tiny Web Server";
     m_headers["Connection"] = "close";
     m_headers["Accept-Ranges"] = "bytes";
+    m_headers["Date"] = Until::currentDateString();
 }
 
 void HttpResponse::setFilePath(const fs::path &path)
@@ -54,7 +55,7 @@ void HttpResponse::toRawData(std::string &response)
     response.clear();
 
     m_headers["Content-Length"] = std::to_string(
-        m_type == Normal ? m_text.size() : fs::directory_entry(m_filePath).file_size() - 1);
+        m_type == Normal ? m_text.size() : fs::directory_entry(m_filePath).file_size());
 
     // Response line
     response.append("HTTP/1.1 " + std::to_string(m_httpState.first) + ' '
@@ -73,7 +74,6 @@ void HttpResponse::toRawData(std::string &response)
 void HttpResponse::buildErrorResponse(int state, const std::string &message)
 {
     this->setRawHeader("Content-Type", "text/html; charset=utf-8");
-    this->setRawHeader("Date", Until::currentDateString());
 
     this->setHttpState({404, "Not found"});
     m_text = "<h2>Tiny Web Server</h2><h1>" + std::to_string(state)
@@ -86,6 +86,5 @@ void HttpResponse::buildFileResponse(const fs::path &filePath)
     if(it != PermissibleStaticType.end())
         this->setRawHeader("Content-Type", it->second);
 
-    this->setRawHeader("Date", Until::currentDateString());
     this->setFilePath(filePath);
 }

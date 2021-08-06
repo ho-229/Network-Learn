@@ -62,7 +62,6 @@ int main(int argc, char** argv)
         for(const auto& arg : req->urlArguments())
             sum += atoi(arg.second.c_str());
 
-        resp->setRawHeader("Date", Until::currentDateString());
         resp->setRawHeader("Content-type", "text/html; charset=utf-8");
 
         resp->setText("<html><title>Tiny Web Server</title><body bgcolor\"#fffff\">"

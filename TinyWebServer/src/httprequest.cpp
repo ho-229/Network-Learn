@@ -61,32 +61,38 @@ std::pair<int64_t, int64_t> HttpRequest::range() const
 
 void HttpRequest::parseRequestLine(const std::string &data)
 {
-    std::regex express("(\\w+)\\s(.+)\\sHTTP\\W(\\S+)");
-    std::smatch result;
+    std::stringstream stream(data);
+    std::string line;
 
-    if(std::regex_search(data, result, express))
+    for(int i = 0; std::getline(stream, line, ' '); ++i)
     {
-        int i = 0;
-        for(const auto& it : result)
+        if(i == 0)
+            m_method = line;
+        else if(i == 1)
         {
-            if(i == 1)
-                m_method = it.str();
-            else if(i == 2)
+            std::string::size_type pos;
+
+            while(true)
             {
-                const std::string str = it.str();
-                std::regex express("(.+)\\?(.+)");
-                std::smatch result;
-                if(std::regex_match(str, result, express))
-                {
-                    m_uri = result[1];
-                    this->parseArguments(result[2]);
-                }
+                if((pos = line.find('?')) == std::string::npos)
+                    m_uri = line;
                 else
-                    m_uri = str;
+                {
+                    if(line[pos - 1] == '\\')
+                        continue;
+
+                    m_uri = line.substr(0, pos);
+                    this->parseArguments(line.substr(pos + 1));
+                }
+
+                break;
             }
-            else if(i == 3)
-                m_httpVersion = it.str();
-            ++i;
+        }
+        else if(i == 2)
+        {
+            std::string::size_type pos;
+            if((pos = line.find('/')) != std::string::npos)
+                m_httpVersion = line.substr(pos + 1);
         }
     }
 }
@@ -96,14 +102,12 @@ void HttpRequest::parseArguments(const std::string &args)
     std::stringstream stream(args);
     std::string line;
 
-    const std::regex express("(.*)=(.*)");
-    std::smatch result;
-
     while(std::getline(stream, line, '&'))
     {
-        if(std::regex_search(line, result, express))
-            m_urlArgs.push_back({result[1], result[2]});
-        else
+        std::string::size_type pos;
+        if((pos = line.find('=')) == std::string::npos)
             m_urlArgs.push_back({{}, line});
+        else
+            m_urlArgs.push_back({line.substr(0, pos), line.substr(pos + 1)});
     }
 }
