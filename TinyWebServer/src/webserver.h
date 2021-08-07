@@ -32,8 +32,6 @@ public:
     template <typename Func>
     void installEventHandler(const Func& handler) { m_handler = handler; }
 
-    void exit();
-
 private:
     void session(AbstractSocket *connect);
 

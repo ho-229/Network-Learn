@@ -69,15 +69,6 @@ int WebServer::exec()
     return 0;
 }
 
-void WebServer::exit()
-{
-    if(!m_runnable)
-        return;
-
-    m_runnable = false;
-    m_listenSocket->close();
-}
-
 void WebServer::session(AbstractSocket *connect)
 {
     std::string raw, response;
