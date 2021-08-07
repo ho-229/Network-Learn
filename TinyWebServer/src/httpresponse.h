@@ -74,6 +74,8 @@ public:
 private:
     std::pair<int, std::string> m_httpState = {200, "OK"};
 
+    inline void initializatHeaders();
+
     std::string m_text;
 
     std::map<std::string,   // Name

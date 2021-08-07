@@ -39,8 +39,7 @@ void HttpRequest::parse(const std::string &data)
                 m_headers[result[1]] = result[2];
     }
 
-    while(!stream.eof())
-        stream >> m_body;
+    std::string(std::istreambuf_iterator<char>(stream), {}).swap(m_body);
 }
 
 std::pair<int64_t, int64_t> HttpRequest::range() const
@@ -78,7 +77,7 @@ void HttpRequest::parseRequestLine(const std::string &data)
                     m_uri = line;
                 else
                 {
-                    if(line[pos - 1] == '\\')
+                    if(line[pos - 1] == '\\')   // Ignore "\?"
                         continue;
 
                     m_uri = line.substr(0, pos);

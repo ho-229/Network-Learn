@@ -34,7 +34,9 @@ WebServer::~WebServer()
     TcpSocket::cleanUpWsa();
 #endif
     m_runnable = false;
+
     delete m_services;
+    delete m_listenSocket;
 }
 
 int WebServer::exec()
@@ -76,7 +78,7 @@ void WebServer::exit()
     m_listenSocket->close();
 }
 
-void WebServer::session(TcpSocket *connect)
+void WebServer::session(AbstractSocket *connect)
 {
     std::string raw, response;
 

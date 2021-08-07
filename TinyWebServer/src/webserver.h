@@ -12,6 +12,7 @@
 class Event;
 class TcpSocket;
 class HttpServices;
+class AbstractSocket;
 
 typedef std::function<void(Event *)> EventHandler;
 
@@ -34,16 +35,7 @@ public:
     void exit();
 
 private:
-    /**
-     * @ref CS:APP(3) P662: int open_listenfd(char *port)
-     * @brief Listen on the given port
-     * @return Listen fd, failed return -1
-     */
-    static int startListen(const std::string& port);
-
-    static void recvAll(int fd, std::string& buffer);
-
-    void session(TcpSocket *connect);
+    void session(AbstractSocket *connect);
 
     bool m_isLoaded = true;
     bool m_runnable = true;

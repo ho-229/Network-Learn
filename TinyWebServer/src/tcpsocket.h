@@ -19,6 +19,11 @@ public:
 
     void close() override;
 
+    /**
+     * @ref CS:APP(3) P662: int open_listenfd(char *port)
+     * @brief Listen on the given port
+     * @return true when successful
+     */
     bool listen(const std::string& port);
     bool isListening() const { return m_isListening; }
 

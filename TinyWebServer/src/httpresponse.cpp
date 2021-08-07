@@ -15,10 +15,7 @@
 
 HttpResponse::HttpResponse()
 {
-    m_headers["Server"] = "Tiny Web Server";
-    m_headers["Connection"] = "close";
-    m_headers["Accept-Ranges"] = "bytes";
-    m_headers["Date"] = Until::currentDateString();
+    this->initializatHeaders();
 }
 
 void HttpResponse::setFilePath(const fs::path &path)
@@ -37,9 +34,7 @@ void HttpResponse::reset()
     m_filePath.clear();
 
     m_headers.clear();
-    m_headers["Server"] = "Tiny Web Server";
-    m_headers["Connection"] = "close";
-    m_headers["Accept-Ranges"] = "bytes";
+    this->initializatHeaders();
 }
 
 void HttpResponse::setHttpState(const HttpState &state)
@@ -87,4 +82,12 @@ void HttpResponse::buildFileResponse(const fs::path &filePath)
         this->setRawHeader("Content-Type", it->second);
 
     this->setFilePath(filePath);
+}
+
+inline void HttpResponse::initializatHeaders()
+{
+    m_headers["Server"] = "Tiny Web Server";
+    m_headers["Connection"] = "close";
+    m_headers["Accept-Ranges"] = "bytes";
+    m_headers["Date"] = Until::currentDateString();
 }
