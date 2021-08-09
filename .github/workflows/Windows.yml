@@ -27,6 +27,11 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
+    - name: Install OpenSSL
+      shell: pwsh
+      run: |
+        choco install openssl
+
     - name: Add MSBuild to PATH
       uses: microsoft/setup-msbuild@v1.0.2
 
