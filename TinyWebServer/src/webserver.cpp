@@ -9,6 +9,7 @@
 
 #include "event.h"
 #include "tcpsocket.h"
+#include "sslsocket.h"
 #include "httpservices.h"
 
 #include <thread>
@@ -33,6 +34,8 @@ WebServer::~WebServer()
 #ifdef _WIN32
     TcpSocket::cleanUpWsa();
 #endif
+    SslSocket::cleanUpSsl();
+
     m_runnable = false;
 
     delete m_services;
@@ -58,7 +61,12 @@ int WebServer::exec()
     m_runnable = true;
     while(m_runnable)
     {
-        TcpSocket* connect = m_listenSocket->waitForAccept();
+        AbstractSocket* connect = nullptr;
+
+        if(m_sslEnable)
+            connect = new SslSocket(m_listenSocket->waitForAccept());
+        else
+            connect = new TcpSocket(m_listenSocket->waitForAccept());
 
         AcceptEvent event(connect->hostName(), connect->port());
         m_handler(&event);
@@ -69,11 +77,17 @@ int WebServer::exec()
     return 0;
 }
 
+void WebServer::setSslEnable(bool enable)
+{
+    m_sslEnable = enable && SslSocket::isSslAvailable();
+}
+
 void WebServer::session(AbstractSocket *connect)
 {
     std::string raw, response;
 
     connect->read(raw);
+
 
     if(raw.empty())
     {

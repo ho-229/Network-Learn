@@ -11,7 +11,7 @@
 class TcpSocket : public AbstractSocket
 {
 public:
-    explicit TcpSocket(Socket descriptor = 0);
+    explicit TcpSocket(const SocketInfo &info = {});
     ~TcpSocket() override;
 
     void read(std::string& buffer) override;
@@ -27,7 +27,7 @@ public:
     bool listen(const std::string& port);
     bool isListening() const { return m_isListening; }
 
-    TcpSocket* waitForAccept();
+    SocketInfo waitForAccept() const;
 
 #ifdef _WIN32
     static bool initializatWsa();

@@ -29,6 +29,9 @@ public:
 
     HttpServices *services() const { return m_services; }
 
+    void setSslEnable(bool enable = true);
+    bool sslEnable() const { return m_sslEnable; }
+
     template <typename Func>
     void installEventHandler(const Func& handler) { m_handler = handler; }
 
@@ -37,6 +40,7 @@ private:
 
     bool m_isLoaded = true;
     bool m_runnable = true;
+    bool m_sslEnable = false;
 
     TcpSocket *m_listenSocket = nullptr;
 

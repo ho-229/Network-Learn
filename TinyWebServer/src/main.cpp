@@ -9,6 +9,7 @@
 #include "event.h"
 #include "until.h"
 #include "webserver.h"
+#include "sslsocket.h"
 #include "httpservices.h"
 
 #ifdef _WIN32
@@ -19,15 +20,28 @@
 
 int main(int argc, char** argv)
 {
-    std::cout << "Welcome to Tiny Web Server.[" << Until::currentDateString() << "]\n";
+    std::cout << "Welcome to Tiny Web Server.[" << Until::currentDateString()
+              << "]\nOpenSSL version: " << SslSocket::sslVersion() << "\n";
 
     if(argc < 2 || std::string(argv[1]) == "-help")
     {
-        std::cerr << "Usage: " << argv[0] << " <port> [shard-directory]\n";
+        std::cerr << "Usage: " << argv[0] << " <port> [shard-directory] "
+                                             "[certificate-file] [privateKey-file]\n";
         return -1;
     }
 
     auto server = std::make_shared<WebServer>();
+
+    if(argc == 5)
+    {
+        if(SslSocket::initializatSsl(argv[3], argv[4]))
+        {
+            std::cout << "OpenSSL initializat successful.\n";
+            server->setSslEnable();
+        }
+        else
+            std::cout << "OpenSSL initializat failed.\n";
+    }
 
     server->installEventHandler([](Event *event) {
         if(event->type() == Event::AcceptEvent)

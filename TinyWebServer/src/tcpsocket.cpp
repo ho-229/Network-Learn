@@ -4,8 +4,6 @@
  */
 
 #define LISTENQ 1024
-#define BUF_SIZE 64
-#define SOCKET_BUF_SIZE 4096
 
 #include "tcpsocket.h"
 
@@ -29,7 +27,7 @@ extern "C"
 #endif
 }
 
-TcpSocket::TcpSocket(Socket descriptor) : AbstractSocket(descriptor)
+TcpSocket::TcpSocket(const SocketInfo& info) : AbstractSocket(info)
 {
 
 }
@@ -97,14 +95,9 @@ bool TcpSocket::listen(const std::string &port)
     for(it = addrList; it; it = it->ai_next)
     {
         // Create a socket descriptor
-#ifdef _WIN32
-        if((m_descriptor = socket(it->ai_family, it->ai_socktype, it->ai_protocol))
-            == INVALID_SOCKET)
-            continue;           // Socket failed, try the next
-#else
-        if((m_descriptor = socket(it->ai_family, it->ai_socktype, it->ai_protocol)) < 0)
-            continue;           // Socket failed, try the next
-#endif
+        if(!AbstractSocket::isValid(
+                (m_descriptor = socket(it->ai_family, it->ai_socktype, it->ai_protocol))))
+            continue;
 
         // Eliminates "Address already in use" error from bind
         setsockopt(m_descriptor, SOL_SOCKET, SO_REUSEADDR,
@@ -136,26 +129,22 @@ bool TcpSocket::listen(const std::string &port)
     return true;
 }
 
-TcpSocket *TcpSocket::waitForAccept()
+SocketInfo TcpSocket::waitForAccept() const
 {
     if(!m_isListening)
-        return nullptr;
+        return {};
 
-    sockaddr_storage clientAddr;
-    socklen_t clientLen = sizeof(clientAddr);
     char hostName[BUF_SIZE], port[BUF_SIZE];
+    sockaddr_storage addr;
+    socklen_t len = sizeof(addr);
 
     const Socket socket = accept(
-        m_descriptor, reinterpret_cast<sockaddr *>(&clientAddr), &clientLen);
+        m_descriptor, reinterpret_cast<sockaddr *>(&addr), &len);
 
-    getnameinfo(reinterpret_cast<sockaddr *>(&clientAddr), clientLen,
-                hostName, BUF_SIZE, port, BUF_SIZE, 0);
+    getnameinfo(reinterpret_cast<sockaddr *>(&addr),
+                len, hostName, BUF_SIZE, port, BUF_SIZE, 0);
 
-    TcpSocket *newConnect = new TcpSocket(socket);
-    newConnect->m_hostName = hostName;
-    newConnect->m_port = port;
-
-    return newConnect;
+    return {socket, hostName, port};
 }
 
 #ifdef _WIN32

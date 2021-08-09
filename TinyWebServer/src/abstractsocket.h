@@ -7,12 +7,18 @@
 #define ABSTRACTSOCKET_H
 
 #include <string>
+#include <tuple>
+
+#define BUF_SIZE 64
+#define SOCKET_BUF_SIZE 4096
 
 #ifdef _WIN32
 typedef unsigned int Socket;
 #else
 typedef int Socket;
 #endif
+
+typedef std::tuple<Socket, std::string, std::string> SocketInfo;
 
 class AbstractSocket
 {
@@ -32,8 +38,21 @@ public:
 
     Socket descriptor() const { return m_descriptor; }
 
+    constexpr inline static bool isValid(const Socket sock)
+    {
+#ifdef _WIN32
+        return sock != Socket(~0);
+#else
+        return sock > 0;
+#endif
+    }
+
 protected:
-    explicit AbstractSocket(Socket descriptor) : m_descriptor(descriptor) {}
+    explicit AbstractSocket(const SocketInfo& info = {}) :
+        m_descriptor(std::get<0>(info)),
+        m_hostName(std::get<1>(info)),
+        m_port(std::get<2>(info))
+    {}
 
     // Disable copy
     AbstractSocket(AbstractSocket& other) = delete;
