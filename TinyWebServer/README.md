@@ -1,6 +1,6 @@
 # Tiny Web Server
 
-This is a tiny `HTTP` web server.
+This is a tiny `HTTP/HTTPS` web server.
 
 ## Features
 
@@ -18,24 +18,24 @@ This is a tiny `HTTP` web server.
 
 * Command line
     ```
-    Usage: ./TinyWebServer <port> [shard-directory]
+    Usage: ./TinyWebServer [http-port] [https-port] [shard-directory] [certificate-file] [privateKey-file]
     ```
 
     Example:
 
     ```shell
-    ./TinyWebServer 8080
+    ./TinyWebServer 80 443 ./shard_files
     ```
 
 * Browser
     ```
-    http://localhost:<port>/
+    http(s)://localhost/<uri>
     ```
 
     Example:
 
     ```
-    http://localhost:8080/adder?1&1
+    http://localhost/adder?1&1
     ```
 
 * Class `WebServer` usage  
@@ -69,3 +69,5 @@ This is a tiny `HTTP` web server.
         return server->exec();
     }
     ```
+
+    For more complete example, see [main.cpp](./src/main.cpp).
