@@ -86,8 +86,9 @@ int WebServer::exec()
     m_runnable = true;
     const auto maxfd = Until::max<TcpSocket>(m_listenSockets).descriptor() + 1;
 
-    const auto acceptConnection = [this](AbstractSocket * const connect) {
-        AcceptEvent event(connect->hostName(), connect->port());
+    const auto acceptConnection = [this](const AcceptEvent::Protocol& protocol,
+                                         AbstractSocket * const connect) {
+        AcceptEvent event(protocol, connect->hostName(), connect->port());
         m_handler(&event);
 
         auto future = std::async(&WebServer::session, this, connect);
@@ -100,10 +101,12 @@ int WebServer::exec()
                    reinterpret_cast<timeval *>(&m_timeout)) <= 0)
             continue;
 
-        if(FD_ISSET(m_listenSockets.first->descriptor(), &readySet))
-            acceptConnection(new TcpSocket(m_listenSockets.first->waitForAccept()));
-        if(FD_ISSET(m_listenSockets.second->descriptor(), &readySet))
-            acceptConnection(new SslSocket(m_listenSockets.second->waitForAccept()));
+        if(FD_ISSET(m_listenSockets.first->descriptor(), &readySet))    // HTTP
+            acceptConnection(AcceptEvent::HTTP,
+                             new TcpSocket(m_listenSockets.first->waitForAccept()));
+        if(FD_ISSET(m_listenSockets.second->descriptor(), &readySet))   // HTTPS
+            acceptConnection(AcceptEvent::HTTPS,
+                             new SslSocket(m_listenSockets.second->waitForAccept()));
     }
 
     return 0;
