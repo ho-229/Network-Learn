@@ -23,24 +23,31 @@ int main(int argc, char** argv)
     std::cout << "Welcome to Tiny Web Server.[" << Until::currentDateString()
               << "]\nOpenSSL version: " << SslSocket::sslVersion() << "\n";
 
-    if(argc < 2 || std::string(argv[1]) == "-help")
+    // -help
+    if(argc >= 2 && std::string(argv[1]) == "-help")
     {
-        std::cerr << "Usage: " << argv[0] << " <port> [shard-directory] "
+        std::cerr << "Usage: " << argv[0] << "[http-port] [https-port] [shard-directory] "
                                              "[certificate-file] [privateKey-file]\n";
-        return -1;
+        return 1;
     }
 
     auto server = std::make_shared<WebServer>();
 
-    if(argc == 5)
+    // Set port
+    if(argc == 2)
+        server->setPort({argv[1], "443"});
+    else if(argc >= 3)
+        server->setPort({argv[1], argv[2]});
+
+    if(argc == 6)
     {
-        if(SslSocket::initializatSsl(argv[3], argv[4]))
+        if(SslSocket::initializatSsl(argv[4], argv[5]))
         {
-            std::cout << "OpenSSL initializat successful.\n";
+            std::cerr << "OpenSSL initializat successful.\n";
             server->setSslEnable();
         }
         else
-            std::cout << "OpenSSL initializat failed.\n";
+            std::cerr << "OpenSSL initializat failed.\n";
     }
 
     server->installEventHandler([](Event *event) {
@@ -83,14 +90,15 @@ int main(int argc, char** argv)
                       + std::to_string(sum) + "</p></body></html>\n");
     });
 
-    if(argc > 2)
+    if(argc > 3)
     {
-        server->services()->setWorkDir(argv[2]);
-        std::cout << "Shard directory: " << argv[2] << ".\n";
+        server->services()->setWorkDir(argv[3]);
+        std::cout << "Shard directory: " << argv[3] << ".\n";
     }
 
-    server->setPort(argv[1]);
-    std::cout << "Listening port: " << argv[1] << ".\n\n";
+    const auto [http, https] = server->port();
+    std::cout << "Listening HTTP port: " << http
+              << ".\nListening HTTPS port: " << https << "\n\n";
 
     return server->exec();
 }

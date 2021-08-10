@@ -33,7 +33,7 @@ SslSocket::SslSocket(const SocketInfo &info) :
     AbstractSocket(info),
     m_ssl(SSL_new(sslContext))
 {
-    SSL_set_fd(m_ssl, m_descriptor);
+    SSL_set_fd(m_ssl, int(m_descriptor));
 
     if(SSL_accept(m_ssl) < 0)
     {
@@ -76,7 +76,7 @@ int SslSocket::write(const char *buf, size_t size)
     if(!m_ssl)
         return 0;
 
-    return SSL_write(m_ssl, buf, size);
+    return SSL_write(m_ssl, buf, int(size));
 }
 
 void SslSocket::close()
@@ -130,6 +130,9 @@ std::string SslSocket::sslVersion()
 
 void SslSocket::cleanUpSsl()
 {
+    if(!sslContext)
+        return;
+
     SSL_CTX_free(sslContext);
     sslContext = nullptr;
 }

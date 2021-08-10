@@ -15,15 +15,13 @@ class HttpServices;
 class AbstractSocket;
 
 typedef std::function<void(Event *)> EventHandler;
+typedef std::pair<std::string, std::string> ServerPort;
 
 class WebServer
 {
 public:
     explicit WebServer();
     virtual ~WebServer();
-
-    void setPort(const std::string& port) { m_port = port; }
-    std::string port() const { return m_port; }
 
     int exec();
 
@@ -32,20 +30,38 @@ public:
     void setSslEnable(bool enable = true);
     bool sslEnable() const { return m_sslEnable; }
 
+    void setInterval(long microSecond) { m_timeout.second = microSecond * 1000; }
+    long interval() const { return m_timeout.second; }
+
+    void setPort(const ServerPort& port)
+    {
+        if(port.first == port.second)
+            return;
+
+        m_port = port;
+    }
+
+    ServerPort port() const { return m_port; }
+
     template <typename Func>
     void installEventHandler(const Func& handler) { m_handler = handler; }
 
 private:
-    void session(AbstractSocket *connect);
+    void session(AbstractSocket * const connect);
 
     bool m_isLoaded = true;
     bool m_runnable = true;
     bool m_sslEnable = false;
 
-    TcpSocket *m_listenSocket = nullptr;
+    std::pair<long, long> m_timeout = {0, 500 * 1000};
+
+    std::pair<TcpSocket *,      // HTTP
+              TcpSocket *>      // HTTPS
+        m_listenSockets = { nullptr, nullptr };
 
     HttpServices *m_services = nullptr;
-    std::string m_port = "8080";
+
+    ServerPort m_port = {"80", "443"};
 
     EventHandler m_handler = [](Event *){};
 };

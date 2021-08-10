@@ -27,6 +27,10 @@ namespace Until
         ss << std::put_time(gmtime(&itt), "%a, %d %b %Y %H:%M:%S GMT");
         return ss.str();
     }
+
+    template <typename T>
+    constexpr inline T& max(const std::pair<T *, T *> p)
+    { return *p.first < *p.second ? *p.second : *p.first; }
 }
 
 #endif // UNTIL_H

@@ -7,6 +7,7 @@
 
 #define SOCKET_BUF_SIZE 4096
 
+#include "until.h"
 #include "event.h"
 #include "tcpsocket.h"
 #include "sslsocket.h"
@@ -18,8 +19,14 @@
 
 #include <signal.h>
 
+#ifdef _WIN32
+# include <WinSock2.h>
+#else
+# include <sys/select.h>
+#endif
+
 WebServer::WebServer() :
-    m_listenSocket(new TcpSocket()),
+    m_listenSockets({new TcpSocket(), new TcpSocket()}),
     m_services(new HttpServices())
 {
 #ifdef _WIN32
@@ -38,8 +45,10 @@ WebServer::~WebServer()
 
     m_runnable = false;
 
+    delete m_listenSockets.first;
+    delete m_listenSockets.second;
+
     delete m_services;
-    delete m_listenSocket;
 }
 
 int WebServer::exec()
@@ -51,7 +60,23 @@ int WebServer::exec()
         return -1;
     }
 
-    if(!m_listenSocket->listen(m_port))
+    fd_set readSet, readySet;
+    FD_ZERO(&readSet);
+
+    // HTTP listener
+    if(m_listenSockets.first->listen(m_port.first))
+        FD_SET(m_listenSockets.first->descriptor(), &readSet);
+    else
+    {
+        ExceptionEvent event(ExceptionEvent::ListenFailed);
+        m_handler(&event);
+        return -1;      // Start listen failed
+    }
+
+    // HTTPS listener
+    if(m_sslEnable && m_listenSockets.second->listen(m_port.second))
+        FD_SET(m_listenSockets.second->descriptor(), &readSet);
+    else
     {
         ExceptionEvent event(ExceptionEvent::ListenFailed);
         m_handler(&event);
@@ -59,19 +84,26 @@ int WebServer::exec()
     }
 
     m_runnable = true;
-    while(m_runnable)
-    {
-        AbstractSocket* connect = nullptr;
+    const auto maxfd = Until::max<TcpSocket>(m_listenSockets).descriptor() + 1;
 
-        if(m_sslEnable)
-            connect = new SslSocket(m_listenSocket->waitForAccept());
-        else
-            connect = new TcpSocket(m_listenSocket->waitForAccept());
-
+    const auto acceptConnection = [this](AbstractSocket * const connect) {
         AcceptEvent event(connect->hostName(), connect->port());
         m_handler(&event);
 
         auto future = std::async(&WebServer::session, this, connect);
+    };
+
+    while(m_runnable)
+    {
+        readySet = readSet;
+        if(select(int(maxfd), &readySet, nullptr, nullptr,
+                   reinterpret_cast<timeval *>(&m_timeout)) <= 0)
+            continue;
+
+        if(FD_ISSET(m_listenSockets.first->descriptor(), &readySet))
+            acceptConnection(new TcpSocket(m_listenSockets.first->waitForAccept()));
+        if(FD_ISSET(m_listenSockets.second->descriptor(), &readySet))
+            acceptConnection(new SslSocket(m_listenSockets.second->waitForAccept()));
     }
 
     return 0;
@@ -82,12 +114,11 @@ void WebServer::setSslEnable(bool enable)
     m_sslEnable = enable && SslSocket::isSslAvailable();
 }
 
-void WebServer::session(AbstractSocket *connect)
+void WebServer::session(AbstractSocket * const connect)
 {
     std::string raw, response;
 
     connect->read(raw);
-
 
     if(raw.empty())
     {

@@ -47,6 +47,12 @@ public:
 #endif
     }
 
+    constexpr inline bool operator==(const Socket& socket) const
+    { return this->m_descriptor == socket; }
+
+    constexpr inline bool operator<(const AbstractSocket& other) const
+    { return this->m_descriptor < other.m_descriptor; }
+
 protected:
     explicit AbstractSocket(const SocketInfo& info = {}) :
         m_descriptor(std::get<0>(info)),
