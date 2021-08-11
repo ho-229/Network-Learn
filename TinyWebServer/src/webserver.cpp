@@ -16,6 +16,7 @@
 #include <thread>
 #include <future>
 #include <fstream>
+#include <iostream>
 
 #include <signal.h>
 
@@ -68,19 +69,24 @@ int WebServer::exec()
         FD_SET(m_listenSockets.first->descriptor(), &readSet);
     else
     {
-        ExceptionEvent event(ExceptionEvent::ListenFailed);
+        ExceptionEvent event(ExceptionEvent::ListenFailed, "Listen port "
+            + m_port.first + " failed, please rerun with an administrator.\n");
         m_handler(&event);
         return -1;      // Start listen failed
     }
 
     // HTTPS listener
-    if(m_sslEnable && m_listenSockets.second->listen(m_port.second))
-        FD_SET(m_listenSockets.second->descriptor(), &readSet);
-    else
+    if(m_sslEnable)
     {
-        ExceptionEvent event(ExceptionEvent::ListenFailed);
-        m_handler(&event);
-        return -1;      // Start listen failed
+        if(m_listenSockets.second->listen(m_port.second))
+            FD_SET(m_listenSockets.second->descriptor(), &readSet);
+        else
+        {
+            ExceptionEvent event(ExceptionEvent::ListenFailed, "Listen port "
+                + m_port.second + " failed, please rerun with an administrator.\n");
+            m_handler(&event);
+            return -1;      // Start listen failed
+        }
     }
 
     m_runnable = true;

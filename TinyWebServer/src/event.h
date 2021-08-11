@@ -41,14 +41,18 @@ public:
         ListenFailed
     };
 
-    explicit ExceptionEvent(Error err) : m_error(err) {}
+    explicit ExceptionEvent(const Error err, const std::string& message = {})
+        : m_error(err), m_message(message) {}
 
     virtual Type type() const override { return Event::ExceptionEvent; }
 
     Error error() const { return m_error; }
 
+    std::string message() const { return m_message; }
+
 private:
     const Error m_error;
+    const std::string m_message;
 };
 
 

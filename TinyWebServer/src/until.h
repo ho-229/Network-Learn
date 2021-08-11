@@ -31,6 +31,14 @@ namespace Until
     template <typename T>
     constexpr inline T& max(const std::pair<T *, T *> p)
     { return *p.first < *p.second ? *p.second : *p.first; }
+
+    template <typename T>
+    inline void toHex(std::string& buf, T num)
+    {
+        std::stringstream stream;
+        stream << std::hex << num;
+        buf += stream.str();
+    }
 }
 
 #endif // UNTIL_H

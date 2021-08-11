@@ -38,7 +38,7 @@ public:
 
     Socket descriptor() const { return m_descriptor; }
 
-    constexpr inline static bool isValid(const Socket sock)
+    constexpr inline static bool isValid(const Socket& sock)
     {
 #ifdef _WIN32
         return sock != Socket(~0);

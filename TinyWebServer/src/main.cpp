@@ -67,7 +67,7 @@ int main(int argc, char** argv)
                 std::cerr << "WinSock2 load failed.\n";
                 break;
             case ExceptionEvent::ListenFailed:
-                std::cerr << "Listen port failed.\n";
+                std::cerr << exception->message();
                 break;
             case ExceptionEvent::UnknownError:
                 std::cerr << "Unknown error.\n";
@@ -98,7 +98,7 @@ int main(int argc, char** argv)
 
     const auto [http, https] = server->port();
     std::cout << "Listening HTTP port: " << http
-              << ".\nListening HTTPS port: " << https << "\n\n";
+              << ".\nListening HTTPS port: " << https << ".\n\n";
 
     return server->exec();
 }
