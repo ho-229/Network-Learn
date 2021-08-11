@@ -24,7 +24,7 @@ This is a tiny `HTTP/HTTPS` web server.
     Example:
 
     ```shell
-    ./TinyWebServer 80 443 ./shard_files
+    sudo ./TinyWebServer 80 443 ./shard_files
     ```
 
 * Browser
