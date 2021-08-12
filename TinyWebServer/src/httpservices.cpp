@@ -5,7 +5,7 @@
 
 #include "httpservices.h"
 
-HttpServices::HttpServices() : m_workDir(fs::current_path())
+HttpServices::HttpServices() : m_workDir(".")
 {
 
 }
@@ -49,7 +49,7 @@ void HttpServices::service(HttpRequest* httpRequest, HttpResponse* httpResponse)
     else
     {
         fs::path filePath(m_workDir.string() + httpRequest->uri());
-        if(fs::directory_entry(filePath).is_regular_file())
+        if(fs::is_regular_file(filePath))
             httpResponse->buildFileResponse(filePath);
         else
             httpResponse->buildErrorResponse(404, "Not Found");
