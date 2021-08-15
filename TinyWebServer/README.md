@@ -7,11 +7,10 @@ This is a tiny `HTTP/HTTPS` web server.
 | Support Headers  | Default Value |
 | ---------------- | ------------- |
 | Accept-Ranges | bytes |
-| Connection | close |
-| Content-Length | \<auto> |
-| Content-Type | \<auto> |
-| Date | \<auto> |
+| Connection | keep-alive |
+| Transfer-Encoding | chunked |
 | Server | Tiny Web Server |
+| Date | \<auto> |
 | \<Custom> | \<Custom> |
 
 ## Usage
