@@ -17,7 +17,7 @@ public:
     ~SslSocket() override;
 
     void read(std::string& buffer) override;
-    int write(const char* buf, size_t size) override;
+    int write(const char* buf, int size) override;
 
     void close() override;
 

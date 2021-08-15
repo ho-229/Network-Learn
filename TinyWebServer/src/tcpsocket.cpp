@@ -66,9 +66,9 @@ void TcpSocket::read(std::string &buffer)
 #endif
 }
 
-int TcpSocket::write(const char *buf, size_t size)
+int TcpSocket::write(const char *buf, int size)
 {
-    return send(m_descriptor, buf, int(size), 0);
+    return send(m_descriptor, buf, size, 0);
 }
 
 void TcpSocket::close()

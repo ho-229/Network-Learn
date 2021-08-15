@@ -16,14 +16,17 @@
 #include <thread>
 #include <future>
 #include <fstream>
-#include <iostream>
 
 #include <signal.h>
 
 #ifdef _WIN32
 # include <WinSock2.h>
+# define POLL(x, y, z) WSAPoll(x, y, z)
 #else
 # include <sys/select.h>
+# include <poll.h>
+
+# define POLL(x, y, z) poll(x, y, z)
 #endif
 
 WebServer::WebServer() :
@@ -97,14 +100,14 @@ int WebServer::exec()
         AcceptEvent event(protocol, connect->hostName(), connect->port());
         m_handler(&event);
 
-        auto future = std::async(&WebServer::session, this, connect);
+        std::thread(&WebServer::session, this, connect).detach();
     };
 
     while(m_runnable)
     {
         readySet = readSet;
         if(select(int(maxfd), &readySet, nullptr, nullptr,
-                   reinterpret_cast<timeval *>(&m_timeout)) <= 0)
+                   reinterpret_cast<timeval *>(&m_interval)) <= 0)
             continue;
 
         if(FD_ISSET(m_listenSockets.first->descriptor(), &readySet))    // HTTP
@@ -126,55 +129,54 @@ void WebServer::setSslEnable(bool enable)
 void WebServer::session(AbstractSocket * const connect)
 {
     std::string raw, response;
+    std::shared_ptr<char[]> sendBuf(new char[SOCKET_BUF_SIZE]);
 
-    connect->read(raw);
-
-    if(raw.empty())
+    for(int i = 0; i < 10; ++i)
     {
-        delete connect;
-        return;
-    }
+        connect->read(raw);
 
-    auto httpRequest = std::make_shared<HttpRequest>(raw);
-    auto httpResponse = std::make_shared<HttpResponse>();
+        if(raw.empty())
+            break;
 
-    m_services->service(httpRequest.get(), httpResponse.get());
+        auto httpRequest = std::make_shared<HttpRequest>(raw);
+        auto httpResponse = std::make_shared<HttpResponse>();
 
-    httpResponse->toRawData(response);
-    connect->AbstractSocket::write(response);
+        m_services->service(httpRequest.get(), httpResponse.get());
+        httpResponse->toRawData(response);
+        connect->write(response);
 
-    if(httpResponse->bodyType() == HttpResponse::File
-        && httpRequest->method() == "GET")
-    {
-        std::shared_ptr<char[]> sendBuf(new char[SOCKET_BUF_SIZE]());
-        std::ifstream out(httpResponse->filePath(), std::ios::binary);
-
-        if(out)
+        // Send file
+        if(httpResponse->bodyType() == HttpResponse::File
+            && httpRequest->method() == "GET")
         {
-            const auto range = httpRequest->range();
+            std::ifstream out(httpResponse->filePath(), std::ios::binary);
 
-            if(range.second > 0 && range.first != range.second)
+            if(out)
             {
-                out.seekg(range.first);
-                while(out.tellg() < range.second)
-                {
-                    out.read(sendBuf.get(),
-                             out.tellg() + int64_t(SOCKET_BUF_SIZE) > range.second
-                                 ? range.second - out.tellg() : SOCKET_BUF_SIZE);
-                    if(connect->write(sendBuf.get(), size_t(out.gcount())) <= 0)
-                        break;
-                }
-            }
-            else
-            {
+                std::string sendChunk;
+                sendChunk.reserve(SOCKET_BUF_SIZE + 4);
+
                 while(!out.eof())
                 {
                     out.read(sendBuf.get(), SOCKET_BUF_SIZE);
-                    if(connect->write(sendBuf.get(), size_t(out.gcount())) <= 0)
-                        break;
+
+                    Until::toHex(sendChunk, out.gcount());
+                    sendChunk.append("\r\n")
+                        .append(sendBuf.get(), size_t(out.gcount()))
+                        .append("\r\n");
+
+                    connect->write(sendChunk);
+
+                    sendChunk.clear();
                 }
+
+                connect->write("0\r\n\r\n", 5);
             }
         }
+
+        pollfd pollFd = {connect->descriptor(), POLLIN, 0};
+        if(POLL(&pollFd, 1, m_timeout) <= 0)
+            break;
     }
 
     delete connect;

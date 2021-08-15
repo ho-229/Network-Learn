@@ -26,7 +26,7 @@ public:
     virtual ~AbstractSocket() = default;
 
     virtual void read(std::string& buffer) = 0;
-    virtual int write(const char* buf, size_t size) = 0;
+    virtual int write(const char* buf, int size) = 0;
 
     inline int write(const std::string& data)
     { return this->write(data.c_str(), data.size()); }

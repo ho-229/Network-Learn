@@ -51,8 +51,6 @@ void HttpResponse::toRawData(std::string &response)
 
     if(m_type == Normal)
         m_headers["Content-Length"] = std::to_string(m_text.size());
-    else
-        m_headers["Content-Length"] = std::to_string(fs::directory_entry(m_filePath).file_size());
 
     // Response line
     response.append("HTTP/1.1 " + std::to_string(m_httpState.first) + ' '
@@ -83,7 +81,7 @@ void HttpResponse::buildFileResponse(const fs::path &filePath)
 
     if(it != PermissibleStaticType.end())
         this->setRawHeader("Content-Type", it->second);
-    //this->setRawHeader("Transfer-Encoding", "chunked");
+    this->setRawHeader("Transfer-Encoding", "chunked");
 
     this->setFilePath(filePath);
 }
@@ -91,8 +89,7 @@ void HttpResponse::buildFileResponse(const fs::path &filePath)
 inline void HttpResponse::initializatHeaders()
 {
     m_headers["Server"] = "Tiny Web Server";
-    //m_headers["Connection"] = "keep-alive";
-    m_headers["Connection"] = "close";
-    m_headers["Accept-Ranges"] = "bytes";
+    m_headers["Connection"] = "keep-alive";
+    m_headers["Accept-Ranges"] = "none";
     m_headers["Date"] = Until::currentDateString();
 }

@@ -6,15 +6,15 @@
 #ifndef HTTPRESPONSE_H
 #define HTTPRESPONSE_H
 
-#include <map>
 #include <string>
 #include <filesystem>
+#include <unordered_map>
 
 namespace fs = std::filesystem;
 
 typedef std::pair<int, std::string> HttpState;
 
-static std::map<std::string, std::string> PermissibleStaticType
+static std::unordered_map<std::string, std::string> PermissibleStaticType
     {
         {".html", "text/html"},
         {".css", "text/css"},
@@ -78,8 +78,8 @@ private:
 
     std::string m_text;
 
-    std::map<std::string,   // Name
-             std::string>   // Value
+    std::unordered_map<std::string,   // Name
+                       std::string>   // Value
         m_headers;
 
     fs::path m_filePath;

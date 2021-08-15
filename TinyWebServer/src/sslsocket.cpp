@@ -71,12 +71,12 @@ void SslSocket::read(std::string &buffer)
     while(ret == SOCKET_BUF_SIZE && recvBuf[SOCKET_BUF_SIZE - 1] != '\n');
 }
 
-int SslSocket::write(const char *buf, size_t size)
+int SslSocket::write(const char *buf, int size)
 {
     if(!m_ssl)
         return 0;
 
-    return SSL_write(m_ssl, buf, int(size));
+    return SSL_write(m_ssl, buf, size);
 }
 
 void SslSocket::close()

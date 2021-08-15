@@ -26,8 +26,7 @@ void HttpServices::addService(const std::string &method,
 
 void HttpServices::setWorkDir(const std::filesystem::path &path)
 {
-    const fs::directory_entry entry(path);
-    if(entry.is_directory())
+    if(fs::is_directory(path))
         m_workDir = path;
 }
 

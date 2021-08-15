@@ -30,8 +30,11 @@ public:
     void setSslEnable(bool enable = true);
     bool sslEnable() const { return m_sslEnable; }
 
-    void setInterval(long microSecond) { m_timeout.second = microSecond * 1000; }
-    long interval() const { return m_timeout.second; }
+    void setInterval(uint32_t microSecond) { m_interval.second = long(microSecond) * 1000; }
+    long interval() const { return m_interval.second; }
+
+    void setTimeout(int microSecond) { m_timeout = microSecond; }
+    int timeout() const { return m_timeout; }
 
     void setPort(const ServerPort& port)
     {
@@ -53,7 +56,9 @@ private:
     bool m_runnable = true;
     bool m_sslEnable = false;
 
-    std::pair<long, long> m_timeout = {0, 500 * 1000};
+    int m_timeout = 3000;       // in ms
+
+    std::pair<long, long> m_interval = {0, 500 * 1000};
 
     std::pair<TcpSocket *,      // HTTP
               TcpSocket *>      // HTTPS

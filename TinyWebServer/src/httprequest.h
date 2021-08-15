@@ -6,9 +6,9 @@
 #ifndef HTTPREQUEST_H
 #define HTTPREQUEST_H
 
-#include <map>
 #include <vector>
 #include <string>
+#include <unordered_map>
 
 typedef std::pair<std::string,  // Name
                   std::string>  // Value
@@ -51,7 +51,7 @@ private:
 
     std::vector<UrlArg> m_urlArgs;
 
-    std::map<std::string, std::string> m_headers;
+    std::unordered_map<std::string, std::string> m_headers;
 };
 
 #endif // HTTPREQUEST_H
