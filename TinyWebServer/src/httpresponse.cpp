@@ -20,12 +20,8 @@ HttpResponse::HttpResponse()
 
 void HttpResponse::setFilePath(const fs::path &path)
 {
-    const fs::directory_entry entry(path);
-    if(entry.is_regular_file())
-    {
-        m_filePath = path;
-        m_type = File;
-    }
+    m_filePath = path;
+    m_type = File;
 }
 
 void HttpResponse::reset()

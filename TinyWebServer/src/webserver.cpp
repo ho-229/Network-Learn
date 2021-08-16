@@ -5,8 +5,6 @@
 
 #include "webserver.h"
 
-#define SOCKET_BUF_SIZE 4096
-
 #include "until.h"
 #include "event.h"
 #include "tcpsocket.h"
@@ -133,7 +131,7 @@ void WebServer::session(AbstractSocket * const connect)
     std::string raw, response;
     std::shared_ptr<char[]> sendBuf(new char[SOCKET_BUF_SIZE]);
 
-    for(int i = 0; i < 10; ++i)
+    for(int i = 0; i < m_maxRequest; ++i)
     {
         connect->read(raw);
 
@@ -144,6 +142,10 @@ void WebServer::session(AbstractSocket * const connect)
         auto httpResponse = std::make_shared<HttpResponse>();
 
         m_services->service(httpRequest.get(), httpResponse.get());
+
+        if(i + 1 == m_maxRequest)
+            httpResponse->setRawHeader("Connection", "close");
+
         httpResponse->toRawData(response);
         connect->write(response);
 
@@ -171,9 +173,9 @@ void WebServer::session(AbstractSocket * const connect)
 
                     sendChunk.clear();
                 }
-
-                connect->write("0\r\n\r\n", 5);
             }
+
+            connect->write("0\r\n\r\n", 5);     // End of chunk
         }
 
         pollfd pollFd = {connect->descriptor(), POLLIN, 0};

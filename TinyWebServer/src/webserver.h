@@ -31,13 +31,20 @@ public:
 
     HttpServices *services() const { return m_services; }
 
-    void setInterval(uint32_t microSecond) { m_interval.second = long(microSecond) * 1000; }
+    void setInterval(long microSecond) { m_interval.second = microSecond * 1000; }
     long interval() const { return m_interval.second; }
 
+    /**
+     * @brief Keep alive timeout
+     */
     void setTimeout(int microSecond) { m_timeout = microSecond; }
     int timeout() const { return m_timeout; }
 
-    void listen(const std::string& hostName, const std::string& port, bool sslEnable = false);
+    void setMaxRequests(int num) { m_maxRequest = num > 0 ? num : 10; }
+    int maxRequests() const { return m_maxRequest; }
+
+    void listen(const std::string& hostName, const std::string& port,
+                bool sslEnable = false);
 
     template <typename Func>
     void installEventHandler(const Func& handler) { m_handler = handler; }
@@ -48,6 +55,7 @@ private:
     bool m_isLoaded = true;
     bool m_runnable = true;
     int m_timeout = 3000;       // in ms
+    int m_maxRequest = 10;
 
     std::pair<long, long> m_interval = {0, 500 * 1000};
 
