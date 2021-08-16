@@ -29,7 +29,7 @@ public:
     virtual int write(const char* buf, int size) = 0;
 
     inline int write(const std::string& data)
-    { return this->write(data.c_str(), data.size()); }
+    { return this->write(data.c_str(), int(data.size())); }
 
     virtual void close() = 0;
 
@@ -47,8 +47,8 @@ public:
 #endif
     }
 
-    constexpr inline bool operator==(const Socket& socket) const
-    { return this->m_descriptor == socket; }
+    //constexpr inline bool operator==(const Socket& socket) const
+    //{ return this->m_descriptor == socket; }
 
     constexpr inline bool operator<(const AbstractSocket& other) const
     { return this->m_descriptor < other.m_descriptor; }

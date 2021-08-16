@@ -21,6 +21,7 @@
 
 #ifdef _WIN32
 # include <WinSock2.h>
+
 # define POLL(x, y, z) WSAPoll(x, y, z)
 #else
 # include <sys/select.h>
@@ -30,7 +31,6 @@
 #endif
 
 WebServer::WebServer() :
-    m_listenSockets({new TcpSocket(), new TcpSocket()}),
     m_services(new HttpServices())
 {
 #ifdef _WIN32
@@ -49,51 +49,22 @@ WebServer::~WebServer()
 
     m_runnable = false;
 
-    delete m_listenSockets.first;
-    delete m_listenSockets.second;
-
     delete m_services;
 }
 
 int WebServer::exec()
 {
-    if(!m_isLoaded)
-    {
-        ExceptionEvent event(ExceptionEvent::SocketLoadFailed);
-        m_handler(&event);
+    if(m_listeners.empty())
         return -1;
-    }
 
     fd_set readSet, readySet;
     FD_ZERO(&readSet);
 
-    // HTTP listener
-    if(m_listenSockets.first->listen(m_port.first))
-        FD_SET(m_listenSockets.first->descriptor(), &readSet);
-    else
-    {
-        ExceptionEvent event(ExceptionEvent::ListenFailed, "Listen port "
-            + m_port.first + " failed, please rerun with an administrator.\n");
-        m_handler(&event);
-        return -1;      // Start listen failed
-    }
-
-    // HTTPS listener
-    if(m_sslEnable)
-    {
-        if(m_listenSockets.second->listen(m_port.second))
-            FD_SET(m_listenSockets.second->descriptor(), &readSet);
-        else
-        {
-            ExceptionEvent event(ExceptionEvent::ListenFailed, "Listen port "
-                + m_port.second + " failed, please rerun with an administrator.\n");
-            m_handler(&event);
-            return -1;      // Start listen failed
-        }
-    }
+    for(auto& item : m_listeners)
+        FD_SET(item.first->descriptor(), &readSet);
 
     m_runnable = true;
-    const auto maxfd = Until::max<TcpSocket>(m_listenSockets).descriptor() + 1;
+    const auto maxfd = m_listeners.back().first->descriptor() + 1;
 
     const auto acceptConnection = [this](const AcceptEvent::Protocol& protocol,
                                          AbstractSocket * const connect) {
@@ -110,20 +81,51 @@ int WebServer::exec()
                    reinterpret_cast<timeval *>(&m_interval)) <= 0)
             continue;
 
-        if(FD_ISSET(m_listenSockets.first->descriptor(), &readySet))    // HTTP
-            acceptConnection(AcceptEvent::HTTP,
-                             new TcpSocket(m_listenSockets.first->waitForAccept()));
-        if(FD_ISSET(m_listenSockets.second->descriptor(), &readySet))   // HTTPS
-            acceptConnection(AcceptEvent::HTTPS,
-                             new SslSocket(m_listenSockets.second->waitForAccept()));
+        for(auto& item : m_listeners)
+        {
+            if(FD_ISSET(item.first->descriptor(), &readySet))
+            {
+                if(item.second)
+                    acceptConnection(AcceptEvent::HTTPS,
+                                     new SslSocket(item.first->waitForAccept()));
+                else
+                    acceptConnection(AcceptEvent::HTTP,
+                                     new TcpSocket(item.first->waitForAccept()));
+            }
+        }
     }
 
     return 0;
 }
 
-void WebServer::setSslEnable(bool enable)
+void WebServer::listen(const std::string &hostName, const std::string &port, bool sslEnable)
 {
-    m_sslEnable = enable && SslSocket::isSslAvailable();
+    if(!m_isLoaded)
+    {
+        ExceptionEvent event(ExceptionEvent::SocketLoadFailed);
+        m_handler(&event);
+        return;
+    }
+
+    if(sslEnable && !SslSocket::isSslAvailable())
+    {
+        ExceptionEvent event(ExceptionEvent::ListenFailed, "Listen "
+            + hostName + ":" + port + " failed, SSL is not available.\n");
+        m_handler(&event);
+        return;
+    }
+
+    auto socket = std::make_shared<TcpSocket>();
+
+    if(!socket->listen(hostName, port))
+    {
+        ExceptionEvent event(ExceptionEvent::ListenFailed, "Listen "
+            + hostName + ":" + port + " failed, please rerun with an administrator.\n");
+        m_handler(&event);
+        return;
+    }
+
+    m_listeners.push_back({socket, sslEnable});
 }
 
 void WebServer::session(AbstractSocket * const connect)

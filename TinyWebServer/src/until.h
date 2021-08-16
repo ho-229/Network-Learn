@@ -39,14 +39,6 @@ namespace Until
         stream << std::hex << num;
         buf += stream.str();
     }
-
-    template <typename T>
-    inline std::string toHex(T num)
-    {
-        std::stringstream stream;
-        stream << std::hex << num;
-        return stream.str();
-    }
 }
 
 #endif // UNTIL_H

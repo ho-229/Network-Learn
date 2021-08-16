@@ -3,7 +3,6 @@
  * @date 2021/7/25
  */
 
-#include <memory>
 #include <iostream>
 
 #include "event.h"
@@ -33,19 +32,10 @@ int main(int argc, char** argv)
 
     auto server = std::make_shared<WebServer>();
 
-    // Set port
-    if(argc == 2)
-        server->setPort({argv[1], "443"});
-    else if(argc >= 3)
-        server->setPort({argv[1], argv[2]});
-
     if(argc == 6)
     {
         if(SslSocket::initializatSsl(argv[4], argv[5]))
-        {
             std::cerr << "OpenSSL initializat successful.\n";
-            server->setSslEnable();
-        }
         else
             std::cerr << "OpenSSL initializat failed.\n";
     }
@@ -96,9 +86,19 @@ int main(int argc, char** argv)
         std::cout << "Shard directory: " << argv[3] << ".\n";
     }
 
-    const auto [http, https] = server->port();
-    std::cout << "Listening HTTP port: " << http
-              << ".\nListening HTTPS port: " << https << ".\n\n";
+    if(argc >= 2)   // HTTP
+    {
+        std::cout << "Listening HTTP port: " << argv[1] << "\n";
+        server->listen(ANY_HOST, argv[1], false);
+    }
+
+    if(argc >= 3 && SslSocket::isSslAvailable())    // HTTPS
+    {
+        std::cout << "Listening HTTP port: " << argv[2] << "\n";
+        server->listen(ANY_HOST, argv[2], true);
+    }
+
+    std::cout << "\n";
 
     return server->exec();
 }

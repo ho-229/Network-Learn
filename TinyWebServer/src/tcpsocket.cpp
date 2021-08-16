@@ -76,7 +76,7 @@ void TcpSocket::close()
     CLOSE(m_descriptor);
 }
 
-bool TcpSocket::listen(const std::string &port)
+bool TcpSocket::listen(const std::string &hostName, const std::string &port)
 {
     if(m_isListening)
         return false;
@@ -89,7 +89,7 @@ bool TcpSocket::listen(const std::string &port)
     hints.ai_socktype = SOCK_STREAM;                // Accept connections
     hints.ai_flags = AI_PASSIVE | AI_ADDRCONFIG     // ... on any IP address
                      | AI_NUMERICSERV;              // ... using port number
-    getaddrinfo(nullptr, port.c_str(), &hints, &addrList);
+    getaddrinfo(hostName.c_str(), port.c_str(), &hints, &addrList);
 
     // Walk the list for one that we can bind to
     for(it = addrList; it; it = it->ai_next)
@@ -122,7 +122,7 @@ bool TcpSocket::listen(const std::string &port)
         return false;
     }
 
-    m_hostName = "localhost";
+    m_hostName = hostName;
     m_port = port;
 
     m_isListening = true;

@@ -24,7 +24,7 @@ public:
      * @brief Listen on the given port
      * @return true when successful
      */
-    bool listen(const std::string& port);
+    bool listen(const std::string& hostName, const std::string& port);
     bool isListening() const { return m_isListening; }
 
     SocketInfo waitForAccept() const;
