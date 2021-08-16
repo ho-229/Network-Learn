@@ -6,7 +6,7 @@ This is a tiny `HTTP/HTTPS` web server.
 
 | Support Headers  | Default Value |
 | ---------------- | ------------- |
-| Accept-Ranges | bytes |
+| Accept-Ranges | none |
 | Connection | keep-alive |
 | Transfer-Encoding | chunked |
 | Server | Tiny Web Server |
@@ -41,9 +41,9 @@ This is a tiny `HTTP/HTTPS` web server.
     Example:
 
     ```cpp
-    #include <memory>
     #include <iostream>
 
+    #include "until.h"
     #include "webserver.h"
     #include "httpservices.h"
 
@@ -65,6 +65,7 @@ This is a tiny `HTTP/HTTPS` web server.
                         + std::to_string(sum) + "</p></body></html>\n");
         });
 
+        server->listen("localhost", 80);    // HTTP
         return server->exec();
     }
     ```
