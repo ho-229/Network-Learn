@@ -20,6 +20,9 @@ typedef int Socket;
 
 typedef std::tuple<Socket, std::string, std::string> SocketInfo;
 
+template <typename T>
+class Timer;
+
 class AbstractSocket
 {
 public:
@@ -47,11 +50,11 @@ public:
 #endif
     }
 
-    //constexpr inline bool operator==(const Socket& socket) const
-    //{ return this->m_descriptor == socket; }
+    void setTimer(Timer<Socket> *timer) { m_timer = timer; }
+    Timer<Socket>* timer() const { return m_timer; }
 
-    constexpr inline bool operator<(const AbstractSocket& other) const
-    { return this->m_descriptor < other.m_descriptor; }
+    void addTimes() { ++m_times; }
+    int times() const { return m_times; }
 
 protected:
     explicit AbstractSocket(const SocketInfo& info = {}) :
@@ -66,8 +69,12 @@ protected:
 
     Socket m_descriptor = 0;
 
+    int m_times = 0;
+
     std::string m_hostName;
     std::string m_port;
+
+    Timer<Socket> *m_timer = nullptr;
 };
 
 #endif // ABSTRACTSOCKET_H
