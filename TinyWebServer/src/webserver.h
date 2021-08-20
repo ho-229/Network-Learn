@@ -13,6 +13,7 @@
 
 #define ANY_HOST "0.0.0.0"
 
+class Epoll;
 class Event;
 class TcpSocket;
 class HttpServices;
@@ -50,7 +51,7 @@ public:
     void installEventHandler(const Func& handler) { m_handler = handler; }
 
 private:
-    void session(AbstractSocket * const connect);
+    bool session(AbstractSocket * const connect) const;
 
     bool m_isLoaded = true;
     bool m_runnable = true;
@@ -58,6 +59,8 @@ private:
     int m_maxRequest = 10;
 
     std::pair<long, long> m_interval = {0, 500 * 1000};
+
+    std::shared_ptr<Epoll> m_epoll;
 
     std::vector<std::pair<std::shared_ptr<TcpSocket>, bool>> m_listeners;
 

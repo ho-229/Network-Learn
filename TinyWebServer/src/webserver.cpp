@@ -5,6 +5,7 @@
 
 #include "webserver.h"
 
+#include "epoll.h"
 #include "until.h"
 #include "event.h"
 #include "tcpsocket.h"
@@ -69,8 +70,14 @@ int WebServer::exec()
         AcceptEvent event(protocol, connect->hostName(), connect->port());
         m_handler(&event);
 
-        std::thread(&WebServer::session, this, connect).detach();
+        //std::thread(&WebServer::session, this, connect).detach();
+        m_epoll->addConnection(connect);
     };
+
+    m_epoll = std::make_shared<Epoll>();
+    std::thread(&Epoll::exec, m_epoll.get(), 500,
+                std::bind(&WebServer::session, this, std::placeholders::_1)
+                ).detach();
 
     while(m_runnable)
     {
@@ -126,62 +133,55 @@ void WebServer::listen(const std::string &hostName, const std::string &port, boo
     m_listeners.push_back({socket, sslEnable});
 }
 
-void WebServer::session(AbstractSocket * const connect)
+bool WebServer::session(AbstractSocket * const connect) const
 {
     std::string raw, response;
     std::shared_ptr<char[]> sendBuf(new char[SOCKET_BUF_SIZE]);
 
-    for(int i = 0; i < m_maxRequest; ++i)
+    connect->read(raw);
+
+    if(raw.empty())
+        return false;
+
+    auto httpRequest = std::make_shared<HttpRequest>(raw);
+    auto httpResponse = std::make_shared<HttpResponse>();
+
+    m_services->service(httpRequest.get(), httpResponse.get());
+
+    if(connect->times() == m_maxRequest)
+        httpResponse->setRawHeader("Connection", "close");
+
+    httpResponse->toRawData(response);
+    connect->write(response);
+
+    // Send file
+    if(httpResponse->bodyType() == HttpResponse::File
+        && httpRequest->method() == "GET")
     {
-        connect->read(raw);
+        std::ifstream out(httpResponse->filePath(), std::ios::binary);
 
-        if(raw.empty())
-            break;
-
-        auto httpRequest = std::make_shared<HttpRequest>(raw);
-        auto httpResponse = std::make_shared<HttpResponse>();
-
-        m_services->service(httpRequest.get(), httpResponse.get());
-
-        if(i + 1 == m_maxRequest)
-            httpResponse->setRawHeader("Connection", "close");
-
-        httpResponse->toRawData(response);
-        connect->write(response);
-
-        // Send file
-        if(httpResponse->bodyType() == HttpResponse::File
-            && httpRequest->method() == "GET")
+        if(out)
         {
-            std::ifstream out(httpResponse->filePath(), std::ios::binary);
+            std::string sendChunk;
+            sendChunk.reserve(SOCKET_BUF_SIZE + 4);
 
-            if(out)
+            while(!out.eof())
             {
-                std::string sendChunk;
-                sendChunk.reserve(SOCKET_BUF_SIZE + 4);
+                out.read(sendBuf.get(), SOCKET_BUF_SIZE);
 
-                while(!out.eof())
-                {
-                    out.read(sendBuf.get(), SOCKET_BUF_SIZE);
+                Until::toHex(sendChunk, out.gcount());
+                sendChunk.append("\r\n")
+                    .append(sendBuf.get(), size_t(out.gcount()))
+                    .append("\r\n");
 
-                    Until::toHex(sendChunk, out.gcount());
-                    sendChunk.append("\r\n")
-                        .append(sendBuf.get(), size_t(out.gcount()))
-                        .append("\r\n");
+                connect->write(sendChunk);
 
-                    connect->write(sendChunk);
-
-                    sendChunk.clear();
-                }
+                sendChunk.clear();
             }
-
-            connect->write("0\r\n\r\n", 5);     // End of chunk
         }
 
-        pollfd pollFd = {connect->descriptor(), POLLIN, 0};
-        if(POLL(&pollFd, 1, m_timeout) <= 0)
-            break;
+        connect->write("0\r\n\r\n", 5);     // End of chunk
     }
 
-    delete connect;
+    return true;
 }
