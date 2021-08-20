@@ -45,7 +45,7 @@ void Epoll::exec(int interval, const SessionHandler &handler)
 #ifdef _WIN32
         auto temp = m_events;
 
-        if(WSAPoll(&temp[0], temp.size(), interval) <= 0)
+        if(WSAPoll(&temp[0], ULONG(temp.size()), interval) <= 0)
         {
             std::unique_lock<std::mutex> lock(m_mutex);
             for(auto it = m_events.begin(); it != m_events.end();)

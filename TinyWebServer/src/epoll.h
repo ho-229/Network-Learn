@@ -21,7 +21,9 @@
 #include <mutex>
 #include <vector>
 #include <memory>
+#include <functional>
 #include <unordered_map>
+#include <condition_variable>
 
 typedef std::function<bool(AbstractSocket * const)> SessionHandler;
 
