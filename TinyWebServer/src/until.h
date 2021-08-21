@@ -27,7 +27,8 @@ namespace Until
 
         std::tm gmt;
         std::ostringstream ss;
-        ss << std::put_time(gmtime_s(&gmt, &itt), "%a, %d %b %Y %H:%M:%S GMT");
+        gmtime_s(&gmt, &itt);
+        ss << std::put_time(&gmt, "%a, %d %b %Y %H:%M:%S GMT");
         return ss.str();
     }
 
