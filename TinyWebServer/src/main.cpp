@@ -5,7 +5,6 @@
 
 #include <iostream>
 
-#include "event.h"
 #include "until.h"
 #include "webserver.h"
 #include "sslsocket.h"

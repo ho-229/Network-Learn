@@ -7,6 +7,7 @@
 #define EVENT_H
 
 #include <string>
+#include <functional>
 
 /**
  * @brief Abstract Event
@@ -27,6 +28,8 @@ public:
 protected:
     explicit Event() {}
 };
+
+typedef std::function<void(Event *)> EventHandler;
 
 /**
  * @brief Exception Event

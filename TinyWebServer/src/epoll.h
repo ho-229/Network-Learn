@@ -8,18 +8,19 @@
 
 #include "abstractsocket.h"
 #include "timermanager.h"
+#include "event.h"
 
 #ifdef _WIN32
 # include <WinSock2.h>
-# define POLL(x, y, z) WSAPoll(x, y, z)
+# include <vector>
 #else
-# include <poll.h>
 # include <sys/epoll.h>
-# define POLL(x, y, z) poll(x, y, z)
+# include <unistd.h>
+
+# define MAX_EVENTS 128
 #endif
 
 #include <mutex>
-#include <vector>
 #include <memory>
 #include <functional>
 #include <unordered_map>
@@ -43,6 +44,11 @@ public:
     void setTimeout(int timeout) { m_timerManager.setTimeout(timeout); }
     int timeout() const { return m_timerManager.timeout(); }
 
+    size_t count() const { return m_connections.size(); }
+
+    template <typename Func>
+    void installEventHandler(const Func& handler) { m_handler = handler; }
+
 private:
     inline void removeConnection(const Socket& socket);
 
@@ -53,11 +59,15 @@ private:
 
     TimerManager<Socket> m_timerManager;
 
-    int m_maxTimes = 10;
+    EventHandler m_handler = {};
+
+    int m_maxTimes = 20;
     bool m_runnable = true;
 
 #ifdef _WIN32
     std::vector<pollfd> m_events;
+#else
+    int m_epoll = 0;
 #endif
 
     using Connection = decltype (m_connections)::value_type;

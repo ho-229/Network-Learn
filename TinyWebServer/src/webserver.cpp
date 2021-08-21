@@ -20,13 +20,8 @@
 
 #ifdef _WIN32
 # include <WinSock2.h>
-
-# define POLL(x, y, z) WSAPoll(x, y, z)
 #else
 # include <sys/select.h>
-# include <poll.h>
-
-# define POLL(x, y, z) poll(x, y, z)
 #endif
 
 WebServer::WebServer() :
@@ -70,11 +65,13 @@ int WebServer::exec()
         AcceptEvent event(protocol, connect->hostName(), connect->port());
         m_handler(&event);
 
-        //std::thread(&WebServer::session, this, connect).detach();
         m_epoll->addConnection(connect);
     };
 
     m_epoll = std::make_shared<Epoll>();
+
+    m_epoll->setMaxTimes(m_maxTimes);
+
     std::thread(&Epoll::exec, m_epoll.get(), 500,
                 std::bind(&WebServer::session, this, std::placeholders::_1)
                 ).detach();
@@ -148,7 +145,7 @@ bool WebServer::session(AbstractSocket * const connect) const
 
     m_services->service(httpRequest.get(), httpResponse.get());
 
-    if(connect->times() == m_maxRequest)
+    if(connect->times() == m_maxTimes)
         httpResponse->setRawHeader("Connection", "close");
 
     httpResponse->toRawData(response);

@@ -5,16 +5,18 @@
 
 #include "epoll.h"
 
-#include <iostream>
-
 Epoll::Epoll()
 {
-
+#ifndef _WIN32
+    m_epoll = epoll_create1(0);
+#endif
 }
 
 Epoll::~Epoll()
 {
-
+#ifndef _WIN32
+    close(m_epoll);
+#endif
 }
 
 void Epoll::addConnection(AbstractSocket* socket)
@@ -23,7 +25,11 @@ void Epoll::addConnection(AbstractSocket* socket)
 #ifdef _WIN32
     m_events.push_back({socket->descriptor(), POLLIN, 0});
 #else   // Unix
-    return;     // TODO
+    epoll_event newEvent{};
+    newEvent.events = EPOLLIN | EPOLLET;
+    newEvent.data.fd = socket->descriptor();
+
+    epoll_ctl(m_epoll, EPOLL_CTL_ADD, socket->descriptor(), &newEvent);
 #endif
     m_connections.insert(Connection(socket->descriptor(), socket));
 
@@ -34,6 +40,9 @@ void Epoll::addConnection(AbstractSocket* socket)
 
 void Epoll::exec(int interval, const SessionHandler &handler)
 {
+#ifndef _WIN32
+    std::shared_ptr<epoll_event[]> events(new epoll_event[MAX_EVENTS]());
+#endif
     while(m_runnable)
     {
         if(m_connections.empty())
@@ -112,18 +121,58 @@ void Epoll::exec(int interval, const SessionHandler &handler)
             ++i;
         }
 #else   // Unix
-        return;     // TODO
+
+        // Check timeout
+        bool ok = false;
+        while(true)
+        {
+            const Socket fd = m_timerManager.checkTop(ok);
+            if(ok)
+                this->removeConnection(fd);
+            else
+                break;
+        }
+
+        if(m_connections.empty())
+            continue;
+
+        // Wait for network events
+        int ret = -1;
+        if((ret = epoll_wait(m_epoll, events.get(), MAX_EVENTS, interval)) <= 0)
+            continue;
+
+        for(int i = 0; i < ret; ++i)
+        {
+            auto it = m_connections.find(events[i].data.fd);
+            if(it == m_connections.end())
+            {
+                epoll_ctl(m_epoll, EPOLL_CTL_DEL, events[i].data.fd, nullptr);
+                continue;
+            }
+
+            AbstractSocket * const socket = it->second.get();
+            socket->addTimes();
+
+            if(!handler(socket) || socket->times() == m_maxTimes)   // Process
+                this->removeConnection(socket->descriptor());
+            else
+            {
+                // Reset timer
+                socket->timer()->isDisable = true;
+                socket->setTimer(m_timerManager.addTimer(socket->descriptor()));
+            }
+        }
 #endif
     }
 }
 
 void Epoll::removeConnection(const Socket &socket)
 {
-    m_connections[socket]->timer()->isDisable = true;
-    m_connections.erase(socket);
+    auto it = m_connections.find(socket);
 
-    std::cout << m_connections.size() << "\n";
-#ifdef _WIN32
+    if(it == m_connections.end())
+        return;
 
-#endif
+    it->second->timer()->isDisable = true;
+    m_connections.erase(it);
 }

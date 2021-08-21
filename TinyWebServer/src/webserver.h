@@ -6,10 +6,11 @@
 #ifndef WEBSERVER_H
 #define WEBSERVER_H
 
+#include "event.h"
+
 #include <vector>
 #include <string>
 #include <memory>
-#include <functional>
 
 #define ANY_HOST "0.0.0.0"
 
@@ -19,7 +20,6 @@ class TcpSocket;
 class HttpServices;
 class AbstractSocket;
 
-typedef std::function<void(Event *)> EventHandler;
 typedef std::pair<std::string, std::string> ServerPort;
 
 class WebServer
@@ -41,8 +41,8 @@ public:
     void setTimeout(int microSecond) { m_timeout = microSecond; }
     int timeout() const { return m_timeout; }
 
-    void setMaxRequests(int num) { m_maxRequest = num > 0 ? num : 10; }
-    int maxRequests() const { return m_maxRequest; }
+    void setMaxTimes(int num) { m_maxTimes = num > 0 ? num : 20; }
+    int maxTimes() const { return m_maxTimes; }
 
     void listen(const std::string& hostName, const std::string& port,
                 bool sslEnable = false);
@@ -56,7 +56,7 @@ private:
     bool m_isLoaded = true;
     bool m_runnable = true;
     int m_timeout = 3000;       // in ms
-    int m_maxRequest = 10;
+    int m_maxTimes = 20;
 
     std::pair<long, long> m_interval = {0, 500 * 1000};
 
