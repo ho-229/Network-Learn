@@ -11,7 +11,9 @@
 #include <chrono>
 #include <ctime>
 
+#ifndef _WIN32
 #define gmtime_s(x, y) gmtime_r(y, x)
+#endif
 
 namespace Until
 {
