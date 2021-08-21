@@ -11,7 +11,7 @@
 #include <chrono>
 #include <ctime>
 
-#pragma warning(disable:4996)
+#define gmtime_s(x, y) gmtime_r(y, x)
 
 namespace Until
 {
@@ -23,8 +23,9 @@ namespace Until
         const auto now = std::chrono::system_clock::now();
         const auto itt = std::chrono::system_clock::to_time_t(now);
 
+        std::tm gmt;
         std::ostringstream ss;
-        ss << std::put_time(gmtime(&itt), "%a, %d %b %Y %H:%M:%S GMT");
+        ss << std::put_time(gmtime_s(&gmt, &itt), "%a, %d %b %Y %H:%M:%S GMT");
         return ss.str();
     }
 
