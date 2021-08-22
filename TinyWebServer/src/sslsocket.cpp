@@ -37,6 +37,7 @@ SslSocket::SslSocket(const SocketInfo &info) :
 
     if(SSL_accept(m_ssl) < 0)
     {
+        ERR_print_errors_fp(stdout);
         CLOSE(m_descriptor);
         SSL_free(m_ssl);
 

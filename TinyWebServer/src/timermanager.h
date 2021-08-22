@@ -67,7 +67,7 @@ public:
     /**
      * @return true if it's timeout
      */
-    bool checkTop(const T& userData)
+    bool checkTop(T &userData)
     {
         while(true)
         {
@@ -80,7 +80,12 @@ public:
         }
 
         const auto top = m_queue.top();
-        return top->userData() == userData && top->duration() >= m_timeout;
+        const bool ret = top->duration() >= m_timeout;
+
+        if(ret)
+            userData = top->userData();
+
+        return ret;
     }
 
     T checkTop(bool &ok)

@@ -61,7 +61,7 @@ private:
 
     EventHandler m_handler = {};
 
-    int m_maxTimes = 20;
+    int m_maxTimes = 30;
     bool m_runnable = true;
 
 #ifdef _WIN32

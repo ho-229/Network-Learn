@@ -40,7 +40,9 @@ void Epoll::addConnection(AbstractSocket* socket)
 
 void Epoll::exec(int interval, const SessionHandler &handler)
 {
-#ifndef _WIN32
+#ifdef _WIN32
+    std::vector<Socket> invalidEvents;
+#else
     std::shared_ptr<epoll_event[]> events(new epoll_event[MAX_EVENTS]());
 #endif
     while(m_runnable)
@@ -52,38 +54,47 @@ void Epoll::exec(int interval, const SessionHandler &handler)
         }
 
 #ifdef _WIN32
-        auto temp = m_events;
+        Socket timeoutSocket = 0;
 
-        if(WSAPoll(&temp[0], ULONG(temp.size()), interval) <= 0)
+        while(m_timerManager.checkTop(timeoutSocket))
+        {
+            invalidEvents.push_back(timeoutSocket);
+            this->removeConnection(timeoutSocket);
+        }
+
+        // Remove invalid events
+        if(!invalidEvents.empty())
         {
             std::unique_lock<std::mutex> lock(m_mutex);
-            for(auto it = m_events.begin(); it != m_events.end();)
+            for(auto it = m_events.begin(); it < m_events.end();)
             {
-                if(m_timerManager.checkTop(it->fd))
+                auto invIt = std::find(invalidEvents.begin(),
+                                       invalidEvents.end(), it->fd);
+
+                if(invIt != invalidEvents.end())
                 {
-                    this->removeConnection(it->fd);
-                    it = m_events.erase(it);
+                    m_events.erase(it);
+                    invalidEvents.erase(invIt);
                 }
                 else
                     ++it;
             }
-
             continue;
         }
 
-        size_t i = 0;
+        m_mutex.lock();
+        auto temp = m_events;
+        m_mutex.unlock();
 
-        const auto removeEvent = [&] {
-            if(i < m_events.size())
-                m_events.erase(m_events.begin() + int(i));
-        };
+        if(WSAPoll(&temp[0], ULONG(temp.size()), interval) <= 0)
+            continue;
 
         for(auto it = temp.begin(); it != temp.end(); ++it)
         {
             if (it->revents & POLLHUP || it->revents & POLLNVAL ||
                 it->revents & POLLERR)
 			{
-				removeEvent();
+                invalidEvents.push_back(it->fd);
                 continue;
 			}
             else if(it->revents & POLLIN)
@@ -91,7 +102,7 @@ void Epoll::exec(int interval, const SessionHandler &handler)
                 auto connIt = m_connections.find(it->fd);
                 if(connIt == m_connections.end())
                 {
-                    removeEvent();
+                    invalidEvents.push_back(it->fd);
                     continue;
                 }
 
@@ -101,7 +112,7 @@ void Epoll::exec(int interval, const SessionHandler &handler)
                 if(!handler(socket) || socket->times() == m_maxTimes)
                 {
                     this->removeConnection(it->fd);
-                    removeEvent();
+                    invalidEvents.push_back(it->fd);
                     continue;
                 }
                 else    // Reset timer
@@ -110,15 +121,6 @@ void Epoll::exec(int interval, const SessionHandler &handler)
                     socket->setTimer(m_timerManager.addTimer(it->fd));
                 }
             }
-
-            if(m_timerManager.checkTop(it->fd))
-            {
-                this->removeConnection(it->fd);
-                removeEvent();
-                continue;
-            }
-
-            ++i;
         }
 #else   // Unix
 
@@ -174,5 +176,7 @@ void Epoll::removeConnection(const Socket &socket)
         return;
 
     it->second->timer()->isDisable = true;
+
+    std::unique_lock<std::mutex> lock(m_mutex);
     m_connections.erase(it);
 }
