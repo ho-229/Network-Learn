@@ -71,6 +71,7 @@ int WebServer::exec()
     m_epoll = std::make_shared<Epoll>();
 
     m_epoll->setMaxTimes(m_maxTimes);
+    m_epoll->setTimeout(m_timeout);
 
     std::thread(&Epoll::exec, m_epoll.get(), 500,
                 std::bind(&WebServer::session, this, std::placeholders::_1)

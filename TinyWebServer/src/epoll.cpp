@@ -53,15 +53,17 @@ void Epoll::exec(int interval, const SessionHandler &handler)
             m_condition.wait(lock);
         }
 
-#ifdef _WIN32
+        // Check timeout
         Socket timeoutSocket = 0;
-
         while(m_timerManager.checkTop(timeoutSocket))
         {
-            invalidEvents.push_back(timeoutSocket);
             this->removeConnection(timeoutSocket);
+#ifdef _WIN32
+            invalidEvents.push_back(timeoutSocket);
+#endif
         }
 
+#ifdef _WIN32
         // Remove invalid events
         if(!invalidEvents.empty())
         {
@@ -123,24 +125,10 @@ void Epoll::exec(int interval, const SessionHandler &handler)
             }
         }
 #else   // Unix
-
-        // Check timeout
-        bool ok = false;
-        while(true)
-        {
-            const Socket fd = m_timerManager.checkTop(ok);
-            if(ok)
-                this->removeConnection(fd);
-            else
-                break;
-        }
-
-        if(m_connections.empty())
-            continue;
-
         // Wait for network events
         int ret = -1;
-        if((ret = epoll_wait(m_epoll, events.get(), MAX_EVENTS, interval)) <= 0)
+        if(m_connections.empty() ||
+                (ret = epoll_wait(m_epoll, events.get(), MAX_EVENTS, interval)) <= 0)
             continue;
 
         for(int i = 0; i < ret; ++i)
@@ -168,15 +156,14 @@ void Epoll::exec(int interval, const SessionHandler &handler)
     }
 }
 
-void Epoll::removeConnection(const Socket &socket)
+void Epoll::removeConnection(const Socket socket)
 {
+    std::unique_lock<std::mutex> lock(m_mutex);
     auto it = m_connections.find(socket);
 
     if(it == m_connections.end())
         return;
 
     it->second->timer()->isDisable = true;
-
-    std::unique_lock<std::mutex> lock(m_mutex);
     m_connections.erase(it);
 }

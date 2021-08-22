@@ -88,27 +88,6 @@ public:
         return ret;
     }
 
-    T checkTop(bool &ok)
-    {
-        while(true)
-        {
-            if(m_queue.empty())
-            {
-                ok = false;
-                return T{};
-            }
-            else if(m_queue.top()->isDisable)
-                m_queue.pop();
-            else
-                break;
-        }
-
-        const auto top = m_queue.top();
-        ok = top->duration() >= m_timeout;
-
-        return ok ? top->userData() : T{};
-    }
-
 private:
     int m_timeout = 30000;      // 30s
 

@@ -41,7 +41,7 @@ public:
     void setTimeout(int microSecond) { m_timeout = microSecond; }
     int timeout() const { return m_timeout; }
 
-    void setMaxTimes(int num) { m_maxTimes = num > 0 ? num : 20; }
+    void setMaxTimes(int num) { m_maxTimes = num > 0 ? num : 30; }
     int maxTimes() const { return m_maxTimes; }
 
     void listen(const std::string& hostName, const std::string& port,
@@ -55,8 +55,8 @@ private:
 
     bool m_isLoaded = true;
     bool m_runnable = true;
-    int m_timeout = 3000;       // in ms
-    int m_maxTimes = 20;
+    int m_timeout = 30000;       // 30s
+    int m_maxTimes = 30;
 
     std::pair<long, long> m_interval = {0, 500 * 1000};
 

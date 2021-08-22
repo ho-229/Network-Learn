@@ -50,7 +50,7 @@ public:
     void installEventHandler(const Func& handler) { m_handler = handler; }
 
 private:
-    inline void removeConnection(const Socket& socket);
+    inline void removeConnection(const Socket socket);
 
     std::unordered_map<Socket, std::shared_ptr<AbstractSocket>> m_connections;
 
