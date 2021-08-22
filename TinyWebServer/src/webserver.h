@@ -18,7 +18,6 @@ class Epoll;
 class Event;
 class TcpSocket;
 class HttpServices;
-class AbstractSocket;
 
 typedef std::pair<std::string, std::string> ServerPort;
 

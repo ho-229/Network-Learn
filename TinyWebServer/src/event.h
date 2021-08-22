@@ -17,7 +17,7 @@ class Event
 public:
     enum Type
     {
-        AcceptEvent,
+        ConnectEvent,
         ExceptionEvent
     };
 
@@ -62,31 +62,31 @@ private:
 /**
  * @brief Accept Event
  */
-class AcceptEvent : public Event
+
+class AbstractSocket;
+
+class ConnectEvent : public Event
 {
 public:
-    enum Protocol
+    enum State
     {
-        HTTP,
-        HTTPS
+        Accpet,
+        Close
     };
 
-    explicit AcceptEvent(const Protocol& protocol,
-                         const std::string& hostName,
-                         const std::string& port)
-        : m_protocol(protocol), m_hostName(hostName), m_port(port) {}
+    explicit ConnectEvent(const AbstractSocket *socket, const State& state)
+        : m_socket(socket), m_state(state)
+    {}
 
-    virtual Type type() const override { return Event::AcceptEvent; }
+    virtual Type type() const override { return Event::ConnectEvent; }
 
-    Protocol protocol() const { return m_protocol; }
+    const AbstractSocket *socket() const { return m_socket; }
 
-    std::string hostName() const { return m_hostName; }
-    std::string port() const { return m_port; }
+    const State state() const { return m_state; }
 
 private:
-    const Protocol m_protocol;
-    const std::string m_hostName;
-    const std::string m_port;
+    const AbstractSocket *m_socket = nullptr;
+    const State m_state;
 };
 
 #endif // EVENT_H

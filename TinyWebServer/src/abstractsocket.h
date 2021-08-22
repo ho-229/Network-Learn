@@ -36,6 +36,8 @@ public:
 
     virtual void close() = 0;
 
+    virtual bool sslEnable() const = 0;
+
     std::string hostName() const { return m_hostName; }
     std::string port() const { return m_port; }
 

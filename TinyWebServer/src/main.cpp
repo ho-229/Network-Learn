@@ -40,11 +40,23 @@ int main(int argc, char** argv)
     }
 
     server->installEventHandler([](Event *event) {
-        if(event->type() == Event::AcceptEvent)
+        if(event->type() == Event::ConnectEvent)
         {
-            AcceptEvent *accept = static_cast<AcceptEvent *>(event);
-            std::cout << "Accepted connection from ("
-                      << accept->hostName() <<", "<< accept->port() <<")\n";
+            ConnectEvent *accept = static_cast<ConnectEvent *>(event);
+
+            auto socket = accept->socket();
+
+            if(socket->sslEnable())
+                std::cout << "[SSL] ";
+            else
+                std::cout << "[TCP] ";
+
+            if(accept->state() == ConnectEvent::Accpet)
+                std::cout << "Accepted connection from ";
+            else
+                std::cout << "Connection closed ";
+
+            std::cout << socket->hostName() <<":"<< socket->port() <<"\n";
         }
         else if(event->type() == Event::ExceptionEvent)
         {

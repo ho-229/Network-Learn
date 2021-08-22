@@ -60,9 +60,8 @@ int WebServer::exec()
     m_runnable = true;
     const auto maxfd = m_listeners.back().first->descriptor() + 1;
 
-    const auto acceptConnection = [this](const AcceptEvent::Protocol& protocol,
-                                         AbstractSocket * const connect) {
-        AcceptEvent event(protocol, connect->hostName(), connect->port());
+    const auto acceptConnection = [this](AbstractSocket * const connect) {
+        ConnectEvent event(connect, ConnectEvent::Accpet);
         m_handler(&event);
 
         m_epoll->addConnection(connect);
@@ -72,6 +71,7 @@ int WebServer::exec()
 
     m_epoll->setMaxTimes(m_maxTimes);
     m_epoll->setTimeout(m_timeout);
+    m_epoll->installEventHandler(m_handler);
 
     std::thread(&Epoll::exec, m_epoll.get(), 500,
                 std::bind(&WebServer::session, this, std::placeholders::_1)
@@ -89,11 +89,9 @@ int WebServer::exec()
             if(FD_ISSET(item.first->descriptor(), &readySet))
             {
                 if(item.second)
-                    acceptConnection(AcceptEvent::HTTPS,
-                                     new SslSocket(item.first->waitForAccept()));
+                    acceptConnection(new SslSocket(item.first->waitForAccept()));
                 else
-                    acceptConnection(AcceptEvent::HTTP,
-                                     new TcpSocket(item.first->waitForAccept()));
+                    acceptConnection(new TcpSocket(item.first->waitForAccept()));
             }
         }
     }

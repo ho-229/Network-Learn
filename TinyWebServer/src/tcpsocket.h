@@ -19,6 +19,8 @@ public:
 
     void close() override;
 
+    bool sslEnable() const override { return false; }
+
     /**
      * @ref CS:APP(3) P662: int open_listenfd(char *port)
      * @brief Listen on the given port

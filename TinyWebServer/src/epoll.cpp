@@ -164,6 +164,9 @@ void Epoll::removeConnection(const Socket socket)
     if(it == m_connections.end())
         return;
 
+    ConnectEvent event(it->second.get(), ConnectEvent::Close);
+    m_handler(&event);
+
     it->second->timer()->isDisable = true;
     m_connections.erase(it);
 }
