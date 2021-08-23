@@ -21,7 +21,9 @@ public:
 
     void close() override;
 
-    bool sslEnable() const override { return m_ssl; }
+    bool sslEnable() const override { return true; }
+
+    bool isValid() const override { return m_descriptor && m_ssl; }
 
     static bool initializatSsl(const std::string& certFile,
                                const std::string& privateKey);

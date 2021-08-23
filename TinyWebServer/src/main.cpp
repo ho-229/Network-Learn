@@ -100,13 +100,13 @@ int main(int argc, char** argv)
     if(argc >= 2)   // HTTP
     {
         std::cout << "Listening HTTP port: " << argv[1] << "\n";
-        server->listen("localhost", argv[1], false);
+        server->listen(ANY_HOST, argv[1], false);
     }
 
     if(argc >= 3 && SslSocket::isSslAvailable())    // HTTPS
     {
         std::cout << "Listening HTTPS port: " << argv[2] << "\n";
-        server->listen("localhost", argv[2], true);
+        server->listen(ANY_HOST, argv[2], true);
     }
 
     std::cout << "\n";

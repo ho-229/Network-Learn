@@ -21,6 +21,8 @@ public:
 
     bool sslEnable() const override { return false; }
 
+    bool isValid() const override { return m_descriptor; }
+
     /**
      * @ref CS:APP(3) P662: int open_listenfd(char *port)
      * @brief Listen on the given port

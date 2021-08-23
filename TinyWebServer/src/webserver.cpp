@@ -61,6 +61,12 @@ int WebServer::exec()
     const auto maxfd = m_listeners.back().first->descriptor() + 1;
 
     const auto acceptConnection = [this](AbstractSocket * const connect) {
+        if(!connect->isValid())
+        {
+            delete connect;
+            return;
+        }
+
         ConnectEvent event(connect, ConnectEvent::Accpet);
         m_handler(&event);
 
@@ -84,7 +90,7 @@ int WebServer::exec()
                    reinterpret_cast<timeval *>(&m_interval)) <= 0)
             continue;
 
-        for(auto& item : m_listeners)
+        for(const auto &item : m_listeners)
         {
             if(FD_ISSET(item.first->descriptor(), &readySet))
             {

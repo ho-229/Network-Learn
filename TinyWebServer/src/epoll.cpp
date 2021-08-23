@@ -81,14 +81,14 @@ void Epoll::exec(int interval, const SessionHandler &handler)
                 else
                     ++it;
             }
-            continue;
         }
 
         m_mutex.lock();
         auto temp = m_events;
         m_mutex.unlock();
 
-        if(WSAPoll(&temp[0], ULONG(temp.size()), interval) <= 0)
+        if(m_events.empty()
+            || WSAPoll(&temp[0], ULONG(temp.size()), interval) <= 0)
             continue;
 
         for(auto it = temp.begin(); it != temp.end(); ++it)
