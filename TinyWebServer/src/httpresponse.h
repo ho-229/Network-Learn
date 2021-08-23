@@ -14,7 +14,7 @@ namespace fs = std::filesystem;
 
 typedef std::pair<int, std::string> HttpState;
 
-static std::unordered_map<std::string, std::string> PermissibleStaticType
+static std::unordered_map<std::string, std::string> PermissibleStaticTypes
     {
         {".html", "text/html"},
         {".css", "text/css"},
@@ -69,7 +69,7 @@ public:
     void buildErrorResponse(int state, const std::string& message);
     void buildFileResponse(const fs::path &filePath);
 
-    static auto& permissibleStaticTypes() { return PermissibleStaticType; }
+    static auto& permissibleStaticTypes() { return PermissibleStaticTypes; }
 
 private:
     std::pair<int, std::string> m_httpState = {200, "OK"};

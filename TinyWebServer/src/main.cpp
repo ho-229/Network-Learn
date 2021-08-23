@@ -56,7 +56,7 @@ int main(int argc, char** argv)
             else
                 std::cout << "Connection closed ";
 
-            std::cout << socket->hostName() <<":"<< socket->port() <<"\n";
+            std::cout << socket->hostName() << ":" << socket->port() <<"\n";
         }
         else if(event->type() == Event::ExceptionEvent)
         {

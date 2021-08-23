@@ -146,6 +146,10 @@ bool WebServer::session(AbstractSocket * const connect) const
         return false;
 
     auto httpRequest = std::make_shared<HttpRequest>(raw);
+
+    if(!httpRequest->isValid())
+        return false;
+
     auto httpResponse = std::make_shared<HttpResponse>();
 
     m_services->service(httpRequest.get(), httpResponse.get());

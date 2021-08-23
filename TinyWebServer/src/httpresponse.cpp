@@ -73,9 +73,9 @@ void HttpResponse::buildErrorResponse(int state, const std::string &message)
 
 void HttpResponse::buildFileResponse(const fs::path &filePath)
 {
-    const auto it = PermissibleStaticType.find(filePath.extension().string());
+    const auto it = PermissibleStaticTypes.find(filePath.extension().string());
 
-    if(it != PermissibleStaticType.end())
+    if(it != PermissibleStaticTypes.end())
         this->setRawHeader("Content-Type", it->second);
     this->setRawHeader("Transfer-Encoding", "chunked");
 

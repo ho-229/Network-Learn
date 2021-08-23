@@ -9,10 +9,19 @@
 #include <vector>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 
 typedef std::pair<std::string,  // Name
                   std::string>  // Value
     UrlArg;
+
+static std::unordered_set<std::string> MethodSet
+    {
+        "GET",
+        "POST",
+        "HEAD",
+        "DELETE"
+    };
 
 class HttpRequest
 {
@@ -39,10 +48,16 @@ public:
     bool isEmpty() const { return m_method.empty() ||
                m_uri.empty() || m_headers.empty(); }
 
+    bool isValid() const { return m_isValid; }
+
+    static auto& methodSet() { return MethodSet; }
+
 private:
     void parseArguments(const std::string& args);
 
     void parseRequestLine(const std::string& data);
+
+    bool m_isValid = false;
 
     std::string m_method;
     std::string m_uri;

@@ -32,6 +32,10 @@ void HttpRequest::parse(const std::string &data)
         if(isFirstLine)
         {
             this->parseRequestLine(line);
+
+            if(!m_isValid)
+                return;
+
             isFirstLine = false;
         }
         else
@@ -66,7 +70,15 @@ void HttpRequest::parseRequestLine(const std::string &data)
     for(int i = 0; std::getline(stream, line, ' '); ++i)
     {
         if(i == 0)
+        {
+            if(MethodSet.find(line) == MethodSet.end())     // Invalid method
+            {
+                m_isValid = false;
+                return;
+            }
+
             m_method = line;
+        }
         else if(i == 1)
         {
             std::string::size_type pos;
@@ -90,7 +102,7 @@ void HttpRequest::parseRequestLine(const std::string &data)
         else if(i == 2)
         {
             std::string::size_type pos;
-            if((pos = line.find('/')) != std::string::npos)
+            if((m_isValid = ((pos = line.find('/')) != std::string::npos)))
                 m_httpVersion = line.substr(pos + 1);
         }
     }
