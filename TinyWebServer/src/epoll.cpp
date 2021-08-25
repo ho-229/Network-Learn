@@ -148,7 +148,7 @@ void Epoll::exec(int interval, const SessionHandler &handler)
             else
             {
                 // Reset timer
-                socket->timer()->isDisable = true;
+                socket->timer()->deleteLater();
                 socket->setTimer(m_timerManager.addTimer(socket->descriptor()));
             }
         }
