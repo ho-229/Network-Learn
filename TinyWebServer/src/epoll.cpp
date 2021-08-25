@@ -119,7 +119,7 @@ void Epoll::exec(int interval, const SessionHandler &handler)
                 }
                 else    // Reset timer
                 {
-                    socket->timer()->isDisable = true;
+                    socket->timer()->deleteLater();
                     socket->setTimer(m_timerManager.addTimer(it->fd));
                 }
             }
@@ -167,6 +167,6 @@ void Epoll::removeConnection(const Socket socket)
     ConnectEvent event(it->second.get(), ConnectEvent::Close);
     m_handler(&event);
 
-    it->second->timer()->isDisable = true;
+    it->second->timer()->deleteLater();
     m_connections.erase(it);
 }

@@ -23,17 +23,21 @@ public:
         m_active(Time::system_clock::now())
     {}
 
-    bool isDisable = false;
+    inline void deleteLater() { m_isDisable = true; }
 
-    auto duration() const
+    inline bool isDisable() const { return m_isDisable; }
+
+    inline auto duration() const
     {
         return Time::duration_cast<Time::milliseconds>(
                    Time::system_clock::now() - m_active).count();
     }
 
-    const T userData() const { return m_userData; }
+    inline const T userData() const { return m_userData; }
 
 private:
+    bool m_isDisable = false;
+
     const T m_userData;
     const Time::system_clock::time_point m_active;
 };
@@ -73,7 +77,7 @@ public:
         {
             if(m_queue.empty())
                 return false;
-            else if(m_queue.top()->isDisable)
+            else if(m_queue.top()->isDisable())
                 m_queue.pop();
             else
                 break;
