@@ -63,10 +63,8 @@ void SslSocket::read(std::string &buffer)
     do
     {
         if((ret = SSL_read(m_ssl, recvBuf.get(), SOCKET_BUF_SIZE - 1)) <= 0)
-        {
-            ERR_print_errors_fp(stdout);
-            break;
-        }
+            break;  // EOF
+
         buffer.append(recvBuf.get(), size_t(ret));
     }
     while(ret == SOCKET_BUF_SIZE && recvBuf[SOCKET_BUF_SIZE - 1] != '\n');

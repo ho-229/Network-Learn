@@ -59,7 +59,9 @@ void TcpSocket::read(std::string &buffer)
 #else   // Unix
     do
     {
-        ret = recv(m_descriptor, recvBuf.get(), SOCKET_BUF_SIZE, 0);
+        if((ret = recv(m_descriptor, recvBuf.get(), SOCKET_BUF_SIZE, 0)) <= 0)
+            break;  // EOF
+
         buffer.append(recvBuf.get(), size_t(ret));
     }
     while(ret == SOCKET_BUF_SIZE && recvBuf[SOCKET_BUF_SIZE - 1] != '\n');

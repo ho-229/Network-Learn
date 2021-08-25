@@ -21,8 +21,8 @@ int main(int argc, char** argv)
     std::cout << "Welcome to Tiny Web Server.[" << Until::currentDateString()
               << "]\nOpenSSL version: " << SslSocket::sslVersion() << "\n";
 
-    // -help
-    if(argc >= 2 && std::string(argv[1]) == "-help")
+    // -help, --help or other
+    if(argc >= 2 && argv[1][0] == '-')
     {
         std::cerr << "Usage: " << argv[0] << "[http-port] [https-port] [shard-directory] "
                                              "[certificate-file] [privateKey-file]\n";
