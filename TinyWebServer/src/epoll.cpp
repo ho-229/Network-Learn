@@ -54,6 +54,7 @@ void Epoll::exec(int interval, const SessionHandler &handler)
         }
 
         // Check timeout
+        m_mutex.lock();
         Socket timeoutSocket = 0;
         while(m_timerManager.checkTop(timeoutSocket))
         {
@@ -62,6 +63,7 @@ void Epoll::exec(int interval, const SessionHandler &handler)
             invalidEvents.push_back(timeoutSocket);
 #endif
         }
+        m_mutex.unlock();
 
 #ifdef _WIN32
         // Remove invalid events
@@ -113,12 +115,15 @@ void Epoll::exec(int interval, const SessionHandler &handler)
 
                 if(!handler(socket) || socket->times() == m_maxTimes)
                 {
+                    std::unique_lock<std::mutex> lock(m_mutex);
                     this->removeConnection(it->fd);
                     invalidEvents.push_back(it->fd);
                     continue;
                 }
-                else    // Reset timer
+                else
                 {
+                    // Reset timer
+                    std::unique_lock<std::mutex> lock(m_mutex);
                     socket->timer()->deleteLater();
                     socket->setTimer(m_timerManager.addTimer(it->fd));
                 }
@@ -144,10 +149,14 @@ void Epoll::exec(int interval, const SessionHandler &handler)
             socket->addTimes();
 
             if(!handler(socket) || socket->times() == m_maxTimes)   // Process
+            {
+                std::unique_lock<std::mutex> lock(m_mutex);
                 this->removeConnection(socket->descriptor());
+            }
             else
             {
                 // Reset timer
+                std::unique_lock<std::mutex> lock(m_mutex);
                 socket->timer()->deleteLater();
                 socket->setTimer(m_timerManager.addTimer(socket->descriptor()));
             }
@@ -158,7 +167,6 @@ void Epoll::exec(int interval, const SessionHandler &handler)
 
 void Epoll::removeConnection(const Socket socket)
 {
-    std::unique_lock<std::mutex> lock(m_mutex);
     auto it = m_connections.find(socket);
 
     if(it == m_connections.end())
