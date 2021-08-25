@@ -170,7 +170,7 @@ bool WebServer::session(AbstractSocket * const connect) const
 
     m_services->service(httpRequest.get(), httpResponse.get());
 
-    if(connect->times() == m_maxTimes)
+    if(!httpRequest->isKeepAlive() || connect->times() == m_maxTimes)
         httpResponse->setRawHeader("Connection", "close");
 
     httpResponse->toRawData(response);
@@ -205,5 +205,5 @@ bool WebServer::session(AbstractSocket * const connect) const
         connect->write("0\r\n\r\n", 5);     // End of chunk
     }
 
-    return true;
+    return httpRequest->isKeepAlive();
 }

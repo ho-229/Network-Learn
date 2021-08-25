@@ -4,6 +4,7 @@
  */
 
 #include "httprequest.h"
+#include "until.h"
 
 #include <sstream>
 #include <regex>
@@ -39,8 +40,11 @@ void HttpRequest::parse(const std::string &data)
             isFirstLine = false;
         }
         else
+        {
+            Until::toLower(line);
             if(std::regex_search(line, result, express))
                 m_headers[result[1]] = result[2];
+        }
     }
 
     std::string(std::istreambuf_iterator<char>(stream), {}).swap(m_body);
@@ -48,7 +52,7 @@ void HttpRequest::parse(const std::string &data)
 
 std::pair<int64_t, int64_t> HttpRequest::range() const
 {
-    const auto it = m_headers.find("Range");
+    const auto it = m_headers.find("range");
 
     if(it == m_headers.end())
         return {0, 0};

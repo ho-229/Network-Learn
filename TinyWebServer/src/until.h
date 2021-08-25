@@ -6,6 +6,7 @@
 #ifndef UNTIL_H
 #define UNTIL_H
 
+#include <algorithm>
 #include <sstream>
 #include <iomanip>
 #include <chrono>
@@ -39,6 +40,9 @@ namespace Until
         stream << std::hex << num;
         buf += stream.str();
     }
+
+    inline void toLower(std::string& str)
+    { std::transform(str.begin(), str.end(), str.begin(), tolower); }
 }
 
 #endif // UNTIL_H

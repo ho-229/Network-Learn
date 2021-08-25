@@ -6,6 +6,8 @@
 #ifndef HTTPREQUEST_H
 #define HTTPREQUEST_H
 
+#include "until.h"
+
 #include <vector>
 #include <string>
 #include <unordered_map>
@@ -41,9 +43,15 @@ public:
 
     std::string body() const { return m_body; }
 
-    std::string rawHeader(const std::string& name) const { return m_headers.at(name); }
+    std::string rawHeader(std::string name) const
+    {
+        Until::toLower(name);
+        return m_headers.at(name);
+    }
 
     std::pair<int64_t, int64_t> range() const;
+
+    bool isKeepAlive() const { return m_headers.at("connection") != "close"; }
 
     bool isEmpty() const { return m_method.empty() ||
                m_uri.empty() || m_headers.empty(); }
