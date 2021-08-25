@@ -47,16 +47,16 @@ int main(int argc, char** argv)
             auto socket = accept->socket();
 
             if(socket->sslEnable())
-                std::cout << "[SSL] ";
+                std::cerr << "[SSL] ";
             else
-                std::cout << "[TCP] ";
+                std::cerr << "[TCP] ";
 
             if(accept->state() == ConnectEvent::Accpet)
-                std::cout << "Accepted connection from ";
+                std::cerr << "Accepted connection from ";
             else
-                std::cout << "Connection closed ";
+                std::cerr << "Connection closed ";
 
-            std::cout << socket->hostName() << ":" << socket->port() <<"\n";
+            std::cerr << socket->hostName() << ":" << socket->port() <<"\n";
         }
         else if(event->type() == Event::ExceptionEvent)
         {

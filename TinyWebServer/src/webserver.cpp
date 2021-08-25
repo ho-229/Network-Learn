@@ -12,8 +12,6 @@
 #include "sslsocket.h"
 #include "httpservices.h"
 
-#include <thread>
-#include <future>
 #include <fstream>
 
 #include <signal.h>
@@ -25,6 +23,7 @@
 #endif
 
 WebServer::WebServer() :
+    m_threadCount(std::thread::hardware_concurrency()),
     m_services(new HttpServices())
 {
 #ifdef _WIN32
@@ -60,7 +59,23 @@ int WebServer::exec()
     m_runnable = true;
     const auto maxfd = m_listeners.back().first->descriptor() + 1;
 
-    const auto acceptConnection = [this](AbstractSocket * const connect) {
+    for(size_t i = 0; i < m_threadCount; ++i)
+    {
+        auto epoll = std::make_shared<Epoll>();
+
+        epoll->setMaxTimes(m_maxTimes);
+        epoll->setTimeout(m_timeout);
+        epoll->installEventHandler(m_handler);
+
+        m_epolls.push_back(
+            {std::thread(&Epoll::exec, epoll.get(), 500,
+                         std::bind(&WebServer::session, this, std::placeholders::_1)
+                         ),
+             epoll});
+    }
+
+    size_t index = 0;
+    const auto acceptConnection = [this, &index](AbstractSocket * const connect) {
         if(!connect->isValid())
         {
             delete connect;
@@ -70,18 +85,13 @@ int WebServer::exec()
         ConnectEvent event(connect, ConnectEvent::Accpet);
         m_handler(&event);
 
-        m_epoll->addConnection(connect);
+        m_epolls[index].second->addConnection(connect);
+
+        if(index == m_threadCount - 1)
+            index = 0;
+        else
+            ++index;
     };
-
-    m_epoll = std::make_shared<Epoll>();
-
-    m_epoll->setMaxTimes(m_maxTimes);
-    m_epoll->setTimeout(m_timeout);
-    m_epoll->installEventHandler(m_handler);
-
-    std::thread(&Epoll::exec, m_epoll.get(), 500,
-                std::bind(&WebServer::session, this, std::placeholders::_1)
-                ).detach();
 
     while(m_runnable)
     {
@@ -100,6 +110,12 @@ int WebServer::exec()
                     acceptConnection(new TcpSocket(item.first->waitForAccept()));
             }
         }
+    }
+
+    for(auto &item : m_epolls)
+    {
+        item.second->quit();
+        item.first.join();
     }
 
     return 0;

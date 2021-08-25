@@ -46,6 +46,8 @@ public:
 
     size_t count() const { return m_connections.size(); }
 
+    void quit() { m_runnable = false; }
+
     template <typename Func>
     void installEventHandler(const Func& handler) { m_handler = handler; }
 
