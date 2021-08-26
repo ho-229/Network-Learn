@@ -46,12 +46,13 @@ public:
     std::string rawHeader(std::string name) const
     {
         Until::toLower(name);
-        return m_headers.at(name);
+        const auto it = m_headers.find(name);
+        return it == m_headers.end() ? std::string() : it->second;
     }
 
     std::pair<int64_t, int64_t> range() const;
 
-    bool isKeepAlive() const { return m_headers.at("connection") != "close"; }
+    bool isKeepAlive() const { return this->rawHeader("connection") != "close"; }
 
     bool isEmpty() const { return m_method.empty() ||
                m_uri.empty() || m_headers.empty(); }
