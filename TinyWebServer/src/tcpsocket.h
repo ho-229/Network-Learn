@@ -19,7 +19,7 @@ public:
 
     void close() override;
 
-    bool sslEnable() const override { return false; }
+    bool sslEnable() const override { return m_sslEnable; }
 
     bool isValid() const override { return m_descriptor; }
 
@@ -28,8 +28,8 @@ public:
      * @brief Listen on the given port
      * @return true when successful
      */
-    bool listen(const std::string& hostName, const std::string& port);
-    bool isListening() const { return m_isListening; }
+    bool listen(const std::string& hostName, const std::string& port, bool sslEnable);
+    bool isListening() const override { return m_isListening; }
 
     SocketInfo waitForAccept() const;
 
@@ -40,6 +40,7 @@ public:
 
 private:
     bool m_isListening = false;
+    bool m_sslEnable = false;
 };
 
 #endif // TCPSOCKET_H

@@ -25,6 +25,8 @@ public:
 
     bool isValid() const override { return m_descriptor && m_ssl; }
 
+    bool isListening() const override { return false; }
+
     static bool initializatSsl(const std::string& certFile,
                                const std::string& privateKey);
     static bool isSslAvailable() { return sslContext; }

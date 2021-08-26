@@ -54,10 +54,10 @@ int WebServer::exec()
     FD_ZERO(&readSet);
 
     for(auto& item : m_listeners)
-        FD_SET(item.first->descriptor(), &readSet);
+        FD_SET(item->descriptor(), &readSet);
 
     m_runnable = true;
-    const auto maxfd = m_listeners.back().first->descriptor() + 1;
+    const auto maxfd = m_listeners.back()->descriptor() + 1;
 
     for(size_t i = 0; i < m_threadCount; ++i)
     {
@@ -102,12 +102,12 @@ int WebServer::exec()
 
         for(const auto &item : m_listeners)
         {
-            if(FD_ISSET(item.first->descriptor(), &readySet))
+            if(FD_ISSET(item->descriptor(), &readySet))
             {
-                if(item.second)
-                    acceptConnection(new SslSocket(item.first->waitForAccept()));
+                if(item->sslEnable())
+                    acceptConnection(new SslSocket(item->waitForAccept()));
                 else
-                    acceptConnection(new TcpSocket(item.first->waitForAccept()));
+                    acceptConnection(new TcpSocket(item->waitForAccept()));
             }
         }
     }
@@ -121,7 +121,8 @@ int WebServer::exec()
     return 0;
 }
 
-void WebServer::listen(const std::string &hostName, const std::string &port, bool sslEnable)
+void WebServer::listen(const std::string &hostName, const std::string &port,
+                       bool sslEnable)
 {
     if(!m_isLoaded)
     {
@@ -140,7 +141,7 @@ void WebServer::listen(const std::string &hostName, const std::string &port, boo
 
     auto socket = std::make_shared<TcpSocket>();
 
-    if(!socket->listen(hostName, port))
+    if(!socket->listen(hostName, port, sslEnable))
     {
         ExceptionEvent event(ExceptionEvent::ListenFailed, "Listen "
             + hostName + ":" + port + " failed, please rerun with an administrator.\n");
@@ -148,7 +149,7 @@ void WebServer::listen(const std::string &hostName, const std::string &port, boo
         return;
     }
 
-    m_listeners.push_back({socket, sslEnable});
+    m_listeners.push_back(socket);
 }
 
 bool WebServer::session(AbstractSocket * const connect) const

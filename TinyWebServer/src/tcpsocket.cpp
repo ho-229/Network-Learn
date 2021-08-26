@@ -39,6 +39,9 @@ TcpSocket::~TcpSocket()
 
 void TcpSocket::read(std::string &buffer)
 {
+    if(m_isListening)
+        return;
+
     int ret = 0;
     std::shared_ptr<char[]> recvBuf(new char[SOCKET_BUF_SIZE]);
 
@@ -70,6 +73,9 @@ void TcpSocket::read(std::string &buffer)
 
 int TcpSocket::write(const char *buf, int size)
 {
+    if(m_isListening)
+        return 0;
+
     return send(m_descriptor, buf, size, 0);
 }
 
@@ -78,7 +84,7 @@ void TcpSocket::close()
     CLOSE(m_descriptor);
 }
 
-bool TcpSocket::listen(const std::string &hostName, const std::string &port)
+bool TcpSocket::listen(const std::string &hostName, const std::string &port, bool sslEnable)
 {
     if(m_isListening)
         return false;
@@ -124,6 +130,7 @@ bool TcpSocket::listen(const std::string &hostName, const std::string &port)
         return false;
     }
 
+    m_sslEnable = sslEnable;
     m_hostName = hostName;
     m_port = port;
 

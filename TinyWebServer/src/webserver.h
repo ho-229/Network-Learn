@@ -72,7 +72,7 @@ private:
 
     std::vector<EpollItem> m_epolls;
 
-    std::vector<std::pair<std::shared_ptr<TcpSocket>, bool>> m_listeners;
+    std::vector<std::shared_ptr<TcpSocket>> m_listeners;
 
     HttpServices *m_services = nullptr;
 
