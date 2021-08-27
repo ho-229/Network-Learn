@@ -13,6 +13,7 @@
 #include "httpservices.h"
 
 #include <fstream>
+#include <iostream>
 
 #include <signal.h>
 
@@ -24,6 +25,7 @@
 
 WebServer::WebServer() :
     m_threadCount(std::thread::hardware_concurrency()),
+    m_epoll(new Epoll),
     m_services(new HttpServices())
 {
 #ifdef _WIN32
@@ -47,75 +49,23 @@ WebServer::~WebServer()
 
 int WebServer::exec()
 {
-    if(m_listeners.empty())
+    if(m_connections.empty())
         return -1;
-
-    fd_set readSet, readySet;
-    FD_ZERO(&readSet);
-
-    for(auto& item : m_listeners)
-        FD_SET(item->descriptor(), &readSet);
-
-    m_runnable = true;
-    const auto maxfd = m_listeners.back()->descriptor() + 1;
-
-    for(size_t i = 0; i < m_threadCount; ++i)
-    {
-        auto epoll = std::make_shared<Epoll>();
-
-        epoll->setMaxTimes(m_maxTimes);
-        epoll->setTimeout(m_timeout);
-        epoll->installEventHandler(m_handler);
-
-        m_epolls.push_back(
-            {std::thread(&Epoll::exec, epoll.get(), 500,
-                         std::bind(&WebServer::session, this, std::placeholders::_1)
-                         ),
-             epoll});
-    }
-
-    size_t index = 0;
-    const auto acceptConnection = [this, &index](AbstractSocket * const connect) {
-        if(!connect->isValid())
-        {
-            delete connect;
-            return;
-        }
-
-        ConnectEvent event(connect, ConnectEvent::Accpet);
-        m_handler(&event);
-
-        m_epolls[index].second->addConnection(connect);
-
-        if(index == m_threadCount - 1)
-            index = 0;
-        else
-            ++index;
-    };
 
     while(m_runnable)
     {
-        readySet = readSet;
-        if(select(int(maxfd), &readySet, nullptr, nullptr,
-                   reinterpret_cast<timeval *>(&m_interval)) <= 0)
-            continue;
+        m_epoll->process(m_interval,
+                         std::bind(&WebServer::readableHandler, this,
+                                   std::placeholders::_1,
+                                   std::placeholders::_2));
 
-        for(const auto &item : m_listeners)
+        // Rempve timeout connections
+        Socket socket = 0;
+        while(m_timerManager.checkTop(socket))
         {
-            if(FD_ISSET(item->descriptor(), &readySet))
-            {
-                if(item->sslEnable())
-                    acceptConnection(new SslSocket(item->waitForAccept()));
-                else
-                    acceptConnection(new TcpSocket(item->waitForAccept()));
-            }
+            std::cout << "timeout\n";
+            this->popConnection(socket);
         }
-    }
-
-    for(auto &item : m_epolls)
-    {
-        item.second->quit();
-        item.first.join();
     }
 
     return 0;
@@ -149,10 +99,75 @@ void WebServer::listen(const std::string &hostName, const std::string &port,
         return;
     }
 
-    m_listeners.push_back(socket);
+    m_connections.insert(Connection(socket->descriptor(), socket));
+    m_epoll->addConnection(socket->descriptor());
 }
 
-bool WebServer::session(AbstractSocket * const connect) const
+void WebServer::popConnection(const Socket socket)
+{
+    std::unique_lock<std::mutex> lock(m_mutex);
+    const auto it = m_connections.find(socket);
+
+    if(it == m_connections.end())
+        return;
+
+    ConnectEvent event(it->second.get(), ConnectEvent::Close);
+    m_handler(&event);
+
+    it->second->timer()->deleteLater();
+    m_epoll->removeConnection(it->first);
+    m_connections.erase(it);
+}
+
+void WebServer::readableHandler(const Socket socket, bool isAvailable)
+{
+    const auto it = m_connections.find(socket);
+    if(it == m_connections.end())
+    {
+        m_epoll->removeConnection(socket);
+        return;
+    }
+    else if(!isAvailable)
+    {
+        m_connections.erase(it);
+        return;
+    }
+
+    if(it->second->isListening())
+    {
+        const auto acceptConnection = [this](AbstractSocket * const connect) {
+            if(!connect->isValid())
+            {
+                delete connect;
+                return;
+            }
+
+            ConnectEvent event(connect, ConnectEvent::Accpet);
+            m_handler(&event);
+
+            connect->setTimer(m_timerManager.addTimer(connect->descriptor()));
+
+            //m_mutex.lock();
+            m_connections.insert(Connection(connect->descriptor(), connect));
+            m_epoll->addConnection(connect->descriptor());
+            //m_mutex.unlock();
+        };
+
+        TcpSocket *listener = static_cast<TcpSocket *>(it->second.get());
+
+        if(listener->sslEnable())
+            acceptConnection(new SslSocket(listener->waitForAccept()));
+        else
+            acceptConnection(new TcpSocket(listener->waitForAccept()));
+    }
+    else
+    {
+        this->session(it->second);
+        //std::thread(&WebServer::session, this, it->second).detach();
+    }
+}
+
+bool WebServer::session(std::shared_ptr<AbstractSocket> connect)
 {
     std::string raw, response;
     std::shared_ptr<char[]> sendBuf(new char[SOCKET_BUF_SIZE]);
@@ -160,19 +175,36 @@ bool WebServer::session(AbstractSocket * const connect) const
     connect->read(raw);
 
     if(raw.empty())
+    {
+        std::cout << "empty\n";
+        this->popConnection(connect->descriptor());
         return false;
+    }
 
     auto httpRequest = std::make_shared<HttpRequest>(raw);
 
     if(!httpRequest->isValid())
+    {
+        std::cout << "invalid\n";
+        this->popConnection(connect->descriptor());
         return false;
+    }
+
+    // Reset timer
+    connect->timer()->deleteLater();
+    connect->setTimer(m_timerManager.addTimer(connect->descriptor()));
 
     auto httpResponse = std::make_shared<HttpResponse>();
 
     m_services->service(httpRequest.get(), httpResponse.get());
 
     if(!httpRequest->isKeepAlive() || connect->times() == m_maxTimes)
+    {
+        std::cout << "start pop connection\n";
         httpResponse->setRawHeader("Connection", "close");
+        this->popConnection(connect->descriptor());
+        std::cout << "end pop connection\n";
+    }
 
     httpResponse->toRawData(response);
     connect->write(response);
@@ -206,5 +238,5 @@ bool WebServer::session(AbstractSocket * const connect) const
         connect->write("0\r\n\r\n", 5);     // End of chunk
     }
 
-    return httpRequest->isKeepAlive();
+    return true;
 }

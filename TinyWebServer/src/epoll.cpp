@@ -5,6 +5,8 @@
 
 #include "epoll.h"
 
+#include <iostream>
+
 Epoll::Epoll()
 {
 #ifndef _WIN32
@@ -19,26 +21,32 @@ Epoll::~Epoll()
 #endif
 }
 
-void Epoll::addConnection(AbstractSocket* socket)
+void Epoll::addConnection(const Socket socket)
 {
-    std::unique_lock<std::mutex> lock(m_mutex);
 #ifdef _WIN32
-    m_events.push_back({socket->descriptor(), POLLIN, 0});
+    m_addBuf.push_back(socket);
 #else   // Unix
     epoll_event newEvent{};
     newEvent.events = EPOLLIN | EPOLLET;
-    newEvent.data.fd = socket->descriptor();
+    newEvent.data.fd = socket;
 
-    epoll_ctl(m_epoll, EPOLL_CTL_ADD, socket->descriptor(), &newEvent);
+    epoll_ctl(m_epoll, EPOLL_CTL_ADD, socket, &newEvent);
+
+    ++m_count;
 #endif
-    m_connections.insert(Connection(socket->descriptor(), socket));
-
-    socket->setTimer(m_timerManager.addTimer(socket->descriptor()));
-
-    m_condition.notify_one();
 }
 
-void Epoll::exec(int interval, const SessionHandler &handler)
+void Epoll::removeConnection(const Socket socket)
+{
+#ifdef _WIN32
+    m_removeBuf.push_back(socket);
+#else
+    //epoll_ctl(m_epoll, EPOLL_CTL_DEL, socket, nullptr);
+    --m_count;
+#endif
+}
+
+/*void Epoll::exec(int interval, const SessionHandler &handler)
 {
 #ifdef _WIN32
     std::vector<Socket> invalidEvents;
@@ -97,10 +105,10 @@ void Epoll::exec(int interval, const SessionHandler &handler)
         {
             if (it->revents & POLLHUP || it->revents & POLLNVAL ||
                 it->revents & POLLERR)
-			{
+            {
                 invalidEvents.push_back(it->fd);
                 continue;
-			}
+            }
             else if(it->revents & POLLIN)
             {
                 auto connIt = m_connections.find(it->fd);
@@ -163,18 +171,76 @@ void Epoll::exec(int interval, const SessionHandler &handler)
         }
 #endif
     }
-}
+}*/
 
-void Epoll::removeConnection(const Socket socket)
+void Epoll::process(int interval, const SessionHandler &handler)
 {
-    auto it = m_connections.find(socket);
+#ifdef _WIN32
+    // Remove invalid events
+    if(!m_removeBuf.empty())
+    {
+        for(auto it = m_events.begin(); it != m_events.end();)
+        {
+            auto invIt = std::find(m_removeBuf.begin(),
+                                   m_removeBuf.end(), it->fd);
 
-    if(it == m_connections.end())
+            if(invIt != m_removeBuf.end())
+            {
+                m_events.erase(it);
+                m_removeBuf.erase(invIt);
+            }
+            else
+                ++it;
+        }
+        m_removeBuf.clear();
+    }
+
+    // Append new events
+    if(!m_addBuf.empty())
+    {
+        for(const auto& sock : m_addBuf)
+            m_events.push_back({sock, POLLIN, 0});
+        m_addBuf.clear();
+    }
+
+    // Wait for events
+    if(m_events.empty() ||
+        WSAPoll(&m_events[0], ULONG(m_events.size()), interval) <= 0)
         return;
 
-    ConnectEvent event(it->second.get(), ConnectEvent::Close);
-    m_handler(&event);
+    for(auto it = m_events.cbegin(); it != m_events.cend();)
+    {
+        if (it->revents & POLLHUP ||
+            it->revents & POLLNVAL ||
+            it->revents & POLLERR)
+        {   // Invalid event
+            handler(it->fd, false);
+            m_events.erase(it);
+            continue;
+        }
+        else if(it->revents & POLLIN)
+            handler(it->fd, true);
 
-    it->second->timer()->deleteLater();
-    m_connections.erase(it);
+        ++it;
+    }
+#else
+    std::shared_ptr<epoll_event[]> events(new epoll_event[MAX_EVENTS]());
+
+    int ret = -1;
+    if(!m_count || (ret = epoll_wait(m_epoll, events.get(), MAX_EVENTS, interval)) <= 0)
+        return;
+
+    for(int i = 0; i < ret; ++i)
+    {
+        const auto& event = events[i];
+        if(event.events & EPOLLERR)
+        {
+            std::cout << "ERR: "<<event.data.fd<<"\n";
+            handler(event.data.fd, false);
+            this->removeConnection(event.data.fd);
+        }
+        else if(event.events & EPOLLIN)
+            handler(event.data.fd, true);
+    }
+#endif
 }

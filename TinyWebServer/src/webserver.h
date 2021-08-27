@@ -7,11 +7,15 @@
 #define WEBSERVER_H
 
 #include "event.h"
+#include "timermanager.h"
+#include "abstractsocket.h"
 
+#include <mutex>
 #include <vector>
 #include <string>
 #include <memory>
 #include <thread>
+#include <unordered_map>
 
 #define ANY_HOST "0.0.0.0"
 
@@ -21,7 +25,6 @@ class TcpSocket;
 class HttpServices;
 
 typedef std::pair<std::string, std::string> ServerPort;
-typedef std::pair<std::thread, std::shared_ptr<Epoll>> EpollItem;
 
 class WebServer
 {
@@ -36,14 +39,14 @@ public:
     /**
      * @brief WebServer::exec() loop interval
      */
-    void setInterval(long microSecond) { m_interval.second = microSecond * 1000; }
-    long interval() const { return m_interval.second; }
+    void setInterval(int ms) { m_interval = ms; }
+    int interval() const { return m_interval; }
 
     /**
      * @brief Keep alive timeout
      */
-    void setTimeout(int microSecond) { m_timeout = microSecond; }
-    int timeout() const { return m_timeout; }
+    void setTimeout(int ms) { m_timerManager.setTimeout(ms); }
+    int timeout() const { return m_timerManager.timeout(); }
 
     void setMaxTimes(int num) { m_maxTimes = num > 0 ? num : 30; }
     int maxTimes() const { return m_maxTimes; }
@@ -60,19 +63,24 @@ public:
     void installEventHandler(const Func& handler) { m_handler = handler; }
 
 private:
-    bool session(AbstractSocket * const connect) const;
+    std::unordered_map<Socket, std::shared_ptr<AbstractSocket>> m_connections;
+    using Connection = decltype (m_connections)::value_type;
+
+    void popConnection(const Socket socket);
+    void readableHandler(const Socket socket, bool isAvailable);
+    bool session(std::shared_ptr<AbstractSocket> connect);
 
     bool m_isLoaded = true;
     bool m_runnable = true;
-    int m_timeout = 30000;       // 30s
     int m_maxTimes = 30;
     size_t m_threadCount;
 
-    std::pair<long, long> m_interval = {0, 500 * 1000};     // 500ms
+    int m_interval = 500;       // 500ms
 
-    std::vector<EpollItem> m_epolls;
+    std::shared_ptr<Epoll> m_epoll;
+    std::mutex m_mutex;
 
-    std::vector<std::shared_ptr<TcpSocket>> m_listeners;
+    TimerManager<Socket> m_timerManager;
 
     HttpServices *m_services = nullptr;
 
