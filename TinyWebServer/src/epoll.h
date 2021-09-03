@@ -16,7 +16,7 @@
 #ifdef _WIN32
 # include <WinSock2.h>
 
-# define ERRPR_EVENT POLLERR
+# define ERROR_EVENT POLLERR
 # define CLOSE_EVENT POLLHUP
 
 typedef std::vector<pollfd> EventList;
