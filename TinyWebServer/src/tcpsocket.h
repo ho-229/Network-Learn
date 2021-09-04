@@ -21,7 +21,7 @@ public:
 
     bool sslEnable() const override { return m_sslEnable; }
 
-    bool isValid() const override { return m_descriptor; }
+    bool isValid() const override { return AbstractSocket::isValid(m_descriptor); }
 
     /**
      * @ref CS:APP(3) P662: int open_listenfd(char *port)
@@ -31,7 +31,7 @@ public:
     bool listen(const std::string& hostName, const std::string& port, bool sslEnable);
     bool isListening() const override { return m_isListening; }
 
-    SocketInfo waitForAccept() const;
+    SocketInfo accept() const;
 
 #ifdef _WIN32
     static bool initializatWsa();

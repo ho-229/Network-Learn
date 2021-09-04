@@ -8,19 +8,28 @@
 
 #include "abstractsocket.h"
 
+#include <memory>
+#include <vector>
+#include <functional>
+#include <unordered_map>
+
 #ifdef _WIN32
 # include <WinSock2.h>
-# include <vector>
+
+# define ERRPR_EVENT POLLERR
+# define CLOSE_EVENT POLLHUP
+
+typedef std::vector<pollfd> EventList;
 #else
 # include <sys/epoll.h>
 # include <unistd.h>
 
-# define MAX_EVENTS 128
-#endif
+# define ERROR_EVENT EPOLLERR
+# define CLOSE_EVENT EPOLLHUP
 
-#include <memory>
-#include <functional>
-#include <unordered_map>
+# define MAX_EVENTS 128
+typedef std::vector<epoll_event> EventList;
+#endif
 
 typedef std::function<void(const Socket, bool)> SessionHandler;
 
@@ -33,19 +42,20 @@ public:
     void addConnection(const Socket socket);
     void removeConnection(const Socket socket);
 
-    void process(int interval, const SessionHandler& handler);
+    const EventList epoll(int interval);
 
     size_t count() const
     {
 #ifdef _WIN32
         return m_events.size();
+#else
+        return m_count;     // It maybe not correct
 #endif
     }
 
 private:
 #ifdef _WIN32
     std::vector<Socket> m_removeBuf;
-    std::vector<Socket> m_addBuf;
     std::vector<pollfd> m_events;
 #else
     int m_epoll = 0;

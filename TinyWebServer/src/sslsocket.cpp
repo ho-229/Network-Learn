@@ -33,6 +33,9 @@ SslSocket::SslSocket(const SocketInfo &info) :
     AbstractSocket(info),
     m_ssl(SSL_new(sslContext))
 {
+    if(!AbstractSocket::isValid(m_descriptor))
+        return;
+
     SSL_set_fd(m_ssl, int(m_descriptor));
 
     if(SSL_accept(m_ssl) < 0)

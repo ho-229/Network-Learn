@@ -23,7 +23,8 @@ public:
 
     bool sslEnable() const override { return true; }
 
-    bool isValid() const override { return m_descriptor && m_ssl; }
+    bool isValid() const override { return AbstractSocket::isValid(m_descriptor)
+               && m_ssl; }
 
     bool isListening() const override { return false; }
 

@@ -16,6 +16,9 @@ HttpRequest::HttpRequest()
 
 HttpRequest::HttpRequest(const std::string &data)
 {
+    if(data.empty())
+        return;
+
     this->parse(data);
 }
 

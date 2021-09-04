@@ -7,6 +7,7 @@
 #define WEBSERVER_H
 
 #include "event.h"
+#include "epoll.h"
 #include "timermanager.h"
 #include "abstractsocket.h"
 
@@ -22,6 +23,7 @@
 class Epoll;
 class Event;
 class TcpSocket;
+class HttpRequest;
 class HttpServices;
 
 typedef std::pair<std::string, std::string> ServerPort;
@@ -66,9 +68,10 @@ private:
     std::unordered_map<Socket, std::shared_ptr<AbstractSocket>> m_connections;
     using Connection = decltype (m_connections)::value_type;
 
-    void popConnection(const Socket socket);
-    void readableHandler(const Socket socket, bool isAvailable);
-    bool session(std::shared_ptr<AbstractSocket> connect);
+    inline void close(const Socket socket);
+    void eventHandler(const EventList &list);
+    void session(std::shared_ptr<AbstractSocket> connect,
+                 std::shared_ptr<HttpRequest> httpRequest);
 
     bool m_isLoaded = true;
     bool m_runnable = true;

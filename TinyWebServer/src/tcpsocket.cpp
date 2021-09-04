@@ -18,6 +18,7 @@ extern "C"
 #define CLOSE(x) closesocket(x)
 
 #else   // Unix
+# include <fcntl.h>
 # include <netdb.h>
 # include <unistd.h>
 # include <string.h>
@@ -130,6 +131,17 @@ bool TcpSocket::listen(const std::string &hostName, const std::string &port, boo
         return false;
     }
 
+    // Set non-blocking
+#ifdef _WIN32
+    u_long  mode = true;
+    ioctlsocket(m_descriptor, FIONBIO, &mode);
+#else
+    int flags;
+    if((flags = fcntl(m_descriptor, F_GETFL, nullptr)) < 0 ||
+            fcntl(m_descriptor, F_SETFL, flags | O_NONBLOCK) == -1)
+        return false;
+#endif
+
     m_sslEnable = sslEnable;
     m_hostName = hostName;
     m_port = port;
@@ -138,7 +150,7 @@ bool TcpSocket::listen(const std::string &hostName, const std::string &port, boo
     return true;
 }
 
-SocketInfo TcpSocket::waitForAccept() const
+SocketInfo TcpSocket::accept() const
 {
     if(!m_isListening)
         return {};
@@ -147,7 +159,7 @@ SocketInfo TcpSocket::waitForAccept() const
     sockaddr_storage addr;
     socklen_t len = sizeof(addr);
 
-    const Socket socket = accept(
+    const Socket socket = ::accept(
         m_descriptor, reinterpret_cast<sockaddr *>(&addr), &len);
 
     getnameinfo(reinterpret_cast<sockaddr *>(&addr),
