@@ -9,7 +9,7 @@ This is a tiny `HTTP/HTTPS` web server.
 | Accept-Ranges | none |
 | Connection | keep-alive |
 | Transfer-Encoding | chunked |
-| Server | Tiny Web Server |
+| Server | TinyWebServer |
 | Date | \<auto> |
 | \<Custom> | \<Custom> |
 

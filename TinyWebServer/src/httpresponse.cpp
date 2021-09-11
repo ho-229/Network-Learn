@@ -84,7 +84,7 @@ void HttpResponse::buildFileResponse(const fs::path &filePath)
 
 inline void HttpResponse::initializatHeaders()
 {
-    m_headers["Server"] = "Tiny Web Server";
+    m_headers["Server"] = "TinyWebServer";
     m_headers["Connection"] = "keep-alive";
     m_headers["Accept-Ranges"] = "none";
     m_headers["Date"] = Until::currentDateString();
