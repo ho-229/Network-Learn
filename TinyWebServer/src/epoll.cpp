@@ -53,7 +53,6 @@ const EventList Epoll::epoll(int interval)
     // Remove invalid events
     if(!m_removeBuf.empty() && !m_events.empty())
     {
-        std::cerr << "remove start\n";
         for(auto it = m_events.begin(); it < m_events.end();)
         {
             if(m_removeBuf.find(it->fd) != m_removeBuf.end())
@@ -63,7 +62,6 @@ const EventList Epoll::epoll(int interval)
         }
 
         m_removeBuf.clear();
-        std::cerr << "remove end\n";
     }
 
     auto temp = m_events;
