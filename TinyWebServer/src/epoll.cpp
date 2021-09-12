@@ -7,7 +7,9 @@
 
 Epoll::Epoll()
 {
-#ifndef _WIN32
+#ifdef _WIN32
+    m_removeBuf.reserve(128);
+#else
     m_epoll = epoll_create1(0);
 #endif
 }
@@ -38,7 +40,7 @@ void Epoll::addConnection(const Socket socket)
 void Epoll::removeConnection(const Socket socket)
 {
 #ifdef _WIN32
-    m_removeBuf.push_back(socket);
+    m_removeBuf.insert(socket);
 #else
     epoll_ctl(m_epoll, EPOLL_CTL_DEL, socket, nullptr);
     --m_count;
@@ -51,20 +53,17 @@ const EventList Epoll::epoll(int interval)
     // Remove invalid events
     if(!m_removeBuf.empty() && !m_events.empty())
     {
-        for(auto it = m_events.begin(); it != m_events.end();)
+        std::cerr << "remove start\n";
+        for(auto it = m_events.begin(); it < m_events.end();)
         {
-            auto invIt = std::find(m_removeBuf.begin(),
-                                   m_removeBuf.end(), it->fd);
-
-            if(invIt != m_removeBuf.end())
-            {
-                m_events.erase(it);
-                m_removeBuf.erase(invIt);
-            }
+            if(m_removeBuf.find(it->fd) != m_removeBuf.end())
+                it = m_events.erase(it);
             else
                 ++it;
         }
+
         m_removeBuf.clear();
+        std::cerr << "remove end\n";
     }
 
     auto temp = m_events;

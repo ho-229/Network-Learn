@@ -21,8 +21,8 @@
 #endif
 
 WebServer::WebServer() :
-    m_threadCount(std::thread::hardware_concurrency()),
     m_epoll(new Epoll()),
+    m_pool(),
     m_services(new HttpServices())
 {
 #ifdef _WIN32
@@ -51,9 +51,7 @@ int WebServer::exec()
 
     while(m_runnable)
     {
-        const EventList&& list = m_epoll->epoll(m_interval);
-
-        this->eventHandler(list);
+        this->eventHandler(m_epoll->epoll(m_interval));
 
         // Rempve timeout connections
         Socket socket = 0;
@@ -190,6 +188,7 @@ void WebServer::eventHandler(const EventList& list)
 
             // TODO: ThreadPool
             std::thread(&WebServer::session, this, temp, request).detach();
+            //m_pool.start(std::bind(&WebServer::session, this, temp, request));
         }
     }
 }

@@ -45,7 +45,7 @@ public:
 
     std::string rawHeader(std::string name) const
     {
-        Until::toLower(name);
+        //Until::toLower(name);
         const auto it = m_headers.find(name);
         return it == m_headers.end() ? std::string() : it->second;
     }

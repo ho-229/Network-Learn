@@ -8,14 +8,11 @@
 
 #include "event.h"
 #include "epoll.h"
+#include "threadpool.h"
 #include "timermanager.h"
 #include "abstractsocket.h"
 
-#include <mutex>
-#include <vector>
 #include <string>
-#include <memory>
-#include <thread>
 #include <unordered_map>
 
 #define ANY_HOST "0.0.0.0"
@@ -53,9 +50,6 @@ public:
     void setMaxTimes(int num) { m_maxTimes = num > 0 ? num : 30; }
     int maxTimes() const { return m_maxTimes; }
 
-    void setThreadCount(size_t num) { m_threadCount = num; }
-    size_t threadCount() const { return m_threadCount; }
-
     void listen(const std::string& hostName, const std::string& port,
                 bool sslEnable = false);
 
@@ -76,14 +70,14 @@ private:
     bool m_isLoaded = true;
     bool m_runnable = true;
     int m_maxTimes = 30;
-    size_t m_threadCount;
 
     int m_interval = 500;       // 500ms
 
     std::shared_ptr<Epoll> m_epoll;
-    std::mutex m_mutex;
 
     TimerManager<Socket> m_timerManager;
+
+    ThreadPool m_pool;
 
     HttpServices *m_services = nullptr;
 

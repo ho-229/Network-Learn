@@ -11,7 +11,7 @@
 #include <memory>
 #include <vector>
 #include <functional>
-#include <unordered_map>
+#include <unordered_set>
 
 #ifdef _WIN32
 # include <WinSock2.h>
@@ -55,7 +55,7 @@ public:
 
 private:
 #ifdef _WIN32
-    std::vector<Socket> m_removeBuf;
+    std::unordered_set<Socket> m_removeBuf;
     std::vector<pollfd> m_events;
 #else
     int m_epoll = 0;
