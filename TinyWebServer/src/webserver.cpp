@@ -22,7 +22,7 @@
 
 WebServer::WebServer() :
     m_epoll(new Epoll()),
-    m_pool(),
+    m_pool(std::thread::hardware_concurrency()),
     m_services(new HttpServices())
 {
 #ifdef _WIN32
@@ -96,6 +96,8 @@ void WebServer::listen(const std::string &hostName, const std::string &port,
 
 void WebServer::close(const Socket socket)
 {
+    std::unique_lock<std::mutex> lock(m_mutex);
+
     m_epoll->removeConnection(socket);
 
     const auto it = m_connections.find(socket);
@@ -124,6 +126,7 @@ void WebServer::eventHandler(const EventList& list)
 
         connect->setTimer(m_timerManager.addTimer(connect->descriptor()));
 
+        std::unique_lock<std::mutex> lock(m_mutex);
         m_connections.insert(Connection(connect->descriptor(), connect));
         m_epoll->addConnection(connect->descriptor());
     };
@@ -139,12 +142,16 @@ void WebServer::eventHandler(const EventList& list)
         const Socket socket = item.data.fd;
 #endif
 
-        const auto it = m_connections.find(socket);
-
-        if(it == m_connections.end())
+        decltype (m_connections)::const_iterator it;
         {
-            m_epoll->removeConnection(socket);
-            continue;
+            std::unique_lock<std::mutex> lock(m_mutex);
+            it = m_connections.find(socket);
+
+            if(it == m_connections.end())
+            {
+                m_epoll->removeConnection(socket);
+                continue;
+            }
         }
 
         if(item.events & ERROR_EVENT ||
@@ -169,33 +176,29 @@ void WebServer::eventHandler(const EventList& list)
             }
         }
         else
-        {
-            std::string raw;
-
-            it->second->read(raw);
-
-            auto request = std::make_shared<HttpRequest>(raw);
-
-            if(!request->isValid())
-                continue;
-
-            it->second->addTimes();
-
-            auto temp = it->second;
-
-            if(!request->isKeepAlive() || it->second->times() > m_maxTimes)
-                this->close(socket);
-
-            // TODO: ThreadPool
-            std::thread(&WebServer::session, this, temp, request).detach();
-            //m_pool.start(std::bind(&WebServer::session, this, temp, request));
-        }
+            m_pool.enqueue(&WebServer::session, this, it->second);
     }
 }
 
-void WebServer::session(std::shared_ptr<AbstractSocket> connect,
-                        std::shared_ptr<HttpRequest> httpRequest)
+void WebServer::session(std::shared_ptr<AbstractSocket> connect)
 {
+    std::string raw;
+
+    connect->read(raw);
+
+    auto httpRequest = std::make_shared<HttpRequest>(raw);
+
+    if(!httpRequest->isValid())
+    {
+        this->close(connect->descriptor());
+        return;
+    }
+
+    connect->addTimes();
+
+    if(!httpRequest->isKeepAlive() || connect->times() > m_maxTimes)
+        this->close(connect->descriptor());
+
     std::string response;
     std::shared_ptr<char[]> sendBuf(new char[SOCKET_BUF_SIZE]);
 

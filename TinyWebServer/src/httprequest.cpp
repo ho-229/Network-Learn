@@ -44,7 +44,7 @@ void HttpRequest::parse(const std::string &data)
         }
         else
         {
-            //Until::toLower(line);
+            Until::toLower(line);
             if(std::regex_search(line, result, express))
                 m_headers[result[1]] = result[2];
         }

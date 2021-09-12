@@ -50,6 +50,9 @@ public:
     void setMaxTimes(int num) { m_maxTimes = num > 0 ? num : 30; }
     int maxTimes() const { return m_maxTimes; }
 
+    /**
+     * @note should run before WebServer::exec
+     */
     void listen(const std::string& hostName, const std::string& port,
                 bool sslEnable = false);
 
@@ -64,8 +67,7 @@ private:
 
     inline void close(const Socket socket);
     void eventHandler(const EventList &list);
-    void session(std::shared_ptr<AbstractSocket> connect,
-                 std::shared_ptr<HttpRequest> httpRequest);
+    void session(std::shared_ptr<AbstractSocket> connect);
 
     bool m_isLoaded = true;
     bool m_runnable = true;
@@ -74,6 +76,8 @@ private:
     int m_interval = 500;       // 500ms
 
     std::shared_ptr<Epoll> m_epoll;
+
+    std::mutex m_mutex;
 
     TimerManager<Socket> m_timerManager;
 

@@ -6,6 +6,7 @@
 #ifndef TIMERMANAGER_H
 #define TIMERMANAGER_H
 
+#include <mutex>
 #include <queue>
 #include <chrono>
 #include <memory>
@@ -63,9 +64,11 @@ public:
 
     Timer<T>* addTimer(const T& data)
     {
-        auto newTimer = new Timer<T>(data);
-        m_queue.push(TimerItem<T>(newTimer));
-        return newTimer;
+        std::unique_lock<std::mutex> lock(m_mutex);
+
+        auto newTimer = std::make_shared<Timer<T>>(data);
+        m_queue.push(newTimer);
+        return newTimer.get();
     }
 
     /**
@@ -73,6 +76,8 @@ public:
      */
     bool checkTop(T &userData)
     {
+        std::unique_lock<std::mutex> lock(m_mutex);
+
         while(true)
         {
             if(m_queue.empty())
@@ -94,6 +99,8 @@ public:
 
 private:
     int m_timeout = 30000;      // 30s
+
+    std::mutex m_mutex;
 
     std::priority_queue<TimerItem<T>,
                         std::deque<TimerItem<T>>,
