@@ -8,6 +8,7 @@
 
 #include <mutex>
 #include <queue>
+#include <atomic>
 #include <chrono>
 #include <memory>
 
@@ -37,7 +38,7 @@ public:
     inline const T userData() const { return m_userData; }
 
 private:
-    bool m_isDisable = false;
+    std::atomic_bool m_isDisable = false;
 
     const T m_userData;
     const Time::system_clock::time_point m_active;
@@ -45,13 +46,6 @@ private:
 
 template <typename T>
 using TimerItem = std::shared_ptr<Timer<T>>;
-
-template <typename T>
-struct TimerCompare
-{
-    bool operator()(const TimerItem<T>& a, const TimerItem<T>& b) const
-    { return a->duration() > b->duration(); }
-};
 
 template <typename T>
 class TimerManager
@@ -82,13 +76,13 @@ public:
         {
             if(m_queue.empty())
                 return false;
-            else if(m_queue.top()->isDisable())
+            else if(m_queue.front()->isDisable())
                 m_queue.pop();
             else
                 break;
         }
 
-        const auto top = m_queue.top();
+        const auto top = m_queue.front();
         const bool ret = top->duration() >= m_timeout;
 
         if(ret)
@@ -102,10 +96,7 @@ private:
 
     std::mutex m_mutex;
 
-    std::priority_queue<TimerItem<T>,
-                        std::deque<TimerItem<T>>,
-                        TimerCompare<T>>
-        m_queue;
+    std::queue<TimerItem<T>, std::deque<TimerItem<T>>> m_queue;
 };
 
 #endif // TIMERMANAGER_H

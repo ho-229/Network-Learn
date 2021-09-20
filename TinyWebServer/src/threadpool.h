@@ -98,5 +98,4 @@ inline ThreadPool::~ThreadPool()
         worker.join();
 }
 
-
 #endif // THREADPOOL_H
