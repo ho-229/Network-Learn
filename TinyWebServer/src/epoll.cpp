@@ -71,12 +71,12 @@ const EventList Epoll::epoll(int interval)
 
     return temp;
 #else   // Unix
-    epoll_event events[MAX_EVENTS];
+    std::shared_ptr<epoll_event[]> events(new epoll_event[MAX_EVENTS]());
 
     int ret = -1;
-    if(!m_count || (ret = epoll_wait(m_epoll, events, MAX_EVENTS, interval)) <= 0)
+    if(!m_count || (ret = epoll_wait(m_epoll, events.get(), MAX_EVENTS, interval)) <= 0)
         return {};
 
-    return {events, events + ret};
+    return {events.get(), events.get() + ret};
 #endif
 }

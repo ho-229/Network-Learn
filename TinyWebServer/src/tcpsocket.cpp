@@ -63,7 +63,11 @@ void TcpSocket::read(std::string &buffer)
 #else   // Unix
     do
     {
-        if((ret = recv(m_descriptor, recvBuf.get(), SOCKET_BUF_SIZE, 0)) <= 0)
+        do
+            ret = ::read(m_descriptor, recvBuf.get(), SOCKET_BUF_SIZE);
+        while(ret <= 0 && errno == EINTR);
+
+        if(ret <= 0)
             break;  // EOF
 
         buffer.append(recvBuf.get(), size_t(ret));
@@ -77,7 +81,17 @@ int TcpSocket::write(const char *buf, int size)
     if(m_isListening)
         return 0;
 
+#ifdef _WIN32
     return send(m_descriptor, buf, size, 0);
+#else
+    int ret = 0;
+
+    do
+        ret = ::write(m_descriptor, buf, size);
+    while(ret <= 0 && errno == EINTR);
+
+    return ret;
+#endif
 }
 
 void TcpSocket::close()

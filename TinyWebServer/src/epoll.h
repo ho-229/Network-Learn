@@ -29,7 +29,7 @@ typedef std::vector<pollfd> EventList;
 # define ERROR_EVENT EPOLLERR
 # define CLOSE_EVENT EPOLLHUP
 
-# define MAX_EVENTS 128
+# define MAX_EVENTS 1024
 typedef std::vector<epoll_event> EventList;
 #endif
 
