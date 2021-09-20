@@ -8,7 +8,8 @@ This is a tiny `HTTP/HTTPS` web server.
 | ---------------- | ------------- |
 | Accept-Ranges | none |
 | Connection | keep-alive |
-| Transfer-Encoding | chunked |
+| Content-Length | \<auto> |
+| Content-Type | \<auto> |
 | Server | TinyWebServer |
 | Date | \<auto> |
 | \<Custom> | \<Custom> |
@@ -16,7 +17,8 @@ This is a tiny `HTTP/HTTPS` web server.
 ## Usage
 
 * Command line
-    ```
+
+    ```shell
     Usage: ./TinyWebServer [http-port] [https-port] [shard-directory] [certificate-file] [privateKey-file]
     ```
 
@@ -27,13 +29,14 @@ This is a tiny `HTTP/HTTPS` web server.
     ```
 
 * Browser
-    ```
+
+    ```shell
     http(s)://localhost/<uri>
     ```
 
     Example:
 
-    ```
+    ```shell
     http://localhost/adder?1&1
     ```
 

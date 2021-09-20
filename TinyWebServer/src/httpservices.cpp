@@ -49,7 +49,7 @@ void HttpServices::service(HttpRequest* httpRequest, HttpResponse* httpResponse)
     {
         fs::path filePath(m_workDir.string() + httpRequest->uri());
         if(fs::is_regular_file(filePath))
-            httpResponse->buildFileResponse(filePath);
+            httpResponse->setFilePath(filePath);
         else
             httpResponse->buildErrorResponse(404, "Not Found");
     }

@@ -35,17 +35,13 @@ class HttpResponse
 public:
     enum BodyType
     {
-        Normal,
+        PlainText,
         File
     };
 
     HttpResponse();
 
-    void setText(const std::string text)
-    {
-        m_text = text;
-        m_type = Normal;
-    }
+    void setText(const std::string text);
     std::string text() const { return m_text; }
 
     void setFilePath(const fs::path& path);
@@ -67,7 +63,6 @@ public:
     void toRawData(std::string& response);
 
     void buildErrorResponse(int state, const std::string& message);
-    void buildFileResponse(const fs::path &filePath);
 
     static auto& permissibleStaticTypes() { return PermissibleStaticTypes; }
 
@@ -84,7 +79,7 @@ private:
 
     fs::path m_filePath;
 
-    BodyType m_type = Normal;
+    BodyType m_type = PlainText;
 };
 
 #endif // HTTPRESPONSE_H

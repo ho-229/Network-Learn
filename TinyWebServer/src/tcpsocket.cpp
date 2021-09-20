@@ -133,7 +133,7 @@ bool TcpSocket::listen(const std::string &hostName, const std::string &port, boo
 
     // Set non-blocking
 #ifdef _WIN32
-    u_long  mode = true;
+    u_long mode = 1;
     ioctlsocket(m_descriptor, FIONBIO, &mode);
 #else
     int flags;

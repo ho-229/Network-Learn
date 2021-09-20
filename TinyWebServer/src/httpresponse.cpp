@@ -18,9 +18,27 @@ HttpResponse::HttpResponse()
     this->initializatHeaders();
 }
 
+void HttpResponse::setText(const std::string text)
+{
+    m_text = text;
+    m_headers["Content-Length"] = std::to_string(text.size());
+
+    m_type = PlainText;
+}
+
 void HttpResponse::setFilePath(const fs::path &path)
 {
     m_filePath = path;
+
+    // Content length
+    m_headers["Content-Length"] = std::to_string(fs::file_size(path));
+
+    // Content type
+    const auto it = PermissibleStaticTypes.find(path.extension().string());
+
+    if(it != PermissibleStaticTypes.end())
+        m_headers["Content-Type"] = it->second;
+
     m_type = File;
 }
 
@@ -45,9 +63,6 @@ void HttpResponse::toRawData(std::string &response)
 {
     response.clear();
 
-    if(m_type == Normal)
-        m_headers["Content-Length"] = std::to_string(m_text.size());
-
     // Response line
     response.append("HTTP/1.1 " + std::to_string(m_httpState.first) + ' '
                     + m_httpState.second + "\r\n");
@@ -56,7 +71,7 @@ void HttpResponse::toRawData(std::string &response)
     for(const auto &[key, value] : m_headers)
         response.append(key + ": " + value + "\r\n");
 
-    if(m_type == Normal)
+    if(m_type == PlainText)
         response.append("\r\n" + m_text);
     else
         response.append("\r\n");
@@ -67,19 +82,8 @@ void HttpResponse::buildErrorResponse(int state, const std::string &message)
     this->setRawHeader("Content-Type", "text/html; charset=utf-8");
 
     this->setHttpState({404, "Not found"});
-    m_text = "<h2>Tiny Web Server</h2><h1>" + std::to_string(state)
-             + " " + message + "<br>∑(っ°Д°;)っ<h1>\n";
-}
-
-void HttpResponse::buildFileResponse(const fs::path &filePath)
-{
-    const auto it = PermissibleStaticTypes.find(filePath.extension().string());
-
-    if(it != PermissibleStaticTypes.end())
-        this->setRawHeader("Content-Type", it->second);
-    this->setRawHeader("Transfer-Encoding", "chunked");
-
-    this->setFilePath(filePath);
+    this->setText("<h2>Tiny Web Server</h2><h1>" + std::to_string(state)
+                  + " " + message + "<br>∑(っ°Д°;)っ<h1>\n");
 }
 
 inline void HttpResponse::initializatHeaders()

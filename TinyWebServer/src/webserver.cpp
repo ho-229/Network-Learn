@@ -224,28 +224,24 @@ void WebServer::session(std::shared_ptr<AbstractSocket> connect)
     {
         std::ifstream out(httpResponse->filePath(), std::ios::binary);
 
-        if(out)
-        {
-            std::string sendChunk;
-            sendChunk.reserve(SOCKET_BUF_SIZE + 4);
-
-            while(!out.eof())
-            {
-                out.read(sendBuf.get(), SOCKET_BUF_SIZE);
-
-                Until::toHex(sendChunk, out.gcount());
-                sendChunk.append("\r\n")
-                    .append(sendBuf.get(), size_t(out.gcount()))
-                    .append("\r\n");
-
-                if(connect->write(sendChunk) <= 0)
-                    return;
-
-                sendChunk.clear();
-            }
-        }
-
-        if(connect->write("0\r\n\r\n", 5) <= 0)     // End of chunk
-            return;
+        sendFile(out, connect.get());
     }
+}
+
+bool WebServer::sendFile(std::ifstream &stream, AbstractSocket *socket)
+{
+    if(!stream || !socket)
+        return false;
+    
+    std::shared_ptr<char[]> sendBuf(new char[SOCKET_BUF_SIZE]());
+    
+    while(!stream.eof())
+    {
+        stream.read(sendBuf.get(), SOCKET_BUF_SIZE);
+
+        if(socket->write(sendBuf.get(), int(stream.gcount())) <= 0)
+            return false;
+    }
+    
+    return true;
 }

@@ -69,6 +69,8 @@ private:
     void eventHandler(const EventList &list);
     void session(std::shared_ptr<AbstractSocket> connect);
 
+    static bool sendFile(std::ifstream& stream, AbstractSocket *socket);
+
     bool m_isLoaded = true;
     bool m_runnable = true;
     int m_maxTimes = 30;
