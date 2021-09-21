@@ -24,7 +24,6 @@ Epoll::~Epoll()
 void Epoll::addConnection(const Socket socket)
 {
 #ifdef _WIN32
-    //m_addBuf.push_back(socket);
     m_events.push_back({socket, POLLIN, 0});
 #else   // Unix
     epoll_event newEvent{};

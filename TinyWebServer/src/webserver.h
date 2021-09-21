@@ -65,7 +65,7 @@ private:
     std::unordered_map<Socket, std::shared_ptr<AbstractSocket>> m_connections;
     using Connection = decltype (m_connections)::value_type;
 
-    inline void close(const Socket socket);
+    inline void release(const Socket socket);
     void eventHandler(const EventList &list);
     void session(std::shared_ptr<AbstractSocket> connect);
 

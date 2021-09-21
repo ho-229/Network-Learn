@@ -16,6 +16,7 @@
 #ifdef _WIN32
 # include <WinSock2.h>
 
+# define READABLE_EVENT POLLIN
 # define ERROR_EVENT POLLERR
 # define CLOSE_EVENT POLLHUP
 
@@ -24,14 +25,13 @@ typedef std::vector<pollfd> EventList;
 # include <sys/epoll.h>
 # include <unistd.h>
 
+# define READABLE_EVENT EPOLLIN
 # define ERROR_EVENT EPOLLERR
 # define CLOSE_EVENT EPOLLHUP
 
 # define MAX_EVENTS 128
 typedef std::vector<epoll_event> EventList;
 #endif
-
-typedef std::function<void(const Socket, bool)> SessionHandler;
 
 class Epoll
 {

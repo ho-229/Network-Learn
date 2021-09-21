@@ -25,6 +25,8 @@ WebServer::WebServer() :
     m_pool(std::thread::hardware_concurrency()),
     m_services(new HttpServices())
 {
+    m_connections.reserve(1024);
+
 #ifdef _WIN32
     m_isLoaded = TcpSocket::initializatWsa();
 #else   // Unix
@@ -56,7 +58,7 @@ int WebServer::exec()
         // Rempve timeout connections
         Socket socket = 0;
         while(m_timerManager.checkTop(socket))
-            this->close(socket);
+            this->release(socket);
     }
 
     return 0;
@@ -94,7 +96,7 @@ void WebServer::listen(const std::string &hostName, const std::string &port,
     m_epoll->addConnection(socket->descriptor());
 }
 
-void WebServer::close(const Socket socket)
+void WebServer::release(const Socket socket)
 {
     std::unique_lock<std::mutex> lock(m_mutex);
 
@@ -157,7 +159,7 @@ void WebServer::eventHandler(const EventList& list)
         if(item.events & ERROR_EVENT ||
             item.events & CLOSE_EVENT)
         {
-            this->close(socket);
+            this->release(socket);
             continue;
         }
 
@@ -190,14 +192,11 @@ void WebServer::session(std::shared_ptr<AbstractSocket> connect)
 
     if(!httpRequest->isValid())
     {
-        this->close(connect->descriptor());
+        this->release(connect->descriptor());
         return;
     }
 
     connect->addTimes();
-
-    if(!httpRequest->isKeepAlive() || connect->times() > m_maxTimes)
-        this->close(connect->descriptor());
 
     std::string response;
     std::shared_ptr<char[]> sendBuf(new char[SOCKET_BUF_SIZE]);
@@ -209,7 +208,10 @@ void WebServer::session(std::shared_ptr<AbstractSocket> connect)
     connect->timer()->deleteLater();
 
     if(!httpRequest->isKeepAlive() || connect->times() > m_maxTimes)
+    {
+        this->release(connect->descriptor());
         httpResponse->setRawHeader("Connection", "close");
+    }
     else    // Reset timer
         connect->setTimer(m_timerManager.addTimer(connect->descriptor()));
 
