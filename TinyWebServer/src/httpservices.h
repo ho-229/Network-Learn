@@ -28,7 +28,7 @@ public:
     void addService(const std::string &method, const std::string& uri,
                     const Handler& handler);
 
-    void service(HttpRequest *httpRequest, HttpResponse* httpResponse);
+    void service(HttpRequest *httpRequest, HttpResponse* httpResponse) const;
 
     void setWorkDir(const fs::path& path);
     fs::path workDir() const { return m_workDir; }
@@ -36,7 +36,7 @@ public:
 private:
     std::unordered_map<std::string,       // URI
                        MethodHandler>     // Method -> Handler
-        m_uriHandlers;
+        m_uris;
 
     fs::path m_workDir;
 };

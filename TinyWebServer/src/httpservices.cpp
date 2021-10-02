@@ -13,12 +13,12 @@ HttpServices::HttpServices() : m_workDir(".")
 void HttpServices::addService(const std::string &method,
                               const std::string &uri, const Handler &handler)
 {
-    auto it = m_uriHandlers.find(uri);
-    if(it == m_uriHandlers.end())
+    auto it = m_uris.find(uri);
+    if(it == m_uris.end())
     {
         MethodHandler methodHandler;
         methodHandler[method] = std::make_shared<Handler>(handler);
-        m_uriHandlers[uri] = methodHandler;
+        m_uris[uri] = methodHandler;
     }
     else
         it->second[method] = std::make_shared<Handler>(handler);
@@ -30,18 +30,16 @@ void HttpServices::setWorkDir(const std::filesystem::path &path)
         m_workDir = path;
 }
 
-void HttpServices::service(HttpRequest* httpRequest, HttpResponse* httpResponse)
+void HttpServices::service(HttpRequest* httpRequest, HttpResponse* httpResponse) const
 {
     // Find Uri -> (Method -> Handler)
-    if(m_uriHandlers.find(httpRequest->uri()) != m_uriHandlers.end())
+    const auto handlerList = m_uris.find(httpRequest->uri());
+    if(handlerList != m_uris.end())
     {
         // Find Method -> Handler
-        const auto& methodHandler = m_uriHandlers[httpRequest->uri()];
-        if(methodHandler.find(httpRequest->method()) != methodHandler.end())
-        {
-            const auto& handler = *methodHandler.at(httpRequest->method()).get();
-            handler(httpRequest, httpResponse);
-        }
+        const auto handler = handlerList->second.find(httpRequest->method());
+        if(handler != handlerList->second.end())
+            (*handler->second.get())(httpRequest, httpResponse);
         else
             httpResponse->buildErrorResponse(405, "Method Not Allowed");
     }
