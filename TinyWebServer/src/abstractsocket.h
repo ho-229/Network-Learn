@@ -7,7 +7,6 @@
 #define ABSTRACTSOCKET_H
 
 #include <string>
-#include <tuple>
 
 #define BUF_SIZE 64
 #define SOCKET_BUF_SIZE 4096
@@ -18,7 +17,12 @@ typedef unsigned int Socket;
 typedef int Socket;
 #endif
 
-typedef std::tuple<Socket, std::string, std::string> SocketInfo;
+struct SocketInfo
+{
+    Socket descriptor;
+    std::string hostName;
+    std::string port;
+};
 
 template <typename T>
 class Timer;
@@ -47,7 +51,7 @@ public:
 
     Socket descriptor() const { return m_descriptor; }
 
-    constexpr inline static bool isValid(const Socket& sock)
+    static inline constexpr bool isValid(const Socket& sock)
     {
 #ifdef _WIN32
         return sock != Socket(~0);
@@ -64,9 +68,9 @@ public:
 
 protected:
     explicit AbstractSocket(const SocketInfo& info = {}) :
-        m_descriptor(std::get<0>(info)),
-        m_hostName(std::get<1>(info)),
-        m_port(std::get<2>(info))
+        m_descriptor(info.descriptor),
+        m_hostName(info.hostName),
+        m_port(info.port)
     {}
 
     // Disable copy

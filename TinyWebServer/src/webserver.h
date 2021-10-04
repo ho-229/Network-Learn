@@ -7,20 +7,14 @@
 #define WEBSERVER_H
 
 #include "event.h"
-#include "epoll.h"
 #include "threadpool.h"
-#include "timermanager.h"
+#include "connectionpool.h"
 #include "abstractsocket.h"
 
 #include <string>
-#include <unordered_map>
 
 #define ANY_HOST "0.0.0.0"
 
-class Epoll;
-class Event;
-class TcpSocket;
-class HttpRequest;
 class HttpServices;
 
 typedef std::pair<std::string, std::string> ServerPort;
@@ -44,11 +38,15 @@ public:
     /**
      * @brief Keep alive timeout
      */
-    void setTimeout(int ms) { m_timerManager.setTimeout(ms); }
-    int timeout() const { return m_timerManager.timeout(); }
+    void setTimeout(int ms) { m_timeout = ms; }
+    int timeout() const { return m_timeout; }
 
     void setMaxTimes(int num) { m_maxTimes = num > 0 ? num : 30; }
     int maxTimes() const { return m_maxTimes; }
+
+    void setLoopCount(size_t count)
+    { m_loopCount = count > 0 ? count : std::thread::hardware_concurrency(); }
+    size_t loopCount() const { return m_loopCount; }
 
     /**
      * @note should run before WebServer::exec
@@ -62,28 +60,18 @@ public:
     void installEventHandler(const Func& handler) { m_handler = handler; }
 
 private:
-    std::unordered_map<Socket, std::shared_ptr<AbstractSocket>> m_connections;
-    using Connection = decltype (m_connections)::value_type;
-
-    inline void release(const Socket socket);
-    void eventHandler(const EventList &list);
-    void session(std::shared_ptr<AbstractSocket> connect);
-
-    static bool sendFile(std::ifstream& stream, AbstractSocket *socket);
-
     bool m_isLoaded = true;
     bool m_runnable = true;
+    size_t m_loopCount = std::thread::hardware_concurrency();
     int m_maxTimes = 30;
+    int m_timeout = 30000;
 
     int m_interval = 500;       // 500ms
 
-    std::shared_ptr<Epoll> m_epoll;
-
-    std::mutex m_mutex;
-
-    TimerManager<Socket> m_timerManager;
-
     ThreadPool m_pool;
+
+    std::vector<std::shared_ptr<ConnectionPool>> m_pools;
+    std::vector<std::shared_ptr<AbstractSocket>> m_listeners;
 
     HttpServices *m_services = nullptr;
 

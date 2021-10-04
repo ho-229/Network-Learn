@@ -16,7 +16,7 @@
 #ifdef _WIN32
 # include <WinSock2.h>
 
-# define READABLE_EVENT POLLIN
+# define IN_EVENT POLLIN
 # define ERROR_EVENT POLLERR
 # define CLOSE_EVENT POLLHUP
 
@@ -25,7 +25,7 @@ typedef std::vector<pollfd> EventList;
 # include <sys/epoll.h>
 # include <unistd.h>
 
-# define READABLE_EVENT EPOLLIN
+# define IN_EVENT EPOLLIN
 # define ERROR_EVENT EPOLLERR
 # define CLOSE_EVENT EPOLLHUP
 
