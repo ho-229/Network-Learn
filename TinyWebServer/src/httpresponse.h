@@ -6,6 +6,7 @@
 #ifndef HTTPRESPONSE_H
 #define HTTPRESPONSE_H
 
+#include <map>
 #include <string>
 #include <filesystem>
 #include <unordered_map>
@@ -73,8 +74,8 @@ private:
 
     std::string m_text;
 
-    std::unordered_map<std::string,   // Name
-                       std::string>   // Value
+    std::map<std::string,   // Name
+             std::string>   // Value
         m_headers;
 
     fs::path m_filePath;

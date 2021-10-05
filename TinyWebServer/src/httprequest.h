@@ -8,9 +8,9 @@
 
 #include "until.h"
 
+#include <map>
 #include <vector>
 #include <string>
-#include <unordered_map>
 #include <unordered_set>
 
 typedef std::pair<std::string,  // Name
@@ -75,7 +75,9 @@ private:
 
     std::vector<UrlArg> m_urlArgs;
 
-    std::unordered_map<std::string, std::string> m_headers;
+    std::map<std::string,   // Name
+             std::string>   // Value
+        m_headers;
 };
 
 #endif // HTTPREQUEST_H
