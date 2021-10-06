@@ -3,9 +3,17 @@
  * @date 2021/7/26
  */
 
+#include "httprequest.h"
+#include "httpresponse.h"
 #include "httpservices.h"
+#include "abstractsocket.h"
 
-HttpServices::HttpServices() : m_workDir(".")
+HttpServices::HttpServices()
+{
+
+}
+
+HttpServices::~HttpServices()
 {
 
 }
@@ -24,31 +32,91 @@ void HttpServices::addService(const std::string &method,
         it->second[method] = std::make_shared<Handler>(handler);
 }
 
-void HttpServices::setWorkDir(const std::filesystem::path &path)
+void HttpServices::setDefaultService(const std::string &method,
+                                     const Handler &handler)
 {
-    if(fs::is_directory(path))
-        m_workDir = path;
+    m_defaults[method] = std::make_shared<Handler>(handler);
 }
 
-void HttpServices::service(HttpRequest* httpRequest, HttpResponse* httpResponse) const
+bool HttpServices::service(AbstractSocket *const socket) const
+{
+    std::string raw;
+
+    socket->read(raw);
+
+    if(raw.empty())
+        return false;
+
+    auto request = std::make_shared<HttpRequest>(raw);
+    if(!request->isValid())
+        return false;
+
+    socket->addTimes();
+
+    auto response = std::make_shared<HttpResponse>();
+
+    this->callHandler(request.get(), response.get());
+
+    std::shared_ptr<char[]> sendBuf(new char[SOCKET_BUF_SIZE]);
+    if(!request->isKeepAlive() || socket->times() > m_maxTimes)
+        response->setRawHeader("Connection", "close");
+
+    response->toRawData(raw);
+
+    if(socket->write(raw) <= 0)
+        return false;
+
+    if(response->bodyType() == HttpResponse::Stream)
+    {
+        if(!sendStream(socket, response->stream()))
+            return false;
+    }
+
+    return request->isKeepAlive() && socket->times() <= m_maxTimes;
+}
+
+void HttpServices::callHandler(HttpRequest *const request,
+                               HttpResponse *const response) const
 {
     // Find Uri -> (Method -> Handler)
-    const auto handlerList = m_uris.find(httpRequest->uri());
+    const auto handlerList = m_uris.find(request->uri());
     if(handlerList != m_uris.end())
     {
         // Find Method -> Handler
-        const auto handler = handlerList->second.find(httpRequest->method());
+        const auto handler = handlerList->second.find(request->method());
         if(handler != handlerList->second.end())
-            (*handler->second.get())(httpRequest, httpResponse);
+            (*handler->second.get())(request, response);
         else
-            httpResponse->buildErrorResponse(405, "Method Not Allowed");
+            response->buildErrorResponse(405, "Method Not Allowed");
+
+        return;
     }
-    else
+
+    const auto defaultHandler = m_defaults.find(request->method());
+    if(defaultHandler != m_defaults.end())
     {
-        fs::path filePath(m_workDir.string() + httpRequest->uri());
-        if(fs::is_regular_file(filePath))
-            httpResponse->setFilePath(filePath);
-        else
-            httpResponse->buildErrorResponse(404, "Not Found");
+        (*defaultHandler->second.get())(request, response);
+        return;
     }
+
+    response->buildErrorResponse(404, "Not Found");
+}
+
+bool HttpServices::sendStream(AbstractSocket *const socket,
+                              std::istream *const stream)
+{
+    if(!socket || stream->bad())
+        return false;
+
+    std::shared_ptr<char[]> sendBuf(new char[SOCKET_BUF_SIZE]());
+
+    while(!stream->eof())
+    {
+        stream->read(sendBuf.get(), SOCKET_BUF_SIZE);
+
+        if(socket->write(sendBuf.get(), int(stream->gcount())) <= 0)
+            return false;
+    }
+
+    return true;
 }

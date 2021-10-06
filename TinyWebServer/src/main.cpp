@@ -3,8 +3,13 @@
  * @date 2021/7/25
  */
 
+#include <fstream>
 #include <iostream>
+#include <filesystem>
 
+namespace fs = std::filesystem;
+
+#include "until.h"
 #include "webserver.h"
 #include "sslsocket.h"
 #include "httpservices.h"
@@ -28,8 +33,6 @@ int main(int argc, char** argv)
         return 1;
     }
 
-    auto server = std::make_shared<WebServer>();
-
     if(argc == 6)
     {
         if(SslSocket::initializatSsl(argv[4], argv[5]))
@@ -37,6 +40,10 @@ int main(int argc, char** argv)
         else
             std::cerr << "OpenSSL initializat failed.\n";
     }
+
+    auto server = std::make_shared<WebServer>();
+
+    server->setServices(new HttpServices);
 
     server->installEventHandler([](Event *event) {
         if(event->type() == Event::ConnectEvent)
@@ -90,10 +97,23 @@ int main(int argc, char** argv)
                       + std::to_string(sum) + "</p></body></html>\n");
     });
 
-    if(argc > 3)
+    if(argc > 3 && fs::is_directory(argv[3]))
     {
-        server->services()->setWorkDir(argv[3]);
-        std::cout << "Shard directory: " << argv[3] << ".\n";
+        const std::string workPath(argv[3]);
+
+        server->services()->setDefaultService("GET", [workPath](HttpRequest *req,
+                                                                HttpResponse *resp) {
+            fs::path path(workPath + req->uri());
+
+            auto out = new std::ifstream(path, std::ios::binary);
+
+            if(out->good())
+                resp->setStream(out);
+            else
+                resp->setHttpState({404, "Not Found"});
+        });
+
+        std::cout << "Shard directory: " << workPath << ".\n";
     }
 
     if(argc >= 2)   // HTTP

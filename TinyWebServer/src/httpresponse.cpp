@@ -18,7 +18,7 @@ HttpResponse::HttpResponse()
     this->initializatHeaders();
 }
 
-void HttpResponse::setText(const std::string text)
+void HttpResponse::setText(const std::string& text)
 {
     m_text = text;
     m_headers["Content-Length"] = std::to_string(text.size());
@@ -26,26 +26,28 @@ void HttpResponse::setText(const std::string text)
     m_type = PlainText;
 }
 
-void HttpResponse::setFilePath(const fs::path &path)
+void HttpResponse::setStream(std::istream *const stream)
 {
-    m_filePath = path;
+    if(stream->bad())
+        return;
 
-    // Content length
-    m_headers["Content-Length"] = std::to_string(fs::file_size(path));
+    m_stream.reset(stream);
 
-    // Content type
-    const auto it = PermissibleStaticTypes.find(path.extension().string());
+    m_stream->seekg(0, std::ios::end);
 
-    if(it != PermissibleStaticTypes.end())
-        m_headers["Content-Type"] = it->second;
+    const auto size = m_stream->tellg();
+    if(size > 0)
+        m_headers["Content-Length"] = std::to_string(size);
 
-    m_type = File;
+    m_stream->seekg(0, std::ios::beg);
+
+    m_type = Stream;
 }
 
 void HttpResponse::reset()
 {
     m_text.clear();
-    m_filePath.clear();
+    m_stream->clear();
 
     m_headers.clear();
     this->initializatHeaders();

@@ -13,7 +13,7 @@
 
 #include <unordered_map>
 
-class HttpServices;
+class AbstractServices;
 
 class ConnectionPool
 {
@@ -21,11 +21,8 @@ public:
     explicit ConnectionPool();
     ~ConnectionPool();
 
-    void setMaxTimes(int num) { m_maxTimes = num > 0 ? num : 30; }
-    int maxTimes() const { return m_maxTimes; }
-
-    void setServices(HttpServices *services) { m_services = services; }
-    HttpServices *services() const { return m_services; }
+    void setServices(AbstractServices *services) { m_services = services; }
+    AbstractServices *services() const { return m_services; }
 
     /**
      * @brief Keep alive timeout
@@ -43,13 +40,8 @@ public:
     void quit() { m_runnable = false; }
 
 private:
-    bool session(AbstractSocket * const socket);
     void eventsHandler(const EventList& events);
     inline void release(const AbstractSocket *socket);
-
-    static bool sendFile(std::ifstream& stream, AbstractSocket *socket);
-
-    int m_maxTimes = 30;
 
     std::unordered_map<Socket, std::shared_ptr<AbstractSocket>> m_connections;
     using Connection = decltype (m_connections)::value_type;
@@ -60,7 +52,7 @@ private:
 
     TimerManager<Socket> m_manager;
 
-    HttpServices *m_services = nullptr;
+    AbstractServices *m_services = nullptr;
 
     EventHandler m_handler;
 };

@@ -8,10 +8,8 @@
 
 #include <map>
 #include <string>
-#include <filesystem>
+#include <istream>
 #include <unordered_map>
-
-namespace fs = std::filesystem;
 
 typedef std::pair<int, std::string> HttpState;
 
@@ -36,21 +34,22 @@ class HttpResponse
 public:
     enum BodyType
     {
+        None,
         PlainText,
-        File
+        Stream
     };
 
     HttpResponse();
 
-    void setText(const std::string text);
+    void setText(const std::string& text);
     std::string text() const { return m_text; }
 
-    void setFilePath(const fs::path& path);
-    fs::path filePath() const { return m_filePath; }
+    void setStream(std::istream * const stream);
+    std::istream* stream() const { return m_stream.get(); }
 
     void reset();
 
-    bool isEmpty() const { return m_text.empty() && m_filePath.empty(); }
+    bool isEmpty() const { return m_text.empty() && m_stream->bad(); }
 
     BodyType bodyType() const { return m_type; }
 
@@ -59,7 +58,14 @@ public:
 
     void setRawHeader(const std::string& name, const std::string& value)
     { m_headers[name] = value; }
-    std::string rawHeader(const std::string& name) const { return m_headers.at(name); }
+    std::string rawHeader(const std::string& name) const
+    {
+        const auto it = m_headers.find(name);
+        if(it != m_headers.end())
+            return it->second;
+
+        return {};
+    }
 
     void toRawData(std::string& response);
 
@@ -73,14 +79,13 @@ private:
     inline void initializatHeaders();
 
     std::string m_text;
+    std::shared_ptr<std::istream> m_stream;
 
     std::map<std::string,   // Name
              std::string>   // Value
         m_headers;
 
-    fs::path m_filePath;
-
-    BodyType m_type = PlainText;
+    BodyType m_type = None;
 };
 
 #endif // HTTPRESPONSE_H

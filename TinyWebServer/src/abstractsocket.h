@@ -64,7 +64,7 @@ public:
     Timer<Socket>* timer() const { return m_timer; }
 
     void addTimes() { ++m_times; }
-    int times() const { return m_times; }
+    size_t times() const { return m_times; }
 
 protected:
     explicit AbstractSocket(const SocketInfo& info = {}) :
@@ -79,7 +79,7 @@ protected:
 
     Socket m_descriptor = 0;
 
-    int m_times = 0;
+    size_t m_times = 0;
 
     std::string m_hostName;
     std::string m_port;

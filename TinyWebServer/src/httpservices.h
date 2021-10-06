@@ -6,39 +6,46 @@
 #ifndef HTTPSERVICES_H
 #define HTTPSERVICES_H
 
-#include <string>
 #include <memory>
-#include <filesystem>
-#include <functional>
+#include <istream>
 #include <unordered_map>
 
 #include "httprequest.h"
 #include "httpresponse.h"
+#include "abstractservices.h"
 
-namespace fs = std::filesystem;
+typedef std::unordered_map<std::string,                 // Method
+                           std::shared_ptr<Handler>>    // Handler
+    MethodHandler;
 
-typedef std::function<void(HttpRequest *, HttpResponse *)> Handler;
-typedef std::unordered_map<std::string, std::shared_ptr<Handler>> MethodHandler;
-
-class HttpServices
+class HttpServices : public AbstractServices
 {
 public:
     explicit HttpServices();
+    ~HttpServices() override;
 
     void addService(const std::string &method, const std::string& uri,
-                    const Handler& handler);
+                    const Handler& handler) override;
 
-    void service(HttpRequest *httpRequest, HttpResponse* httpResponse) const;
+    void setDefaultService(const std::string& method,
+                           const Handler& handler) override;
 
-    void setWorkDir(const fs::path& path);
-    fs::path workDir() const { return m_workDir; }
+    bool service(AbstractSocket *const socket) const override;
 
 private:
+    void callHandler(HttpRequest *const request,
+                     HttpResponse *const response) const;
+
+    static bool sendStream(AbstractSocket *const socket,
+                           std::istream * const stream);
+
     std::unordered_map<std::string,       // URI
                        MethodHandler>     // Method -> Handler
         m_uris;
 
-    fs::path m_workDir;
+    std::unordered_map<std::string,                 // Method
+                       std::shared_ptr<Handler>>    // Handler
+        m_defaults;
 };
 
 #endif // HTTPSERVICES_H

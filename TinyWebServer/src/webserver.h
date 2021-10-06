@@ -9,13 +9,13 @@
 #include "event.h"
 #include "threadpool.h"
 #include "connectionpool.h"
-#include "abstractsocket.h"
 
 #include <string>
 
 #define ANY_HOST "0.0.0.0"
 
-class HttpServices;
+class AbstractSocket;
+class AbstractServices;
 
 typedef std::pair<std::string, std::string> ServerPort;
 
@@ -27,7 +27,8 @@ public:
 
     int exec();
 
-    HttpServices *services() const { return m_services; }
+    void setServices(AbstractServices *services) { m_services.reset(services); }
+    AbstractServices *services() const { return m_services.get(); }
 
     /**
      * @brief WebServer::exec() loop interval
@@ -40,9 +41,6 @@ public:
      */
     void setTimeout(int ms) { m_timeout = ms; }
     int timeout() const { return m_timeout; }
-
-    void setMaxTimes(int num) { m_maxTimes = num > 0 ? num : 30; }
-    int maxTimes() const { return m_maxTimes; }
 
     void setLoopCount(size_t count)
     { m_loopCount = count > 0 ? count : std::thread::hardware_concurrency(); }
@@ -62,18 +60,18 @@ public:
 private:
     bool m_isLoaded = true;
     bool m_runnable = true;
-    size_t m_loopCount = std::thread::hardware_concurrency();
-    int m_maxTimes = 30;
-    int m_timeout = 30000;
 
+    size_t m_loopCount = std::thread::hardware_concurrency();
+
+    int m_timeout = 30000;
     int m_interval = 500;       // 500ms
 
-    ThreadPool m_pool;
+    //ThreadPool m_pool;
 
     std::vector<std::shared_ptr<ConnectionPool>> m_pools;
     std::vector<std::shared_ptr<AbstractSocket>> m_listeners;
 
-    HttpServices *m_services = nullptr;
+    std::shared_ptr<AbstractServices> m_services;
 
     EventHandler m_handler = [](Event *){};
 };

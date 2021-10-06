@@ -8,9 +8,6 @@
 #include "until.h"
 #include "tcpsocket.h"
 #include "sslsocket.h"
-#include "httpservices.h"
-
-#include <fstream>
 
 #include <signal.h>
 
@@ -20,11 +17,9 @@
 # include <sys/select.h>
 #endif
 
-WebServer::WebServer() :
-    m_pool(std::thread::hardware_concurrency()),
-    m_services(new HttpServices())
+WebServer::WebServer()
+    //m_pool(std::thread::hardware_concurrency())
 {
-
 #ifdef _WIN32
     m_isLoaded = TcpSocket::initializatWsa();
 #else   // Unix
@@ -40,13 +35,11 @@ WebServer::~WebServer()
     SslSocket::cleanUpSsl();
 
     m_runnable = false;
-
-    delete m_services;
 }
 
 int WebServer::exec()
 {
-    if(m_listeners.empty())
+    if(m_listeners.empty() || !m_services)
         return -1;
 
     for(size_t i = 0; i < m_loopCount; ++i)
@@ -56,8 +49,7 @@ int WebServer::exec()
         for(const auto& connect : m_listeners)
             m_pools.back()->addConnection(connect);
 
-        m_pools.back()->setServices(m_services);
-        m_pools.back()->setMaxTimes(m_maxTimes);
+        m_pools.back()->setServices(m_services.get());
         m_pools.back()->setTimeout(m_timeout);
         m_pools.back()->installEventHandler(m_handler);
     }

@@ -6,12 +6,8 @@
 #include "epoll.h"
 #include "tcpsocket.h"
 #include "sslsocket.h"
-#include "httprequest.h"
-#include "httpresponse.h"
-#include "httpservices.h"
 #include "connectionpool.h"
-
-#include <fstream>
+#include "abstractservices.h"
 
 ConnectionPool::ConnectionPool() :
     m_epoll(new Epoll)
@@ -47,45 +43,6 @@ void ConnectionPool::exec(int interval)
                 this->release(it->second.get());
         }
     }
-}
-
-bool ConnectionPool::session(AbstractSocket * const socket)
-{
-    std::string raw;
-
-    socket->read(raw);
-
-    auto httpRequest = std::make_shared<HttpRequest>(raw);
-
-    if(!httpRequest->isValid())
-        return false;
-
-    socket->addTimes();
-
-    std::string response;
-    std::shared_ptr<char[]> sendBuf(new char[SOCKET_BUF_SIZE]);
-
-    auto httpResponse = std::make_shared<HttpResponse>();
-
-    m_services->service(httpRequest.get(), httpResponse.get());
-
-    if(!httpRequest->isKeepAlive() || socket->times() > m_maxTimes)
-        httpResponse->setRawHeader("Connection", "close");
-
-    httpResponse->toRawData(response);
-
-    if(socket->write(response) <= 0)
-        return false;
-
-    // Send file
-    if(httpResponse->bodyType() == HttpResponse::File
-        && httpRequest->method() == "GET")
-    {
-        std::ifstream out(httpResponse->filePath(), std::ios::binary);
-        sendFile(out, socket);
-    }
-
-    return httpRequest->isKeepAlive() && socket->times() <= m_maxTimes;
 }
 
 void ConnectionPool::eventsHandler(const EventList &events)
@@ -134,13 +91,13 @@ void ConnectionPool::eventsHandler(const EventList &events)
         }
         else
         {
-            if(!this->session(it->second.get()))
-                this->release(it->second.get());
-            else
+            if(m_services->service(it->second.get()))
             {
                 it->second->timer()->deleteLater();
                 it->second->setTimer(m_manager.addTimer(it->second->descriptor()));
             }
+            else
+                this->release(it->second.get());
         }
     }
 }
@@ -153,22 +110,4 @@ void ConnectionPool::release(const AbstractSocket *socket)
     socket->timer()->deleteLater();
     m_epoll->removeConnection(socket->descriptor());
     m_connections.erase(socket->descriptor());
-}
-
-bool ConnectionPool::sendFile(std::ifstream &stream, AbstractSocket *socket)
-{
-    if(!stream || !socket)
-        return false;
-
-    std::shared_ptr<char[]> sendBuf(new char[SOCKET_BUF_SIZE]());
-
-    while(!stream.eof())
-    {
-        stream.read(sendBuf.get(), SOCKET_BUF_SIZE);
-
-        if(socket->write(sendBuf.get(), int(stream.gcount())) <= 0)
-            return false;
-    }
-
-    return true;
 }
