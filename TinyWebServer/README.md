@@ -44,18 +44,20 @@ This is a tiny `HTTP/HTTPS` web server.
     Example:
 
     ```cpp
-    #include <iostream>
+    #include "until/until.h"
 
-    #include "until.h"
     #include "webserver.h"
     #include "httpservices.h"
 
     int main()
     {
         auto server = std::make_shared<WebServer>();
+
+        server->setServices(new HttpServices);
+
         // Adder Service
         server->services()->addService("GET", "/adder",
-                                    [](HttpRequest* req, HttpResponse* resp) {
+                                    [](HttpRequest *req, HttpResponse *resp) {
             int sum = 0;
             for(const auto& arg : req->urlArguments())
                 sum += atoi(arg.second.c_str());
