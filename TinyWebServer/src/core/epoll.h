@@ -6,7 +6,7 @@
 #ifndef EPOLL_H
 #define EPOLL_H
 
-#include "abstractsocket.h"
+#include "../abstract/abstractsocket.h"
 
 #include <memory>
 #include <vector>

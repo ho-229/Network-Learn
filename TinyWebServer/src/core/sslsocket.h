@@ -6,7 +6,7 @@
 #ifndef SSLSOCKET_H
 #define SSLSOCKET_H
 
-#include "abstractsocket.h"
+#include "../abstract/abstractsocket.h"
 
 #include <openssl/ssl.h>
 

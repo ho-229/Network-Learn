@@ -7,7 +7,7 @@
 #include "tcpsocket.h"
 #include "sslsocket.h"
 #include "connectionpool.h"
-#include "abstractservices.h"
+#include "../abstract/abstractservices.h"
 
 ConnectionPool::ConnectionPool() :
     m_epoll(new Epoll)

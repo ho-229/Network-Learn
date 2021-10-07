@@ -6,7 +6,7 @@
 #include "httprequest.h"
 #include "httpresponse.h"
 #include "httpservices.h"
-#include "abstractsocket.h"
+#include "abstract/abstractsocket.h"
 
 HttpServices::HttpServices()
 {

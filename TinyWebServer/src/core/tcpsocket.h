@@ -6,7 +6,7 @@
 #ifndef TCPSOCKET_H
 #define TCPSOCKET_H
 
-#include "abstractsocket.h"
+#include "../abstract/abstractsocket.h"
 
 class TcpSocket : public AbstractSocket
 {
