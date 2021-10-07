@@ -26,7 +26,7 @@ public:
     virtual Type type() const = 0;
 
 protected:
-    explicit Event() {}
+    explicit Event() = default;
 };
 
 typedef std::function<void(Event *)> EventHandler;

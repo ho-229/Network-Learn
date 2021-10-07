@@ -7,6 +7,7 @@
 #define HTTPRESPONSE_H
 
 #include <map>
+#include <memory>
 #include <string>
 #include <istream>
 #include <unordered_map>

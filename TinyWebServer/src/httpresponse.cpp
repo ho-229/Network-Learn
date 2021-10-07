@@ -47,7 +47,7 @@ void HttpResponse::setStream(std::istream *const stream)
 void HttpResponse::reset()
 {
     m_text.clear();
-    m_stream->clear();
+    m_stream.reset();
 
     m_headers.clear();
     this->initializatHeaders();

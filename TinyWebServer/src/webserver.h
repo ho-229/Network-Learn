@@ -9,6 +9,7 @@
 #include "event.h"
 #include "threadpool.h"
 #include "connectionpool.h"
+#include "abstractservices.h"
 
 #include <string>
 
