@@ -45,8 +45,8 @@ public:
     void setText(const std::string& text);
     std::string text() const { return m_text; }
 
-    void setStream(std::istream * const stream);
-    std::istream* stream() const { return m_stream.get(); }
+    void setStream(std::istream *const stream);
+    std::istream& stream() const { return *m_stream; }
 
     void reset();
 
@@ -62,15 +62,23 @@ public:
     std::string rawHeader(const std::string& name) const
     {
         const auto it = m_headers.find(name);
-        if(it != m_headers.end())
-            return it->second;
-
-        return {};
+        return it == m_headers.end() ? std::string() : it->second;
     }
 
     void toRawData(std::string& response);
 
     void buildErrorResponse(int state, const std::string& message);
+
+    inline void operator<<(const std::string& text)
+    {
+        m_text.append(text);
+        m_headers["Content-Length"] = std::to_string(m_text.size());
+
+        m_type = PlainText;
+    }
+
+    inline void operator<<(std::istream *const stream)
+    { this->setStream(stream); }
 
     static auto& permissibleStaticTypes() { return PermissibleStaticTypes; }
 

@@ -21,7 +21,7 @@ HttpResponse::HttpResponse()
 void HttpResponse::setText(const std::string& text)
 {
     m_text = text;
-    m_headers["Content-Length"] = std::to_string(text.size());
+    m_headers["Content-Length"] = std::to_string(m_text.size());
 
     m_type = PlainText;
 }
@@ -91,7 +91,5 @@ void HttpResponse::buildErrorResponse(int state, const std::string &message)
 inline void HttpResponse::initializatHeaders()
 {
     m_headers["Server"] = "TinyWebServer";
-    m_headers["Connection"] = "keep-alive";
-    m_headers["Accept-Ranges"] = "none";
     m_headers["Date"] = Until::currentDateString();
 }

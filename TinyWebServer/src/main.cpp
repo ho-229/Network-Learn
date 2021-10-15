@@ -86,7 +86,7 @@ int main(int argc, char** argv)
 
     // Add "Adder" Service
     server->services()->addService("GET", "/adder",
-                                   [](HttpRequest* req, HttpResponse* resp) {
+                                   [](HttpRequest *req, HttpResponse *resp) {
         int sum = 0;
         for(const auto& arg : req->urlArguments())
             sum += atoi(arg.second.c_str());
@@ -96,6 +96,12 @@ int main(int argc, char** argv)
         resp->setText("<html><title>Tiny Web Server</title><body bgcolor\"#fffff\">"
                           "<h1>Tiny Web Server / Adder</h1><p>Result: "
                       + std::to_string(sum) + "</p></body></html>\n");
+    });
+
+    server->services()->addService("GET", "/hello",
+                                   [](HttpRequest *, HttpResponse *resp) {
+        resp->setRawHeader("Content-type", "text/html; charset=utf-8");
+        *resp << "Hello world.\n";
     });
 
     if(argc > 3 && fs::is_directory(argv[3]))

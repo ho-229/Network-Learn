@@ -102,5 +102,3 @@ void WebServer::listen(const std::string &hostName, const std::string &port,
 
     m_listeners.push_back(socket);
 }
-
-

@@ -23,6 +23,7 @@ extern "C"
 # include <unistd.h>
 # include <string.h>
 # include <sys/socket.h>
+# include <netinet/tcp.h>
 
 #define CLOSE(x) ::close(x)
 #endif
@@ -154,6 +155,9 @@ bool TcpSocket::listen(const std::string &hostName, const std::string &port, boo
     if((flags = fcntl(m_descriptor, F_GETFL, nullptr)) < 0 ||
             fcntl(m_descriptor, F_SETFL, flags | O_NONBLOCK) == -1)
         return false;
+
+    //flags = 1;
+    //setsockopt(m_descriptor, IPPROTO_TCP, TCP_NODELAY, &flags, sizeof (int));
 #endif
 
     m_sslEnable = sslEnable;

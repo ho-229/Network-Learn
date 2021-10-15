@@ -60,6 +60,8 @@ bool HttpServices::service(AbstractSocket *const socket) const
     std::shared_ptr<char[]> sendBuf(new char[SOCKET_BUF_SIZE]);
     if(!request->isKeepAlive() || socket->times() > m_maxTimes)
         response->setRawHeader("Connection", "close");
+    else
+        response->setRawHeader("Connection", "keep-alive");
 
     response->toRawData(raw);
 
@@ -68,7 +70,7 @@ bool HttpServices::service(AbstractSocket *const socket) const
 
     if(response->bodyType() == HttpResponse::Stream)
     {
-        if(!sendStream(socket, response->stream()))
+        if(!sendStream(socket, &response->stream()))
             return false;
     }
 
