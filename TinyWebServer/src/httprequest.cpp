@@ -31,6 +31,10 @@ void HttpRequest::parse(const std::string &data)
     std::smatch result;
 
     bool isFirstLine = true;
+
+    m_headers.clear();
+    m_urlArgs.clear();
+
     while(std::getline(stream, line) && line != "\r\n")
     {
         if(isFirstLine)
