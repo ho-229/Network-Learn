@@ -40,7 +40,7 @@ void HttpServices::setDefaultService(const std::string &method,
 
 bool HttpServices::service(AbstractSocket *const socket) const
 {
-    std::string raw;
+    static thread_local std::string raw;
 
     socket->read(raw);
 

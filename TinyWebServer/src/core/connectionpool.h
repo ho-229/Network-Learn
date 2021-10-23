@@ -6,11 +6,13 @@
 #ifndef CONNECTIONPOOL_H
 #define CONNECTIONPOOL_H
 
-#include "../until/event.h"
 #include "epoll.h"
+#include "../until/event.h"
 #include "../until/timermanager.h"
 #include "../abstract/abstractsocket.h"
 
+#include <atomic>
+#include <thread>
 #include <unordered_map>
 
 class AbstractServices;
@@ -18,26 +20,20 @@ class AbstractServices;
 class ConnectionPool
 {
 public:
-    explicit ConnectionPool();
+    explicit ConnectionPool(const std::atomic_bool &runnable,
+                            int timeout, int interval,
+                            AbstractServices *const services,
+                            const EventHandler &handler);
     ~ConnectionPool();
 
-    void setServices(AbstractServices *services) { m_services = services; }
-    AbstractServices *services() const { return m_services; }
-
-    /**
-     * @brief Keep alive timeout
-     */
-    void setTimeout(int ms) { m_manager.setTimeout(ms); }
-    int timeout() const { return m_manager.timeout(); }
-
-    template <typename Func>
-    void installEventHandler(const Func& handler) { m_handler = handler; }
+    size_t count() const { return m_connections.size(); }
 
     void addConnection(std::shared_ptr<AbstractSocket> socket);
 
-    void exec(int interval);
+    std::thread &thread() { return m_thread; }
 
-    void quit() { m_runnable = false; }
+protected:
+    void exec(int interval);
 
 private:
     void eventsHandler(const EventList& events);
@@ -46,15 +42,17 @@ private:
     std::unordered_map<Socket, std::shared_ptr<AbstractSocket>> m_connections;
     using Connection = decltype (m_connections)::value_type;
 
-    std::shared_ptr<Epoll> m_epoll;
+    Epoll m_epoll;
 
-    std::atomic_bool m_runnable = false;
+    const std::atomic_bool &m_runnable;
 
     TimerManager<Socket> m_manager;
 
-    AbstractServices *m_services = nullptr;
+    AbstractServices *const m_services;
 
     EventHandler m_handler;
+
+    std::thread m_thread;
 };
 
 #endif // CONNECTIONPOOL_H

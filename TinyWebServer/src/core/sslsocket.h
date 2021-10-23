@@ -30,9 +30,9 @@ public:
 
     static bool initializatSsl(const std::string& certFile,
                                const std::string& privateKey);
-    static bool isSslAvailable() { return sslContext; }
-    static std::string sslVersion();
     static void cleanUpSsl();
+    static std::string sslVersion();
+    static bool isSslAvailable() { return sslContext; }
 
 private:
     static SSL_CTX *sslContext;

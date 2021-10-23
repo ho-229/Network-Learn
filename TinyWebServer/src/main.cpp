@@ -3,9 +3,17 @@
  * @date 2021/7/25
  */
 
+#define PROFILER_ENABLE 0
+
 #include <fstream>
 #include <iostream>
 #include <filesystem>
+
+#include <signal.h>
+
+#if PROFILER_ENABLE
+# include <gperftools/profiler.h>
+#endif
 
 namespace fs = std::filesystem;
 
@@ -20,6 +28,14 @@ namespace fs = std::filesystem;
 #  pragma execution_character_set("utf-8")
 # endif
 #endif
+
+static auto server = std::make_shared<WebServer>();
+
+void signalHandler(int signum)
+{
+    if(signum == SIGINT)
+        server->quit();
+}
 
 int main(int argc, char** argv)
 {
@@ -41,8 +57,6 @@ int main(int argc, char** argv)
         else
             std::cerr << "OpenSSL initializat failed.\n";
     }
-
-    auto server = std::make_shared<WebServer>();
 
     server->setServices(new HttpServices);
 
@@ -137,5 +151,17 @@ int main(int argc, char** argv)
 
     std::cout << "\n";
 
-    return server->exec();
+    signal(SIGINT, signalHandler);
+
+#if PROFILER_ENABLE
+    ProfilerStart("test_capture.prof");
+#endif
+
+    const int ret = server->exec();
+
+#if PROFILER_ENABLE
+    ProfilerStop();
+#endif
+
+    return ret;
 }

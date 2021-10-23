@@ -9,10 +9,18 @@
 #include "connectionpool.h"
 #include "../abstract/abstractservices.h"
 
-ConnectionPool::ConnectionPool() :
-    m_epoll(new Epoll)
+ConnectionPool::ConnectionPool(const std::atomic_bool &runnable,
+                               int timeout, int interval,
+                               AbstractServices *const services,
+                               const EventHandler &handler) :
+    m_runnable(runnable),
+    m_services(services),
+    m_handler(handler),
+    m_thread(std::bind(&ConnectionPool::exec, this, interval))
 {
     m_connections.reserve(512);
+
+    m_manager.setTimeout(timeout);
 }
 
 ConnectionPool::~ConnectionPool()
@@ -23,16 +31,14 @@ ConnectionPool::~ConnectionPool()
 void ConnectionPool::addConnection(std::shared_ptr<AbstractSocket> socket)
 {
     m_connections.insert(Connection(socket->descriptor(), socket));
-    m_epoll->addConnection(socket->descriptor());
+    m_epoll.addConnection(socket->descriptor());
 }
 
 void ConnectionPool::exec(int interval)
 {
-    m_runnable = true;
-
     while(m_runnable)
     {
-        this->eventsHandler(m_epoll->epoll(interval));
+        this->eventsHandler(m_epoll.epoll(interval));
 
         // Clean up timeout connections
         Socket socket;
@@ -61,7 +67,7 @@ void ConnectionPool::eventsHandler(const EventList &events)
         const auto it = m_connections.find(fd);
 
         if(it == m_connections.end())
-            m_epoll->removeConnection(fd);
+            m_epoll.removeConnection(fd);
         else if(item.events & CLOSE_EVENT || item.events & ERROR_EVENT)
         {
             this->release(it->second.get());
@@ -108,6 +114,6 @@ void ConnectionPool::release(const AbstractSocket *socket)
     m_handler(&event);
 
     socket->timer()->deleteLater();
-    m_epoll->removeConnection(socket->descriptor());
+    m_epoll.removeConnection(socket->descriptor());
     m_connections.erase(socket->descriptor());
 }

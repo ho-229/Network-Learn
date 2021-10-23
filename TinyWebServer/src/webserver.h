@@ -8,13 +8,12 @@
 
 #include "until/event.h"
 #include "until/threadpool.h"
-#include "core/connectionpool.h"
-#include "abstract/abstractservices.h"
 
-#include <string>
+#include "abstract/abstractservices.h"
 
 #define ANY_HOST "0.0.0.0"
 
+class ConnectionPool;
 class AbstractSocket;
 class AbstractServices;
 
@@ -25,8 +24,6 @@ class WebServer
 public:
     explicit WebServer();
     virtual ~WebServer();
-
-    int exec();
 
     void setServices(AbstractServices *services) { m_services.reset(services); }
     AbstractServices *services() const { return m_services.get(); }
@@ -53,14 +50,25 @@ public:
     void listen(const std::string& hostName, const std::string& port,
                 bool sslEnable = false);
 
+    int start();
     void quit() { m_runnable = false; }
+    void waitForFinished();
+
+    inline int exec()
+    {
+        int ret = 0;
+        if((ret = this->start()) == 0)
+            this->waitForFinished();
+
+        return ret;
+    }
 
     template <typename Func>
     void installEventHandler(const Func& handler) { m_handler = handler; }
 
 private:
     bool m_isLoaded = true;
-    bool m_runnable = true;
+    std::atomic_bool m_runnable = true;
 
     size_t m_loopCount = std::thread::hardware_concurrency();
 

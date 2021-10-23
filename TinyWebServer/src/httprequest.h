@@ -52,7 +52,11 @@ public:
 
     std::pair<int64_t, int64_t> range() const;
 
-    bool isKeepAlive() const { return this->rawHeader("connection") != "close"; }
+    bool isKeepAlive() const
+    {
+        const auto it = m_headers.find("connection");
+        return it == m_headers.end() ? false : it->second != "close";
+    }
 
     bool isEmpty() const { return m_method.empty() ||
                m_uri.empty() || m_headers.empty(); }

@@ -8,6 +8,7 @@
 #include "until/until.h"
 #include "core/tcpsocket.h"
 #include "core/sslsocket.h"
+#include "core/connectionpool.h"
 
 #include <signal.h>
 
@@ -18,7 +19,6 @@
 #endif
 
 WebServer::WebServer()
-    //m_pool(std::thread::hardware_concurrency())
 {
 #ifdef _WIN32
     m_isLoaded = TcpSocket::initializatWsa();
@@ -37,39 +37,32 @@ WebServer::~WebServer()
     m_runnable = false;
 }
 
-int WebServer::exec()
+int WebServer::start()
 {
-    if(m_listeners.empty() || !m_services)
+    if(m_listeners.empty() || !m_services || !m_pools.empty())
         return -1;
 
     for(size_t i = 0; i < m_loopCount; ++i)
     {
-        m_pools.emplace_back(std::make_shared<ConnectionPool>());
+        m_pools.emplace_back(new ConnectionPool(
+            m_runnable, m_timeout, m_interval, m_services.get(), m_handler));
 
         for(const auto& connect : m_listeners)
             m_pools.back()->addConnection(connect);
-
-        m_pools.back()->setServices(m_services.get());
-        m_pools.back()->setTimeout(m_timeout);
-        m_pools.back()->installEventHandler(m_handler);
-    }
-
-    std::vector<std::thread> workers;
-
-    for(size_t i = 0; i < m_loopCount; ++i)
-    {
-        workers.push_back(std::thread(
-            std::bind(&ConnectionPool::exec, m_pools[i].get(), m_interval)));
-    }
-
-    // Wait for finished
-    for(auto& worker : workers)
-    {
-        if(worker.joinable())
-            worker.join();
     }
 
     return 0;
+}
+
+void WebServer::waitForFinished()
+{   
+    for(auto &pool : m_pools)
+    {
+        if(pool->thread().joinable())
+            pool->thread().join();
+    }
+
+    m_pools.clear();
 }
 
 void WebServer::listen(const std::string &hostName, const std::string &port,
