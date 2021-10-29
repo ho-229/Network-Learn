@@ -14,22 +14,6 @@
 
 typedef std::pair<int, std::string> HttpState;
 
-static std::unordered_map<std::string, std::string> PermissibleStaticTypes
-    {
-        {".html", "text/html"},
-        {".css", "text/css"},
-        {".js", "text/javascript"},
-        {".png", "image/png"},
-        {".jpg", "image/jpg"},
-        {".jpeg", "image/jpeg"},
-        {".gif", "image/gif"},
-        {".svg", "image/svg+xml"},
-        {".txt", "text/plain"},
-        {".pdf", "application/pdf"},
-        {".ico", "image/x-icon"},
-        {".swf", "application/x-shockwave-flash"}
-    };
-
 class HttpResponse
 {
 public:
@@ -39,6 +23,8 @@ public:
         PlainText,
         Stream
     };
+
+    static std::unordered_map<std::string, std::string> PermissibleStaticTypes;
 
     HttpResponse();
 
@@ -69,18 +55,15 @@ public:
 
     void buildErrorResponse(int state, const std::string& message);
 
-    inline void operator<<(const std::string& text)
+    inline HttpResponse& operator<<(const std::string& text)
     {
         m_text.append(text);
         m_headers["Content-Length"] = std::to_string(m_text.size());
 
         m_type = PlainText;
+
+        return *this;
     }
-
-    inline void operator<<(std::istream *const stream)
-    { this->setStream(stream); }
-
-    static auto& permissibleStaticTypes() { return PermissibleStaticTypes; }
 
 private:
     std::pair<int, std::string> m_httpState = {200, "OK"};

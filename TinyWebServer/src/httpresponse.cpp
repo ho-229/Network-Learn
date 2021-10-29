@@ -13,6 +13,22 @@
 # endif
 #endif
 
+std::unordered_map<std::string, std::string> HttpResponse::PermissibleStaticTypes
+    {
+        {".html", "text/html"},
+        {".css", "text/css"},
+        {".js", "text/javascript"},
+        {".png", "image/png"},
+        {".jpg", "image/jpg"},
+        {".jpeg", "image/jpeg"},
+        {".gif", "image/gif"},
+        {".svg", "image/svg+xml"},
+        {".txt", "text/plain"},
+        {".pdf", "application/pdf"},
+        {".ico", "image/x-icon"},
+        {".swf", "application/x-shockwave-flash"}
+    };
+
 HttpResponse::HttpResponse()
 {
     this->initializatHeaders();
