@@ -21,21 +21,21 @@ HttpServices::~HttpServices()
 void HttpServices::addService(const std::string &method,
                               const std::string &uri, const Handler &handler)
 {
-    auto it = m_uris.find(uri);
-    if(it == m_uris.end())
-    {
-        MethodHandler methodHandler;
-        methodHandler[method] = std::make_shared<Handler>(handler);
-        m_uris[uri] = methodHandler;
-    }
+    auto it = m_services.find(method);
+    if(it == m_services.end())
+        m_services[method] = {{{uri, std::make_shared<Handler>(handler)}}, {}};
     else
-        it->second[method] = std::make_shared<Handler>(handler);
+        it->second.uriHandlers[uri] = std::make_shared<Handler>(handler);
 }
 
 void HttpServices::setDefaultService(const std::string &method,
                                      const Handler &handler)
 {
-    m_defaults[method] = std::make_shared<Handler>(handler);
+    auto it = m_services.find(method);
+    if(it == m_services.end())
+        m_services[method] = {{}, std::make_shared<Handler>(handler)};
+    else
+        it->second.defaultHandler = std::make_shared<Handler>(handler);
 }
 
 bool HttpServices::service(AbstractSocket *const socket) const
@@ -91,27 +91,21 @@ bool HttpServices::service(AbstractSocket *const socket) const
 void HttpServices::callHandler(HttpRequest *const request,
                                HttpResponse *const response) const
 {
-    // Find Uri -> (Method -> Handler)
-    const auto handlerList = m_uris.find(request->uri());
-    if(handlerList != m_uris.end())
+    // Find Method -> {URI -> Handler}
+    const auto methodIt = m_services.find(request->method());
+    if(methodIt != m_services.end())
     {
-        // Find Method -> Handler
-        const auto handler = handlerList->second.find(request->method());
-        if(handler != handlerList->second.end())
-            (*handler->second.get())(request, response);
+        // URI -> Handler
+        const auto handlerIt = methodIt->second.uriHandlers.find(request->uri());
+        if(handlerIt == methodIt->second.uriHandlers.end())         // URI not found
+            (*methodIt->second.defaultHandler)(request, response);  // Default handler
         else
-            response->buildErrorResponse(405, "Method Not Allowed");
+            (*handlerIt->second)(request, response);
 
         return;
     }
 
-    const auto defaultHandler = m_defaults.find(request->method());
-    if(defaultHandler != m_defaults.end())
-    {
-        (*defaultHandler->second.get())(request, response);
-        return;
-    }
-
+    // Method not found
     response->buildErrorResponse(404, "Not Found");
 }
 
