@@ -2,11 +2,12 @@
 
 This is a tiny `HTTP/HTTPS` web server.
 
+The idea of doing this project originated from the TinyWebServer of CS:APP, I hope to learn network programming from this project.
+
 ## Features
 
 | Support Headers  | Default Value |
 | ---------------- | ------------- |
-| Accept-Ranges | none |
 | Connection | keep-alive |
 | Content-Length | \<auto> |
 | Content-Type | \<auto> |
@@ -19,13 +20,13 @@ This is a tiny `HTTP/HTTPS` web server.
 * Command line
 
     ```shell
-    Usage: ./TinyWebServer [http-port] [https-port] [shard-directory] [certificate-file] [privateKey-file]
+    Usage: ./TinyWebServer [http-port] [https-port] [shared-directory] [certificate-file] [privateKey-file]
     ```
 
     Example:
 
     ```shell
-    sudo ./TinyWebServer 80 443 ./shard_files
+    sudo ./TinyWebServer 80 443 ./shared_files
     ```
 
 * Browser
@@ -62,7 +63,6 @@ This is a tiny `HTTP/HTTPS` web server.
             for(const auto& arg : req->urlArguments())
                 sum += atoi(arg.second.c_str());
 
-            resp->setRawHeader("Date", Until::currentDateString());
             resp->setRawHeader("Content-type", "text/html; charset=utf-8");
 
             resp->setText("<html><title>Tiny Web Server</title><body bgcolor\"#fffff\">"

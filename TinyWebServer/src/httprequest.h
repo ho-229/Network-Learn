@@ -55,7 +55,7 @@ public:
     bool isKeepAlive() const
     {
         const auto it = m_headers.find("connection");
-        return it == m_headers.end() ? false : it->second != "close";
+        return it == m_headers.end() ? true : it->second != "close";
     }
 
     bool isEmpty() const { return m_method.empty() ||

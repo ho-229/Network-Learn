@@ -45,7 +45,7 @@ int main(int argc, char** argv)
     // -help, --help or other
     if(argc >= 2 && argv[1][0] == '-')
     {
-        std::cerr << "Usage: " << argv[0] << "[http-port] [https-port] [shard-directory] "
+        std::cerr << "Usage: " << argv[0] << "[http-port] [https-port] [shared-directory] "
                                              "[certificate-file] [privateKey-file]\n";
         return 1;
     }
@@ -134,7 +134,7 @@ int main(int argc, char** argv)
                 resp->setHttpState({404, "Not Found"});
         });
 
-        std::cout << "Shard directory: " << workPath << ".\n";
+        std::cout << "Shared directory: " << workPath << ".\n";
     }
 
     if(argc >= 2)   // HTTP
