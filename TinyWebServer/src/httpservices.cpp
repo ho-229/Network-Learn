@@ -47,7 +47,7 @@ bool HttpServices::service(AbstractSocket *const socket) const
     if(raw.empty())
         return false;
 
-    static thread_local std::shared_ptr<HttpRequest> request;
+    static thread_local auto request = std::make_shared<HttpRequest>();
     if(!request)
         request.reset(new HttpRequest());
 
@@ -58,9 +58,7 @@ bool HttpServices::service(AbstractSocket *const socket) const
 
     socket->addTimes();
 
-    static thread_local std::shared_ptr<HttpResponse> response;
-    if(!response)
-        response.reset(new HttpResponse());
+    static thread_local auto response = std::make_shared<HttpResponse>();
 
     this->callHandler(request.get(), response.get());
 

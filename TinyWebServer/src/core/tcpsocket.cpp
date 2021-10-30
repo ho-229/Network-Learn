@@ -12,24 +12,19 @@
 extern "C"
 {
 #ifdef _WIN32
-# include <WinSock2.h>
-# include <WS2tcpip.h>
-
-#define CLOSE(x) closesocket(x)
-
+# define CLOSE(x) closesocket(x)
 #else   // Unix
 # include <fcntl.h>
 # include <netdb.h>
 # include <unistd.h>
 # include <string.h>
-# include <sys/socket.h>
 # include <netinet/tcp.h>
 
-#define CLOSE(x) ::close(x)
+# define CLOSE(x) ::close(x)
 #endif
 }
 
-TcpSocket::TcpSocket(const SocketInfo& info) : AbstractSocket(info)
+TcpSocket::TcpSocket(const Socket info) : AbstractSocket(info)
 {
 
 }
@@ -161,29 +156,28 @@ bool TcpSocket::listen(const std::string &hostName, const std::string &port, boo
 #endif
 
     m_sslEnable = sslEnable;
+
+#if SOCKET_INFO_ENABLE
     m_hostName = hostName;
     m_port = port;
+#endif
 
     m_isListening = true;
     return true;
 }
 
-SocketInfo TcpSocket::accept() const
+Socket TcpSocket::accept() const
 {
     if(!m_isListening)
         return {};
 
-    char hostName[BUF_SIZE], port[BUF_SIZE];
     sockaddr_storage addr;
     socklen_t len = sizeof(addr);
 
     const Socket socket = ::accept(
         m_descriptor, reinterpret_cast<sockaddr *>(&addr), &len);
 
-    getnameinfo(reinterpret_cast<sockaddr *>(&addr),
-                len, hostName, BUF_SIZE, port, BUF_SIZE, 0);
-
-    return {socket, hostName, port};
+    return socket;
 }
 
 #ifdef _WIN32

@@ -3,7 +3,6 @@
  * @date 2021/10/3
  */
 
-#include "epoll.h"
 #include "tcpsocket.h"
 #include "sslsocket.h"
 #include "connectionpool.h"
@@ -78,10 +77,10 @@ void ConnectionPool::eventsHandler(const EventList &events)
         {
             while(true)
             {
-                const SocketInfo info =
+                const Socket info =
                     static_cast<TcpSocket *>(it->second.get())->accept();
 
-                if(!AbstractSocket::isValid(info.descriptor))
+                if(!AbstractSocket::isValid(info))
                     break;
 
                 AbstractSocket *socket = it->second->sslEnable() ?

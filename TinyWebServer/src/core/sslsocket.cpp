@@ -12,25 +12,20 @@
 extern "C"
 {
 #ifdef _WIN32
-# include <WinSock2.h>
-# include <WS2tcpip.h>
-
-#define CLOSE(x) closesocket(x)
-
+# define CLOSE(x) closesocket(x)
 #else   // Unix
 # include <netdb.h>
 # include <unistd.h>
 # include <string.h>
-# include <sys/socket.h>
 
-#define CLOSE(x) ::close(x)
+# define CLOSE(x) ::close(x)
 #endif
 }
 
 SSL_CTX* SslSocket::sslContext = nullptr;
 
-SslSocket::SslSocket(const SocketInfo &info) :
-    AbstractSocket(info),
+SslSocket::SslSocket(const Socket socket) :
+    AbstractSocket(socket),
     m_ssl(SSL_new(sslContext))
 {
     if(!AbstractSocket::isValid(m_descriptor))

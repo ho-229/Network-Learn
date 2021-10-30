@@ -11,18 +11,23 @@
 #define BUF_SIZE 64
 #define SOCKET_BUF_SIZE 4096
 
+#define SOCKET_INFO_ENABLE 0
+
+extern "C"
+{
 #ifdef _WIN32
 typedef unsigned int Socket;
+# define DEFAULT_SOCKET Socket(~0)
+
+# include <WinSock2.h>
+# include <WS2tcpip.h>
 #else
 typedef int Socket;
-#endif
+# define DEFAULT_SOCKET -1
 
-struct SocketInfo
-{
-    Socket descriptor;
-    std::string hostName;
-    std::string port;
-};
+# include <sys/socket.h>
+#endif
+}
 
 template <typename T>
 class Timer;
@@ -46,8 +51,27 @@ public:
 
     virtual bool isListening() const = 0;
 
+#if SOCKET_INFO_ENABLE
+    inline void initializeInfo()
+    {
+        sockaddr_in addr;
+        socklen_t len = sizeof (addr);
+
+        if(this->isListening())
+            getsockname(m_descriptor, reinterpret_cast<sockaddr *>(&addr), &len);
+        else
+            getpeername(m_descriptor, reinterpret_cast<sockaddr *>(&addr), &len);
+
+        char hostName[32];
+        m_hostName = inet_ntop(addr.sin_family, &addr.sin_addr,
+                               hostName, sizeof (hostName));
+        m_port = std::to_string(ntohs(addr.sin_port));
+    }
+
+
     std::string hostName() const { return m_hostName; }
     std::string port() const { return m_port; }
+#endif
 
     Socket descriptor() const { return m_descriptor; }
 
@@ -67,11 +91,14 @@ public:
     size_t times() const { return m_times; }
 
 protected:
-    explicit AbstractSocket(const SocketInfo& info = {}) :
-        m_descriptor(info.descriptor),
-        m_hostName(info.hostName),
-        m_port(info.port)
-    {}
+    explicit AbstractSocket(const Socket socket = DEFAULT_SOCKET) :
+        m_descriptor(socket)
+    {
+#if SOCKET_INFO_ENABLE
+        if(isValid(socket))
+            this->initializeInfo();
+#endif
+    }
 
     // Disable copy
     AbstractSocket(AbstractSocket& other) = delete;
@@ -81,8 +108,10 @@ protected:
 
     size_t m_times = 0;
 
+#if SOCKET_INFO_ENABLE
     std::string m_hostName;
     std::string m_port;
+#endif
 
     Timer<Socket> *m_timer = nullptr;
 };

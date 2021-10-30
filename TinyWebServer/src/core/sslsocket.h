@@ -13,7 +13,7 @@
 class SslSocket : public AbstractSocket
 {
 public:
-    explicit SslSocket(const SocketInfo& info);
+    explicit SslSocket(const Socket socket);
     ~SslSocket() override;
 
     void read(std::string& buffer) override;

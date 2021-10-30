@@ -12,12 +12,6 @@
 
 #include <signal.h>
 
-#ifdef _WIN32
-# include <WinSock2.h>
-#else
-# include <sys/select.h>
-#endif
-
 WebServer::WebServer()
 {
 #ifdef _WIN32

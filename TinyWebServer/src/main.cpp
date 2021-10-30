@@ -73,11 +73,11 @@ int main(int argc, char** argv)
                 std::cerr << "[TCP] ";
 
             if(accept->state() == ConnectEvent::Accpet)
-                std::cerr << "Accepted connection from ";
+                std::cerr << "Accepted connection descriptor ";
             else
-                std::cerr << "Connection closed ";
+                std::cerr << "Connection closed descriptor ";
 
-            std::cerr << socket->hostName() << ":" << socket->port() <<"\n";
+            std::cerr << socket->descriptor() <<"\n";
         }
         else if(event->type() == Event::ExceptionEvent)
         {
