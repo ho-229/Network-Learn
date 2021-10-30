@@ -6,6 +6,7 @@
 #ifndef UNTIL_H
 #define UNTIL_H
 
+#include <string_view>
 #include <algorithm>
 #include <sstream>
 #include <iomanip>
@@ -33,6 +34,28 @@ namespace Until
         return ss.str();
     }
 
+    template <typename Str>
+    std::string_view getLine(std::string::size_type &offset,
+                             const Str &text,
+                             const std::string &limit)
+    {
+        if(offset >= text.size())       // Out of range
+            return {};
+
+        const auto pos = text.find(limit, offset);
+        if(pos == std::string::npos)    // Not found
+        {
+            const auto begin = offset;
+            offset = text.size();
+            return {text.data() + begin};
+        }
+
+        std::string_view ret(text.data() + offset, pos - offset);
+        offset += pos - offset + limit.size();
+
+        return ret;
+    }
+
     template <typename T>
     inline void toHex(std::string& buf, T num)
     {
@@ -41,7 +64,8 @@ namespace Until
         buf += stream.str();
     }
 
-    inline void toLower(std::string& str)
+    template <typename Str>
+    inline void toLower(Str& str)
     { std::transform(str.begin(), str.end(), str.begin(), tolower); }
 }
 

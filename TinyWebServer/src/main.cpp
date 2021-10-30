@@ -60,43 +60,43 @@ int main(int argc, char** argv)
 
     server->setServices(new HttpServices);
 
-    server->installEventHandler([](Event *event) {
-        if(event->type() == Event::ConnectEvent)
-        {
-            ConnectEvent *accept = static_cast<ConnectEvent *>(event);
+//    server->installEventHandler([](Event *event) {
+//        if(event->type() == Event::ConnectEvent)
+//        {
+//            ConnectEvent *accept = static_cast<ConnectEvent *>(event);
 
-            auto socket = accept->socket();
+//            auto socket = accept->socket();
 
-            if(socket->sslEnable())
-                std::cerr << "[SSL] ";
-            else
-                std::cerr << "[TCP] ";
+//            if(socket->sslEnable())
+//                std::cerr << "[SSL] ";
+//            else
+//                std::cerr << "[TCP] ";
 
-            if(accept->state() == ConnectEvent::Accpet)
-                std::cerr << "Accepted connection descriptor ";
-            else
-                std::cerr << "Connection closed descriptor ";
+//            if(accept->state() == ConnectEvent::Accpet)
+//                std::cerr << "Accepted connection descriptor ";
+//            else
+//                std::cerr << "Connection closed descriptor ";
 
-            std::cerr << socket->descriptor() <<"\n";
-        }
-        else if(event->type() == Event::ExceptionEvent)
-        {
-            ExceptionEvent *exception = static_cast<ExceptionEvent *>(event);
+//            std::cerr << socket->descriptor() <<"\n";
+//        }
+//        else if(event->type() == Event::ExceptionEvent)
+//        {
+//            ExceptionEvent *exception = static_cast<ExceptionEvent *>(event);
 
-            switch (exception->error())
-            {
-            case ExceptionEvent::SocketLoadFailed:
-                std::cerr << "WinSock2 load failed.\n";
-                break;
-            case ExceptionEvent::ListenFailed:
-                std::cerr << exception->message();
-                break;
-            case ExceptionEvent::UnknownError:
-                std::cerr << "Unknown error.\n";
-                break;
-            }
-        }
-    });
+//            switch (exception->error())
+//            {
+//            case ExceptionEvent::SocketLoadFailed:
+//                std::cerr << "WinSock2 load failed.\n";
+//                break;
+//            case ExceptionEvent::ListenFailed:
+//                std::cerr << exception->message();
+//                break;
+//            case ExceptionEvent::UnknownError:
+//                std::cerr << "Unknown error.\n";
+//                break;
+//            }
+//        }
+//    });
 
     // Add "Adder" Service
     server->services()->addService("GET", "/adder",

@@ -4,9 +4,7 @@
  */
 
 #include "httprequest.h"
-#include "until/until.h"
 
-#include <sstream>
 #include <regex>
 
 HttpRequest::HttpRequest()
@@ -24,37 +22,45 @@ HttpRequest::HttpRequest(const std::string &data)
 
 void HttpRequest::parse(const std::string &data)
 {
-    std::stringstream stream(data);
-    std::string line;
-
-    const std::regex express("(.+)\\s*:\\s*(.+)");
-    std::smatch result;
-
-    bool isFirstLine = true;
-
     m_headers.clear();
     m_urlArgs.clear();
+    m_isValid = false;
 
-    while(std::getline(stream, line) && line != "\r\n")
+    std::string::size_type offset = 0;
+
+    const auto requestLine = Until::getLine(offset, data, "\r\n");
+    if(requestLine.empty() || !this->parseRequestLine(std::string(requestLine)))
+        return;
+
+    std::string line;
+    while(true)
     {
-        if(isFirstLine)
-        {
-            this->parseRequestLine(line);
+        line = Until::getLine(offset, data, "\r\n");
+        if(line.empty())
+            break;
 
-            if(!m_isValid)
-                return;
+        Until::toLower(line);
 
-            isFirstLine = false;
-        }
-        else
-        {
-            Until::toLower(line);
-            if(std::regex_search(line, result, express))
-                m_headers[result[1]] = result[2];
-        }
+        const auto splitPos = line.find(':');
+        if(splitPos == std::string_view::npos)
+            break;
+
+        // Remove spaces forward
+        auto keyEnd = splitPos;
+        while(keyEnd - 1 > 0 && line[keyEnd] == ' ')
+            --keyEnd;
+
+        // Remove spaces backward
+        auto valueStart = splitPos + 1;
+        while(valueStart + 1 < line.size() && line[valueStart] == ' ')
+            ++valueStart;
+
+        m_headers[line.substr(0, keyEnd)] = line.substr(valueStart);
     }
 
-    std::string(std::istreambuf_iterator<char>(stream), {}).swap(m_body);
+    m_body = data.substr(offset);
+
+    m_isValid = true;
 }
 
 std::pair<int64_t, int64_t> HttpRequest::range() const
@@ -73,63 +79,68 @@ std::pair<int64_t, int64_t> HttpRequest::range() const
     return {atoll(result[1].str().c_str()), atoll(result[2].str().c_str())};
 }
 
-void HttpRequest::parseRequestLine(const std::string &data)
+bool HttpRequest::parseRequestLine(const std::string &data)
 {
-    std::stringstream stream(data);
-    std::string line;
+    std::string::size_type offset = 0;
 
-    for(int i = 0; std::getline(stream, line, ' '); ++i)
+    // Method
+    const auto method = Until::getLine(offset, data, " ");
+    if(method.empty())
+        return false;
+    else
+        m_method = method;
+
+    // URI
+    const auto uri = Until::getLine(offset, data, " ");
+    if(uri.empty())
+        return false;
+    else
     {
-        if(i == 0)
+        std::string::size_type pos;
+
+        while(true)
         {
-            if(MethodSet.find(line) == MethodSet.end())     // Invalid method
+            if((pos = uri.find('?')) == std::string::npos)
+                m_uri = uri;
+            else
             {
-                m_isValid = false;
-                return;
+                if(uri[pos - 1] == '\\')   // Ignore "\?"
+                    continue;
+
+                m_uri = uri.substr(0, pos);
+                this->parseArguments(uri.substr(pos + 1));
             }
 
-            m_method = line;
-        }
-        else if(i == 1)
-        {
-            std::string::size_type pos;
-
-            while(true)
-            {
-                if((pos = line.find('?')) == std::string::npos)
-                    m_uri = line;
-                else
-                {
-                    if(line[pos - 1] == '\\')   // Ignore "\?"
-                        continue;
-
-                    m_uri = line.substr(0, pos);
-                    this->parseArguments(line.substr(pos + 1));
-                }
-
-                break;
-            }
-        }
-        else if(i == 2)
-        {
-            std::string::size_type pos;
-            if((m_isValid = ((pos = line.find('/')) != std::string::npos)))
-                m_httpVersion = line.substr(pos + 1);
+            break;
         }
     }
+
+    // Version
+    const auto version = Until::getLine(offset, data, " ");
+    if(version.empty())
+        return false;
+    else
+    {
+        std::string::size_type pos;
+        if((m_isValid = ((pos = version.find('/')) != std::string::npos)))
+            m_httpVersion = version.substr(pos + 1);
+    }
+
+    return true;
 }
 
-void HttpRequest::parseArguments(const std::string &args)
+void HttpRequest::parseArguments(const std::string_view &args)
 {
-    std::stringstream stream(args);
-    std::string line;
+    std::string::size_type offset = 0;
+    std::string_view line;
 
-    while(std::getline(stream, line, '&'))
+    while(!(line = Until::getLine(offset, args, "&")).empty())
     {
         std::string::size_type pos;
         if((pos = line.find('=')) == std::string::npos)
-            m_urlArgs.push_back({{}, line});
+            m_urlArgs.push_back({{}, std::string(line)});
         else
-            m_urlArgs.push_back({line.substr(0, pos), line.substr(pos + 1)});
+            m_urlArgs.push_back({std::string(line.substr(0, pos)),
+                                 std::string(line.substr(pos + 1))});
     }
 }

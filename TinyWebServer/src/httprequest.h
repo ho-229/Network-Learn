@@ -66,9 +66,9 @@ public:
     static auto& methodSet() { return MethodSet; }
 
 private:
-    void parseArguments(const std::string& args);
+    void parseArguments(const std::string_view &args);
 
-    void parseRequestLine(const std::string& data);
+    bool parseRequestLine(const std::string &data);
 
     bool m_isValid = false;
 
