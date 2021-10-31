@@ -9,7 +9,7 @@
 Epoll::Epoll()
 {
 #ifdef _WIN32
-    m_removeBuf.reserve(128);
+    m_connections.reserve(512);
 #else
     m_epoll = epoll_create1(0);
 #endif
@@ -25,7 +25,10 @@ Epoll::~Epoll()
 void Epoll::insert(AbstractSocket * const socket, bool once)
 {
 #ifdef _WIN32
-    // Win32
+    m_events.emplace_back(pollfd{socket->descriptor(), POLLIN, 0});
+
+    m_connections[socket->descriptor()]
+        = {once, std::shared_ptr<AbstractSocket>(socket)};
 #else
     epoll_event event{EPOLLIN | (once ? EPOLLONESHOT : EPOLLET), socket};
     epoll_ctl(m_epoll, EPOLL_CTL_ADD, socket->descriptor(), &event);
@@ -37,7 +40,14 @@ void Epoll::insert(AbstractSocket * const socket, bool once)
 void Epoll::erase(AbstractSocket * const socket)
 {
 #ifdef _WIN32
-    // Win32
+    auto const it = std::find_if(m_events.cbegin(), m_events.cend(),
+                                 [socket](pollfd event) -> bool {
+                                     return socket->descriptor() == event.fd;
+                                 });
+    if(it != m_events.cend())
+        m_events.erase(it);
+
+    m_connections.erase(socket->descriptor());
 #else
     epoll_ctl(m_epoll, EPOLL_CTL_DEL, socket->descriptor(), nullptr);
     delete socket;
@@ -49,27 +59,30 @@ void Epoll::erase(AbstractSocket * const socket)
 void Epoll::epoll(int interval, std::vector<AbstractSocket *> &events)
 {
 #ifdef _WIN32
-    // Remove invalid events
-    if(!m_removeBuf.empty() && !m_events.empty())
+    if(m_events.empty())
     {
-        for(auto it = m_events.begin(); it < m_events.end();)
-        {
-            if(m_removeBuf.find(it->fd) != m_removeBuf.end())
-                it = m_events.erase(it);
-            else
-                ++it;
-        }
-
-        m_removeBuf.clear();
+        Sleep(200);
+        return;
     }
 
     auto temp = m_events;
+    if(WSAPoll(&temp[0], ULONG(temp.size()), interval) <= 0)
+        return;
 
-    if(temp.empty() ||
-        WSAPoll(&temp[0], ULONG(temp.size()), interval) <= 0)
-        return {};
+    for(const auto &item : temp)
+    {
+        const auto it = m_connections.find(item.fd);
+        if(it == m_connections.end())
+            continue;
 
-    return temp;
+        if(item.revents & POLLIN)
+            events.emplace_back(it->second.second.get());
+        else if(item.revents & POLLERR || item.revents & POLLHUP)
+        {
+            it->second.second->timer()->deleteLater();
+            this->erase(it->second.second.get());
+        }
+    }
 #else   // Unix
     int ret = -1;
     if((ret = epoll_wait(m_epoll, m_eventBuf, MAX_EVENTS, interval)) <= 0)

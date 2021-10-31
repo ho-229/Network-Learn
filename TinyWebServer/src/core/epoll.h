@@ -12,7 +12,7 @@
 #include <memory>
 
 #ifdef _WIN32
-# include <unordered_set>
+# include <unordered_map>
 typedef std::vector<pollfd> EventList;
 #else
 # include <sys/epoll.h>
@@ -43,7 +43,12 @@ public:
 
 private:
 #ifdef _WIN32
-    std::unordered_set<Socket> m_removeBuf;
+    typedef std::pair<bool,                             // Once
+                      std::shared_ptr<AbstractSocket>>  // Socket
+        Connection;
+
+    std::unordered_map<Socket, Connection> m_connections;
+
     std::vector<pollfd> m_events;
 #else
     int m_epoll = 0;
