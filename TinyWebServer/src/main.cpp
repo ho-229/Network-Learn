@@ -4,6 +4,7 @@
  */
 
 #define PROFILER_ENABLE 0
+#define _GLIBCXX_SANITIZE_VECTOR 0
 
 #include <fstream>
 #include <iostream>
@@ -112,7 +113,7 @@ int main(int argc, char** argv)
                       + std::to_string(sum) + "</p></body></html>\n");
     });
 
-    server->services()->addService("GET", "/hello",
+    server->services()->addService("GET", "/hello/",
                                    [](HttpRequest *, HttpResponse *resp) {
         resp->setRawHeader("Content-type", "text/html; charset=utf-8");
         *resp << "Hello world.\n";
@@ -125,6 +126,11 @@ int main(int argc, char** argv)
         server->services()->setDefaultService("GET", [workPath](HttpRequest *req,
                                                                 HttpResponse *resp) {
             fs::path path(workPath + req->uri());
+            if(!fs::is_regular_file(path))
+            {
+                resp->buildErrorResponse(404, "Not Found");
+                return;
+            }
 
             auto out = new std::ifstream(path, std::ios::binary);
 

@@ -83,12 +83,15 @@ public:
         }
 
         const auto top = m_queue.front();
-        const bool ret = top->duration() >= m_timeout;
 
-        if(ret)
+        if(top->duration() >= m_timeout)
+        {
             userData = top->userData();
+            m_queue.pop();
+            return true;
+        }
 
-        return ret;
+        return false;
     }
 
 private:

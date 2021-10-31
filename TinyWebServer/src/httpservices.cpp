@@ -48,8 +48,6 @@ bool HttpServices::service(AbstractSocket *const socket) const
         return false;
 
     static thread_local auto request = std::make_shared<HttpRequest>();
-    if(!request)
-        request.reset(new HttpRequest());
 
     request->parse(raw);
 

@@ -151,8 +151,8 @@ bool TcpSocket::listen(const std::string &hostName, const std::string &port, boo
             fcntl(m_descriptor, F_SETFL, flags | O_NONBLOCK) == -1)
         return false;
 
-    //flags = 1;
-    //setsockopt(m_descriptor, IPPROTO_TCP, TCP_NODELAY, &flags, sizeof (int));
+//    flags = 1;
+//    setsockopt(m_descriptor, IPPROTO_TCP, TCP_NODELAY, &flags, sizeof (int));
 #endif
 
     m_sslEnable = sslEnable;

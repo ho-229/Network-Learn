@@ -6,6 +6,8 @@ project(Network-Learn)
 
 set(CXX_FLAGS
    -j4
+#   -fsanitize=address
+#   -fno-omit-frame-pointer
 )
 
 set(CMAKE_CXX_STANDARD 17)

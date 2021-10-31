@@ -84,8 +84,8 @@ public:
 #endif
     }
 
-    void setTimer(Timer<Socket> *timer) { m_timer = timer; }
-    Timer<Socket>* timer() const { return m_timer; }
+    void setTimer(Timer<AbstractSocket *> *timer) { m_timer = timer; }
+    Timer<AbstractSocket *> *timer() const { return m_timer; }
 
     void addTimes() { ++m_times; }
     size_t times() const { return m_times; }
@@ -113,7 +113,7 @@ protected:
     std::string m_port;
 #endif
 
-    Timer<Socket> *m_timer = nullptr;
+    Timer<AbstractSocket *> *m_timer = nullptr;
 };
 
 #endif // ABSTRACTSOCKET_H

@@ -8,29 +8,17 @@
 
 #include "../abstract/abstractsocket.h"
 
-#include <memory>
 #include <vector>
-#include <functional>
-#include <unordered_set>
+#include <memory>
 
 #ifdef _WIN32
-# include <WinSock2.h>
-
-# define IN_EVENT POLLIN
-# define ERROR_EVENT POLLERR
-# define CLOSE_EVENT POLLHUP
-
+# include <unordered_set>
 typedef std::vector<pollfd> EventList;
 #else
 # include <sys/epoll.h>
 # include <unistd.h>
 
-# define IN_EVENT EPOLLIN
-# define ERROR_EVENT EPOLLERR
-# define CLOSE_EVENT EPOLLHUP
-
-# define MAX_EVENTS 1024
-typedef std::vector<epoll_event> EventList;
+# define MAX_EVENTS 256
 #endif
 
 class Epoll
@@ -39,10 +27,10 @@ public:
     explicit Epoll();
     ~Epoll();
 
-    void addConnection(const Socket socket);
-    void removeConnection(const Socket socket);
+    void insert(AbstractSocket *const socket, bool once = false);
+    void erase(AbstractSocket *const socket);
 
-    const EventList epoll(int interval);
+    void epoll(int interval, std::vector<AbstractSocket *> &events);
 
     size_t count() const
     {
@@ -60,6 +48,7 @@ private:
 #else
     int m_epoll = 0;
     size_t m_count = 0;
+    epoll_event m_eventBuf[MAX_EVENTS];
 #endif
 };
 

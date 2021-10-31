@@ -17,8 +17,6 @@ ConnectionPool::ConnectionPool(const std::atomic_bool &runnable,
     m_handler(handler),
     m_thread(std::bind(&ConnectionPool::exec, this, interval))
 {
-    m_connections.reserve(512);
-
     m_manager.setTimeout(timeout);
 }
 
@@ -27,92 +25,59 @@ ConnectionPool::~ConnectionPool()
 
 }
 
-void ConnectionPool::addConnection(std::shared_ptr<AbstractSocket> socket)
-{
-    m_connections.insert(Connection(socket->descriptor(), socket));
-    m_epoll.addConnection(socket->descriptor());
-}
-
 void ConnectionPool::exec(int interval)
 {
     while(m_runnable)
     {
-        this->eventsHandler(m_epoll.epoll(interval));
+        m_epoll.epoll(interval, m_queue);
+        if(!m_queue.empty())
+            this->eventsHandler();
 
         // Clean up timeout connections
-        Socket socket;
+        AbstractSocket *socket = nullptr;
         while(m_manager.checkTop(socket))
-        {
-            const auto it = m_connections.find(socket);
-            if(it != m_connections.end())
-                this->release(it->second.get());
-        }
+            m_epoll.erase(socket);
     }
 }
 
-void ConnectionPool::eventsHandler(const EventList &events)
+void ConnectionPool::eventsHandler()
 {
-    for(const auto& item : events)
+    for(auto& socket : m_queue)
     {
-        if(item.events == 0)
-            continue;
-
-#ifdef _WIN32
-        const Socket fd = item.fd;
-#else
-        const Socket fd = item.data.fd;
-#endif
-
-        const auto it = m_connections.find(fd);
-
-        if(it == m_connections.end())
-            m_epoll.removeConnection(fd);
-        else if(item.events & CLOSE_EVENT || item.events & ERROR_EVENT)
-        {
-            this->release(it->second.get());
-            continue;
-        }
-
-        if(it->second->isListening())
+        if(socket->isListening())
         {
             while(true)
             {
-                const Socket info =
-                    static_cast<TcpSocket *>(it->second.get())->accept();
+                const Socket descriptor = static_cast<TcpSocket *>(socket)->accept();
 
-                if(!AbstractSocket::isValid(info))
+                if(!AbstractSocket::isValid(descriptor))
                     break;
 
-                AbstractSocket *socket = it->second->sslEnable() ?
-                    static_cast<AbstractSocket *>(new SslSocket(info)) :
-                    static_cast<AbstractSocket *>(new TcpSocket(info));
+                AbstractSocket *newSocket = socket->sslEnable() ?
+                    static_cast<AbstractSocket *>(new SslSocket(descriptor)) :
+                    static_cast<AbstractSocket *>(new TcpSocket(descriptor));
 
-                socket->setTimer(m_manager.addTimer(socket->descriptor()));
-                this->addConnection(std::shared_ptr<AbstractSocket>(socket));
+                newSocket->setTimer(m_manager.addTimer(newSocket));
+                m_epoll.insert(newSocket);
 
-                ConnectEvent event(socket, ConnectEvent::Accpet);
+                ConnectEvent event(newSocket, ConnectEvent::Accpet);
                 m_handler(&event);
             }
         }
         else
         {
-            if(m_services->service(it->second.get()))
-            {
-                it->second->timer()->deleteLater();
-                it->second->setTimer(m_manager.addTimer(it->second->descriptor()));
-            }
+            socket->timer()->deleteLater();
+            if(m_services->service(socket))
+                socket->setTimer(m_manager.addTimer(socket));   // Reset timer
             else
-                this->release(it->second.get());
+            {
+                m_epoll.erase(socket);
+
+                ConnectEvent event(socket, ConnectEvent::Close);
+                m_handler(&event);
+            }
         }
     }
-}
 
-void ConnectionPool::release(const AbstractSocket *socket)
-{
-    ConnectEvent event(socket, ConnectEvent::Close);
-    m_handler(&event);
-
-    socket->timer()->deleteLater();
-    m_epoll.removeConnection(socket->descriptor());
-    m_connections.erase(socket->descriptor());
+    m_queue.clear();
 }

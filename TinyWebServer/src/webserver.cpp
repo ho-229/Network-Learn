@@ -42,7 +42,7 @@ int WebServer::start()
             m_runnable, m_timeout, m_interval, m_services.get(), m_handler));
 
         for(const auto& connect : m_listeners)
-            m_pools.back()->addConnection(connect);
+            m_pools.back()->registerListener(connect.get());
     }
 
     return 0;

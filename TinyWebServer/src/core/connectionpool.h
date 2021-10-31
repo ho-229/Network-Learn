@@ -13,7 +13,6 @@
 
 #include <atomic>
 #include <thread>
-#include <unordered_map>
 
 class AbstractServices;
 
@@ -26,9 +25,10 @@ public:
                             const EventHandler &handler);
     ~ConnectionPool();
 
-    size_t count() const { return m_connections.size(); }
+    size_t count() const { return m_epoll.count(); }
 
-    void addConnection(std::shared_ptr<AbstractSocket> socket);
+    void registerListener(AbstractSocket *const socket)
+    { m_epoll.insert(socket); }
 
     std::thread &thread() { return m_thread; }
 
@@ -36,17 +36,15 @@ protected:
     void exec(int interval);
 
 private:
-    void eventsHandler(const EventList& events);
-    inline void release(const AbstractSocket *socket);
-
-    std::unordered_map<Socket, std::shared_ptr<AbstractSocket>> m_connections;
-    using Connection = decltype (m_connections)::value_type;
+    void eventsHandler();
 
     Epoll m_epoll;
 
+    std::vector<AbstractSocket *> m_queue;
+
     const std::atomic_bool &m_runnable;
 
-    TimerManager<Socket> m_manager;
+    TimerManager<AbstractSocket *> m_manager;
 
     AbstractServices *const m_services;
 

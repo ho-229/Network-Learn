@@ -4,6 +4,7 @@
  */
 
 #include "epoll.h"
+#include "../until/timermanager.h"
 
 Epoll::Epoll()
 {
@@ -21,32 +22,31 @@ Epoll::~Epoll()
 #endif
 }
 
-void Epoll::addConnection(const Socket socket)
+void Epoll::insert(AbstractSocket * const socket, bool once)
 {
 #ifdef _WIN32
-    m_events.push_back({socket, POLLIN, 0});
-#else   // Unix
-    epoll_event newEvent{};
-    newEvent.events = EPOLLIN | EPOLLET;
-    newEvent.data.fd = socket;
-
-    epoll_ctl(m_epoll, EPOLL_CTL_ADD, socket, &newEvent);
+    // Win32
+#else
+    epoll_event event{EPOLLIN | (once ? EPOLLONESHOT : EPOLLET), socket};
+    epoll_ctl(m_epoll, EPOLL_CTL_ADD, socket->descriptor(), &event);
 
     ++m_count;
 #endif
 }
 
-void Epoll::removeConnection(const Socket socket)
+void Epoll::erase(AbstractSocket * const socket)
 {
 #ifdef _WIN32
-    m_removeBuf.insert(socket);
+    // Win32
 #else
-    epoll_ctl(m_epoll, EPOLL_CTL_DEL, socket, nullptr);
+    epoll_ctl(m_epoll, EPOLL_CTL_DEL, socket->descriptor(), nullptr);
+    delete socket;
+
     --m_count;
 #endif
 }
 
-const EventList Epoll::epoll(int interval)
+void Epoll::epoll(int interval, std::vector<AbstractSocket *> &events)
 {
 #ifdef _WIN32
     // Remove invalid events
@@ -71,12 +71,24 @@ const EventList Epoll::epoll(int interval)
 
     return temp;
 #else   // Unix
-    std::shared_ptr<epoll_event[]> events(new epoll_event[MAX_EVENTS]());
-
     int ret = -1;
-    if(!m_count || (ret = epoll_wait(m_epoll, events.get(), MAX_EVENTS, interval)) <= 0)
-        return {};
+    if((ret = epoll_wait(m_epoll, m_eventBuf, MAX_EVENTS, interval)) <= 0)
+        return;
 
-    return {events.get(), events.get() + ret};
+    epoll_event *item = nullptr;
+    AbstractSocket *socket = nullptr;
+    for(int i = 0; i < ret; ++i)
+    {
+        item = m_eventBuf + i;
+        socket = reinterpret_cast<AbstractSocket *>(item->data.ptr);
+
+        if(item->events & EPOLLIN)
+            events.emplace_back(socket);
+        else if(item->events & EPOLLERR || item->events & EPOLLHUP)
+        {
+            socket->timer()->deleteLater();
+            this->erase(socket);
+        }
+    }
 #endif
 }
