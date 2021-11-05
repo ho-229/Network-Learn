@@ -126,18 +126,10 @@ int main(int argc, char** argv)
         server->services()->setDefaultService("GET", [workPath](HttpRequest *req,
                                                                 HttpResponse *resp) {
             fs::path path(workPath + req->uri());
-            if(!fs::is_regular_file(path))
-            {
+            if(!fs::is_regular_file(path) ||
+                !resp->setStream(std::shared_ptr<std::istream>(
+                    new std::ifstream(path, std::ios::binary))))
                 resp->buildErrorResponse(404, "Not Found");
-                return;
-            }
-
-            auto out = new std::ifstream(path, std::ios::binary);
-
-            if(out->good())
-                resp->setStream(out);
-            else
-                resp->setHttpState({404, "Not Found"});
         });
 
         std::cout << "Shared directory: " << workPath << ".\n";

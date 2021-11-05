@@ -42,12 +42,12 @@ void HttpResponse::setText(const std::string& text)
     m_type = PlainText;
 }
 
-void HttpResponse::setStream(std::istream *const stream)
+bool HttpResponse::setStream(std::shared_ptr<std::istream> &&stream)
 {
     if(stream->bad())
-        return;
+        return false;
 
-    m_stream.reset(stream);
+    m_stream = stream;
 
     m_stream->seekg(0, std::ios::end);
 
@@ -58,6 +58,8 @@ void HttpResponse::setStream(std::istream *const stream)
     m_stream->seekg(0, std::ios::beg);
 
     m_type = Stream;
+
+    return true;
 }
 
 void HttpResponse::reset()

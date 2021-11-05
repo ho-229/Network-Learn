@@ -31,7 +31,7 @@ public:
     void setText(const std::string& text);
     std::string text() const { return m_text; }
 
-    void setStream(std::istream *const stream);
+    bool setStream(std::shared_ptr<std::istream> &&stream);
     std::istream& stream() const { return *m_stream; }
 
     void reset();
