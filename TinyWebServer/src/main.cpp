@@ -59,7 +59,8 @@ int main(int argc, char** argv)
             std::cerr << "OpenSSL initializat failed.\n";
     }
 
-    server->setServices(new HttpServices);
+    auto services = new HttpServices;
+    server->setServices(services);
 
 //    server->installEventHandler([](Event *event) {
 //        if(event->type() == Event::ConnectEvent)
@@ -100,7 +101,7 @@ int main(int argc, char** argv)
 //    });
 
     // Add "Adder" Service
-    server->services()->addService("GET", "/adder",
+    services->addService("GET", "/adder",
                                    [](HttpRequest *req, HttpResponse *resp) {
         int sum = 0;
         for(const auto& arg : req->urlArguments())
@@ -113,7 +114,7 @@ int main(int argc, char** argv)
                       + std::to_string(sum) + "</p></body></html>\n");
     });
 
-    server->services()->addService("GET", "/hello/",
+    services->addService("GET", "/hello",
                                    [](HttpRequest *, HttpResponse *resp) {
         resp->setRawHeader("Content-type", "text/html; charset=utf-8");
         *resp << "Hello world.\n";
@@ -123,11 +124,10 @@ int main(int argc, char** argv)
     {
         const std::string workPath(argv[3]);
 
-        server->services()->setDefaultService("GET", [workPath](HttpRequest *req,
-                                                                HttpResponse *resp) {
+        services->setDefaultService("GET", [workPath](HttpRequest *req, HttpResponse *resp) {
             fs::path path(workPath + req->uri());
             if(!fs::is_regular_file(path) ||
-                !resp->setStream(std::shared_ptr<std::istream>(
+                    !resp->setStream(std::shared_ptr<std::istream>(
                     new std::ifstream(path, std::ios::binary))))
                 resp->buildErrorResponse(404, "Not Found");
         });

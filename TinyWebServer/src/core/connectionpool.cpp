@@ -34,7 +34,12 @@ void ConnectionPool::exec()
         // Clean up timeout connections
         AbstractSocket *socket = nullptr;
         while(m_manager.checkTop(socket))
+        {
+            ConnectEvent event(socket, ConnectEvent::Close);
+            m_handler(&event);
+
             m_epoll.erase(socket);
+        }
     }
 }
 
@@ -65,14 +70,14 @@ void ConnectionPool::eventsHandler()
         else
         {
             socket->timer()->deleteLater();
-            if(m_services->service(socket))
+            if(m_services->process(socket))
                 socket->setTimer(m_manager.addTimer(socket));   // Reset timer
             else    // Close
             {
-                m_epoll.erase(socket);
-
                 ConnectEvent event(socket, ConnectEvent::Close);
                 m_handler(&event);
+
+                m_epoll.erase(socket);
             }
         }
     }

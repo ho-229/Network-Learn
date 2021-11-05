@@ -3,10 +3,10 @@
  * @date 2021/7/26
  */
 
-#include "httprequest.h"
-#include "httpresponse.h"
 #include "httpservices.h"
 #include "abstract/abstractsocket.h"
+
+#include <iostream>
 
 HttpServices::HttpServices()
 {
@@ -23,9 +23,11 @@ void HttpServices::addService(const std::string &method,
 {
     auto it = m_services.find(method);
     if(it == m_services.end())
-        m_services[method] = {{{uri, std::make_shared<Handler>(handler)}}, {}};
+        m_services[method] = {{{uri, handler}},
+                              {[](HttpRequest *, HttpResponse *resp) {
+                                  resp->setHttpState({404, "Not Found"}); }}};
     else
-        it->second.uriHandlers[uri] = std::make_shared<Handler>(handler);
+        it->second.uriHandlers[uri] = handler;
 }
 
 void HttpServices::setDefaultService(const std::string &method,
@@ -33,12 +35,12 @@ void HttpServices::setDefaultService(const std::string &method,
 {
     auto it = m_services.find(method);
     if(it == m_services.end())
-        m_services[method] = {{}, std::make_shared<Handler>(handler)};
+        m_services[method] = {{}, handler};
     else
-        it->second.defaultHandler = std::make_shared<Handler>(handler);
+        it->second.defaultHandler = handler;
 }
 
-bool HttpServices::service(AbstractSocket *const socket) const
+bool HttpServices::process(AbstractSocket *const socket) const
 {
     static thread_local std::string raw;
 
@@ -62,9 +64,9 @@ bool HttpServices::service(AbstractSocket *const socket) const
 
     std::shared_ptr<char[]> sendBuf(new char[SOCKET_BUF_SIZE]);
     if(!request->isKeepAlive() || socket->times() > m_maxTimes)
-        response->setRawHeader("Connection", "close");
+        response->setRawHeader("Connection", "Close");
     else
-        response->setRawHeader("Connection", "keep-alive");
+        response->setRawHeader("Connection", "Keep-Alive");
 
     response->toRawData(raw);
 
@@ -94,15 +96,15 @@ void HttpServices::callHandler(HttpRequest *const request,
         // URI -> Handler
         const auto handlerIt = methodIt->second.uriHandlers.find(request->uri());
         if(handlerIt == methodIt->second.uriHandlers.end())         // URI not found
-            (*methodIt->second.defaultHandler)(request, response);  // Default handler
+            methodIt->second.defaultHandler(request, response);  // Default handler
         else
-            (*handlerIt->second)(request, response);
+            handlerIt->second(request, response);
 
         return;
     }
 
     // Method not found
-    response->buildErrorResponse(404, "Not Found");
+    response->setHttpState({405, "Method Not Allowed"});
 }
 
 bool HttpServices::sendStream(AbstractSocket *const socket,

@@ -14,6 +14,8 @@
 #include "httpresponse.h"
 #include "abstract/abstractservices.h"
 
+typedef std::function<void(HttpRequest *, HttpResponse *)> Handler;
+
 class HttpServices : public AbstractServices
 {
 public:
@@ -21,21 +23,21 @@ public:
     ~HttpServices() override;
 
     void addService(const std::string &method, const std::string& uri,
-                    const Handler& handler) override;
+                    const Handler& handler);
 
     void setDefaultService(const std::string& method,
-                           const Handler& handler) override;
+                           const Handler& handler);
 
-    bool service(AbstractSocket *const socket) const override;
+    bool process(AbstractSocket *const socket) const override;
 
 private:
-    struct HandlerSet
+    struct UriHandler
     {
-        std::unordered_map<std::string,                 // URI
-                           std::shared_ptr<Handler>>    // Handler
+        std::unordered_map<std::string, // URI
+                           Handler>     // Handler
             uriHandlers;
 
-        std::shared_ptr<Handler> defaultHandler;
+        Handler defaultHandler;
     };
 
     void callHandler(HttpRequest *const request,
@@ -44,8 +46,8 @@ private:
     static bool sendStream(AbstractSocket *const socket,
                            std::istream * const stream);
 
-    std::unordered_map<std::string,     // Method
-                       HandlerSet>      // URI -> Handler
+    std::unordered_map<std::string,     // Method -> {URI -> Handler}
+                       UriHandler>      // URI -> Handler
         m_services;
 };
 
