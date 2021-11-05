@@ -8,14 +8,12 @@
 #include "connectionpool.h"
 #include "../abstract/abstractservices.h"
 
-ConnectionPool::ConnectionPool(const std::atomic_bool &runnable,
-                               int timeout, int interval,
+ConnectionPool::ConnectionPool(const std::atomic_bool &runnable, int timeout,
                                AbstractServices *const services,
                                const EventHandler &handler) :
     m_runnable(runnable),
     m_services(services),
-    m_handler(handler),
-    m_thread(std::bind(&ConnectionPool::exec, this, interval))
+    m_handler(handler)
 {
     m_manager.setTimeout(timeout);
 }
@@ -25,11 +23,11 @@ ConnectionPool::~ConnectionPool()
 
 }
 
-void ConnectionPool::exec(int interval)
+void ConnectionPool::exec()
 {
     while(m_runnable)
     {
-        m_epoll.epoll(interval, m_queue);
+        m_epoll.epoll(m_queue);
         if(!m_queue.empty())
             this->eventsHandler();
 
@@ -69,7 +67,7 @@ void ConnectionPool::eventsHandler()
             socket->timer()->deleteLater();
             if(m_services->service(socket))
                 socket->setTimer(m_manager.addTimer(socket));   // Reset timer
-            else
+            else    // Close
             {
                 m_epoll.erase(socket);
 

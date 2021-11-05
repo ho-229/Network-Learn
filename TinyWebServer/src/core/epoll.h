@@ -21,6 +21,8 @@ typedef std::vector<pollfd> EventList;
 # define MAX_EVENTS 256
 #endif
 
+#define EPOLL_WAIT_TIMEOUT 500
+
 class Epoll
 {
 public:
@@ -30,19 +32,21 @@ public:
     void insert(AbstractSocket *const socket, bool once = false);
     void erase(AbstractSocket *const socket);
 
-    void epoll(int interval, std::vector<AbstractSocket *> &events);
+    void epoll(std::vector<AbstractSocket *> &events);
 
     size_t count() const
     {
 #ifdef _WIN32
         return m_events.size();
 #else
-        return m_count;     // It maybe not correct
+        return m_count;
 #endif
     }
 
 private:
 #ifdef _WIN32
+    inline void eraseEvent(AbstractSocket *const socket);
+
     typedef std::pair<bool,                             // Once
                       std::shared_ptr<AbstractSocket>>  // Socket
         Connection;

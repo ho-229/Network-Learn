@@ -24,7 +24,7 @@ extern "C"
 #endif
 }
 
-TcpSocket::TcpSocket(const Socket info) : AbstractSocket(info)
+TcpSocket::TcpSocket(const Socket socket) : AbstractSocket(socket)
 {
 
 }

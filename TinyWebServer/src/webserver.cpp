@@ -36,13 +36,16 @@ int WebServer::start()
     if(m_listeners.empty() || !m_services || !m_pools.empty())
         return -1;
 
+    ConnectionPool *pool = nullptr;
     for(size_t i = 0; i < m_loopCount; ++i)
     {
-        m_pools.emplace_back(new ConnectionPool(
-            m_runnable, m_timeout, m_interval, m_services.get(), m_handler));
+        m_pools.emplace_back(pool = new ConnectionPool(
+            m_runnable, m_timeout, m_services.get(), m_handler));
 
         for(const auto& connect : m_listeners)
-            m_pools.back()->registerListener(connect.get());
+            pool->registerListener(connect.get());
+
+        pool->start();
     }
 
     return 0;
@@ -51,10 +54,7 @@ int WebServer::start()
 void WebServer::waitForFinished()
 {   
     for(auto &pool : m_pools)
-    {
-        if(pool->thread().joinable())
-            pool->thread().join();
-    }
+        pool->waitForFinished();
 
     m_pools.clear();
 }

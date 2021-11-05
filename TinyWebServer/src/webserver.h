@@ -29,12 +29,6 @@ public:
     AbstractServices *services() const { return m_services.get(); }
 
     /**
-     * @brief WebServer::exec() loop interval
-     */
-    void setInterval(int ms) { m_interval = ms; }
-    int interval() const { return m_interval; }
-
-    /**
      * @brief Keep alive timeout
      */
     void setTimeout(int ms) { m_timeout = ms; }
@@ -73,7 +67,6 @@ private:
     size_t m_loopCount = std::thread::hardware_concurrency();
 
     int m_timeout = 30000;
-    int m_interval = 500;       // 500ms
 
     //ThreadPool m_pool;
 

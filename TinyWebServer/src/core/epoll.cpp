@@ -40,13 +40,7 @@ void Epoll::insert(AbstractSocket * const socket, bool once)
 void Epoll::erase(AbstractSocket * const socket)
 {
 #ifdef _WIN32
-    auto const it = std::find_if(m_events.cbegin(), m_events.cend(),
-                                 [socket](pollfd event) -> bool {
-                                     return socket->descriptor() == event.fd;
-                                 });
-    if(it != m_events.cend())
-        m_events.erase(it);
-
+    this->eraseEvent(socket);
     m_connections.erase(socket->descriptor());
 #else
     epoll_ctl(m_epoll, EPOLL_CTL_DEL, socket->descriptor(), nullptr);
@@ -56,17 +50,26 @@ void Epoll::erase(AbstractSocket * const socket)
 #endif
 }
 
-void Epoll::epoll(int interval, std::vector<AbstractSocket *> &events)
+#ifdef _WIN32
+void Epoll::eraseEvent(AbstractSocket * const socket)
+{
+    const auto it = std::find_if(m_events.cbegin(), m_events.cend(),
+                                 [socket](const pollfd &event) -> bool {
+                                     return socket->descriptor() == event.fd;
+                                 });
+    if(it != m_events.cend())
+        m_events.erase(it);
+}
+#endif
+
+void Epoll::epoll(std::vector<AbstractSocket *> &events)
 {
 #ifdef _WIN32
     if(m_events.empty())
-    {
-        Sleep(200);
         return;
-    }
 
     auto temp = m_events;
-    if(WSAPoll(&temp[0], ULONG(temp.size()), interval) <= 0)
+    if(WSAPoll(&temp[0], ULONG(temp.size()), EPOLL_WAIT_TIMEOUT) <= 0)
         return;
 
     for(const auto &item : temp)
@@ -76,7 +79,12 @@ void Epoll::epoll(int interval, std::vector<AbstractSocket *> &events)
             continue;
 
         if(item.revents & POLLIN)
+        {
             events.emplace_back(it->second.second.get());
+
+            if(it->second.first)
+                this->eraseEvent(it->second.second.get());
+        }
         else if(item.revents & POLLERR || item.revents & POLLHUP)
         {
             it->second.second->timer()->deleteLater();
@@ -85,7 +93,7 @@ void Epoll::epoll(int interval, std::vector<AbstractSocket *> &events)
     }
 #else   // Unix
     int ret = -1;
-    if((ret = epoll_wait(m_epoll, m_eventBuf, MAX_EVENTS, interval)) <= 0)
+    if((ret = epoll_wait(m_epoll, m_eventBuf, MAX_EVENTS, EPOLL_WAIT_TIMEOUT)) <= 0)
         return;
 
     epoll_event *item = nullptr;

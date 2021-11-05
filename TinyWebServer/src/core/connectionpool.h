@@ -20,7 +20,7 @@ class ConnectionPool
 {
 public:
     explicit ConnectionPool(const std::atomic_bool &runnable,
-                            int timeout, int interval,
+                            int timeout,
                             AbstractServices *const services,
                             const EventHandler &handler);
     ~ConnectionPool();
@@ -30,10 +30,17 @@ public:
     void registerListener(AbstractSocket *const socket)
     { m_epoll.insert(socket); }
 
-    std::thread &thread() { return m_thread; }
+    inline void start()
+    { m_thread = std::thread(std::bind(&ConnectionPool::exec, this)); }
+
+    inline void waitForFinished()
+    {
+        if(m_thread.joinable())
+            m_thread.join();
+    }
 
 protected:
-    void exec(int interval);
+    void exec();
 
 private:
     void eventsHandler();
