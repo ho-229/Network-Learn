@@ -70,7 +70,7 @@ void SslSocket::read(std::string &buffer)
 
 int SslSocket::write(const char *buf, int size)
 {
-    if(!m_ssl)
+    if(!m_ssl || !buf)
         return 0;
 
     return SSL_write(m_ssl, buf, size);

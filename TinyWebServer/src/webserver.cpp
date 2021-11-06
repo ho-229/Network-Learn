@@ -17,7 +17,10 @@ WebServer::WebServer()
 #ifdef _WIN32
     m_isLoaded = TcpSocket::initializatWsa();
 #else   // Unix
-    signal(SIGPIPE, SIG_IGN);       // Ignore SIGPIPE
+    // Ignore SIGPIPE
+    struct sigaction sa;
+    sa.sa_handler = SIG_IGN;
+    sigaction(SIGPIPE, &sa, 0);
 #endif
 }
 

@@ -74,19 +74,31 @@ void TcpSocket::read(std::string &buffer)
 
 int TcpSocket::write(const char *buf, int size)
 {
-    if(m_isListening)
-        return 0;
+    if(m_isListening || !buf || !size)
+        return -1;
 
 #ifdef _WIN32
     return send(m_descriptor, buf, size, 0);
 #else
-    int ret = 0;
+    size_t leftSize = size;
+    ssize_t writtenSize;
+    const char *bufptr = buf;
 
-    do
-        ret = ::write(m_descriptor, buf, size);
-    while(ret <= 0 && errno == EINTR);
+    while(leftSize > 0)
+    {
+        if((writtenSize = ::write(m_descriptor, bufptr, leftSize)) <= 0)
+        {
+            if(errno == EINTR)      // Interrupted by signal handler return
+                writtenSize = 0;    // and call write() again
+            else
+                return -1;          // errno set by write()
+        }
 
-    return ret;
+        leftSize -= writtenSize;
+        bufptr += writtenSize;
+    }
+
+    return size;
 #endif
 }
 
