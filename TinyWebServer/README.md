@@ -10,7 +10,6 @@ The idea of doing this project originated from the TinyWebServer of CS:APP, I ho
 | ---------------- | ------------- |
 | Connection | keep-alive |
 | Content-Length | \<auto> |
-| Content-Type | \<auto> |
 | Server | TinyWebServer |
 | Date | \<auto> |
 | \<Custom> | \<Custom> |
@@ -45,19 +44,18 @@ The idea of doing this project originated from the TinyWebServer of CS:APP, I ho
     Example:
 
     ```cpp
-    #include "until/until.h"
-
     #include "webserver.h"
     #include "httpservices.h"
 
     int main()
     {
         auto server = std::make_shared<WebServer>();
+        auto services = new HttpServices();
 
-        server->setServices(new HttpServices);
+        server->setServices(services);
 
         // Adder Service
-        server->services()->addService("GET", "/adder",
+        services->addService("GET", "/adder",
                                     [](HttpRequest *req, HttpResponse *resp) {
             int sum = 0;
             for(const auto& arg : req->urlArguments())
