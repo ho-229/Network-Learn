@@ -4,6 +4,18 @@ This is a tiny `HTTP/HTTPS` web server.
 
 The idea of doing this project originated from the TinyWebServer of CS:APP, I hope to learn network programming from this project.
 
+* Webbench
+
+> CPU: Intel i5-7500 3.40GHz x 4  
+> RAM: 8GB  
+> OS: Manjaro KDE
+
+* Short connection
+![image](./screenshot/close.png)
+
+* Keep alive
+![image](./screenshot/keep-alive.png)
+
 ## Features
 
 | Support Headers  | Default Value |
