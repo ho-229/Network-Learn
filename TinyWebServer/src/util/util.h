@@ -3,8 +3,8 @@
  * @date 2021/7/27
  */
 
-#ifndef UNTIL_H
-#define UNTIL_H
+#ifndef UTIL_H
+#define UTIL_H
 
 #include <string_view>
 #include <algorithm>
@@ -69,4 +69,4 @@ namespace Util
     { std::transform(str.begin(), str.end(), str.begin(), tolower); }
 }
 
-#endif // UNTIL_H
+#endif // UTIL_H
