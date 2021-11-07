@@ -7,8 +7,8 @@
 #define CONNECTIONPOOL_H
 
 #include "epoll.h"
-#include "../until/event.h"
-#include "../until/timermanager.h"
+#include "../util/event.h"
+#include "../util/timermanager.h"
 #include "../abstract/abstractsocket.h"
 
 #include <atomic>

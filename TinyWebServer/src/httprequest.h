@@ -6,7 +6,7 @@
 #ifndef HTTPREQUEST_H
 #define HTTPREQUEST_H
 
-#include "until/until.h"
+#include "util/util.h"
 
 #include <map>
 #include <vector>
@@ -45,7 +45,7 @@ public:
 
     std::string rawHeader(std::string name) const
     {
-        Until::toLower(name);
+        Util::toLower(name);
         const auto it = m_headers.find(name);
         return it == m_headers.end() ? std::string() : it->second;
     }

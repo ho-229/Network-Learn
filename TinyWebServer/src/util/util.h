@@ -17,7 +17,7 @@
 #define gmtime_s(x, y) gmtime_r(y, x)
 #endif
 
-namespace Until
+namespace Util
 {
     /**
      * @return Current time in GMT format

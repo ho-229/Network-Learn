@@ -28,18 +28,18 @@ void HttpRequest::parse(const std::string &data)
 
     std::string::size_type offset = 0;
 
-    const auto requestLine = Until::getLine(offset, data, "\r\n");
+    const auto requestLine = Util::getLine(offset, data, "\r\n");
     if(requestLine.empty() || !this->parseRequestLine(std::string(requestLine)))
         return;
 
     std::string line;
     while(true)
     {
-        line = Until::getLine(offset, data, "\r\n");
+        line = Util::getLine(offset, data, "\r\n");
         if(line.empty())
             break;
 
-        Until::toLower(line);
+        Util::toLower(line);
 
         const auto splitPos = line.find(':');
         if(splitPos == std::string_view::npos)
@@ -84,14 +84,14 @@ bool HttpRequest::parseRequestLine(const std::string &data)
     std::string::size_type offset = 0;
 
     // Method
-    const auto method = Until::getLine(offset, data, " ");
+    const auto method = Util::getLine(offset, data, " ");
     if(method.empty())
         return false;
     else
         m_method = method;
 
     // URI
-    const auto uri = Until::getLine(offset, data, " ");
+    const auto uri = Util::getLine(offset, data, " ");
     if(uri.empty())
         return false;
     else
@@ -116,7 +116,7 @@ bool HttpRequest::parseRequestLine(const std::string &data)
     }
 
     // Version
-    const auto version = Until::getLine(offset, data, " ");
+    const auto version = Util::getLine(offset, data, " ");
     if(version.empty())
         return false;
     else
@@ -134,7 +134,7 @@ void HttpRequest::parseArguments(const std::string_view &args)
     std::string::size_type offset = 0;
     std::string_view line;
 
-    while(!(line = Until::getLine(offset, args, "&")).empty())
+    while(!(line = Util::getLine(offset, args, "&")).empty())
     {
         std::string::size_type pos;
         if((pos = line.find('=')) == std::string::npos)

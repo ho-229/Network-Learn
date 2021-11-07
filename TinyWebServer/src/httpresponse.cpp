@@ -5,7 +5,7 @@
 
 #include "httpresponse.h"
 
-#include "until/until.h"
+#include "util/util.h"
 
 #ifdef _WIN32
 # if _MSC_VER >= 1600
@@ -109,5 +109,5 @@ void HttpResponse::buildErrorResponse(int state, const std::string &message)
 inline void HttpResponse::initializatHeaders()
 {
     m_headers["Server"] = "TinyWebServer";
-    m_headers["Date"] = Until::currentDateString();
+    m_headers["Date"] = Util::currentDateString();
 }

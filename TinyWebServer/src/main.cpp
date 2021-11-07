@@ -21,7 +21,7 @@ namespace fs = std::filesystem;
 #include "webserver.h"
 #include "httpservices.h"
 
-#include "until/until.h"
+#include "util/util.h"
 #include "core/sslsocket.h"
 
 #ifdef _WIN32
@@ -40,7 +40,7 @@ void signalHandler(int signum)
 
 int main(int argc, char** argv)
 {
-    std::cout << "Welcome to Tiny Web Server.[" << Until::currentDateString()
+    std::cout << "Welcome to Tiny Web Server.[" << Util::currentDateString()
               << "]\nOpenSSL version: " << SslSocket::sslVersion() << "\n";
 
     // -help, --help or other
