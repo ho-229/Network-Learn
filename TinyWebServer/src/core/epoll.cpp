@@ -4,7 +4,8 @@
  */
 
 #include "epoll.h"
-#include "../until/timermanager.h"
+
+#include <algorithm>
 
 Epoll::Epoll()
 {
@@ -62,7 +63,8 @@ void Epoll::eraseEvent(AbstractSocket * const socket)
 }
 #endif
 
-void Epoll::epoll(std::vector<AbstractSocket *> &events)
+void Epoll::epoll(std::vector<AbstractSocket *> &events,
+                  const std::function<void (AbstractSocket *const)> errorHandler)
 {
 #ifdef _WIN32
     if(m_events.empty())
@@ -86,10 +88,7 @@ void Epoll::epoll(std::vector<AbstractSocket *> &events)
                 this->eraseEvent(it->second.second.get());
         }
         else if(item.revents & POLLERR || item.revents & POLLHUP)
-        {
-            it->second.second->timer()->deleteLater();
-            this->erase(it->second.second.get());
-        }
+            errorHandler(it->second.second.get());
     }
 #else   // Unix
     int ret = -1;
@@ -106,10 +105,7 @@ void Epoll::epoll(std::vector<AbstractSocket *> &events)
         if(item->events & EPOLLIN)
             events.emplace_back(socket);
         else if(item->events & EPOLLERR || item->events & EPOLLHUP)
-        {
-            socket->timer()->deleteLater();
-            this->erase(socket);
-        }
+            errorHandler(socket);
     }
 #endif
 }

@@ -10,6 +10,7 @@
 
 #include <vector>
 #include <memory>
+#include <functional>
 
 #ifdef _WIN32
 # include <unordered_map>
@@ -32,7 +33,8 @@ public:
     void insert(AbstractSocket *const socket, bool once = false);
     void erase(AbstractSocket *const socket);
 
-    void epoll(std::vector<AbstractSocket *> &events);
+    void epoll(std::vector<AbstractSocket *> &events,
+               const std::function<void(AbstractSocket *const)> errorHandler);
 
     size_t count() const
     {

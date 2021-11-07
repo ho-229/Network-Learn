@@ -27,7 +27,14 @@ void ConnectionPool::exec()
 {
     while(m_runnable)
     {
-        m_epoll.epoll(m_queue);
+        m_epoll.epoll(m_queue, [this](AbstractSocket *const socket) {
+            ConnectEvent event(socket, ConnectEvent::Close);
+            m_handler(&event);
+
+            socket->timer()->deleteLater();
+            m_epoll.erase(socket);
+        });
+
         if(!m_queue.empty())
             this->eventsHandler();
 
