@@ -56,17 +56,18 @@ bool HttpServices::process(AbstractSocket *const socket) const
     if(!request->isValid())
         return false;
 
-    socket->addTimes();
+    if(m_maxTimes)
+        socket->addTimes();
 
     static thread_local auto response = std::make_shared<HttpResponse>();
 
     this->callHandler(request.get(), response.get());
 
     std::shared_ptr<char[]> sendBuf(new char[SOCKET_BUF_SIZE]);
-    if(!request->isKeepAlive() || socket->times() > m_maxTimes)
-        response->setRawHeader("Connection", "Close");
-    else
+    if(request->isKeepAlive() && socket->times() <= m_maxTimes)
         response->setRawHeader("Connection", "Keep-Alive");
+    else
+        response->setRawHeader("Connection", "Close");
 
     response->toRawData(raw);
 
