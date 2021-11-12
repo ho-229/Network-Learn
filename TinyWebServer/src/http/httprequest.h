@@ -6,7 +6,7 @@
 #ifndef HTTPREQUEST_H
 #define HTTPREQUEST_H
 
-#include "util/util.h"
+#include "../util/util.h"
 
 #include <map>
 #include <vector>

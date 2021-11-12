@@ -2,6 +2,7 @@
    "src/*.h" "src/*.cpp"
    "src/abstract/*.h" "src/abstract/*.cpp"
    "src/core/*.h" "src/core/*.cpp"
+   "src/http/*.h" "src/http/*.cpp"
    "src/util/*.h" "src/util/*.cpp")
 
 set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
