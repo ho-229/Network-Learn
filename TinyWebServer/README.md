@@ -11,20 +11,21 @@ The idea of doing this project originated from the TinyWebServer of CS:APP, I ho
 > OS: Manjaro KDE
 
 * Short connection
+
 ![image](./screenshot/close.png)
 
 * Keep alive
+
 ![image](./screenshot/keep-alive.png)
 
 ## Features
 
-| Support Headers  | Default Value |
+| Default Response Headers  | Value |
 | ---------------- | ------------- |
 | Connection | keep-alive |
 | Content-Length | \<auto> |
 | Server | TinyWebServer |
 | Date | \<auto> |
-| \<Custom> | \<Custom> |
 
 ## Usage
 
@@ -57,7 +58,7 @@ The idea of doing this project originated from the TinyWebServer of CS:APP, I ho
 
     ```cpp
     #include "webserver.h"
-    #include "httpservices.h"
+    #include "http/httpservices.h"
 
     int main()
     {
