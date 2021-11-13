@@ -40,7 +40,7 @@ void TcpSocket::read(std::string &buffer)
         return;
 
     int ret = 0;
-    std::shared_ptr<char[]> recvBuf(new char[SOCKET_BUF_SIZE]);
+    static thread_local std::shared_ptr<char[]> recvBuf(new char[SOCKET_BUF_SIZE]());
 
     buffer.clear();
     buffer.reserve(SOCKET_BUF_SIZE);
