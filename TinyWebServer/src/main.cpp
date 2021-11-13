@@ -129,7 +129,13 @@ int main(int argc, char** argv)
             if(!fs::is_regular_file(path) ||
                     !resp->setStream(std::shared_ptr<std::istream>(
                     new std::ifstream(path, std::ios::binary))))
-                resp->buildErrorResponse(404, "Not Found");
+            {
+                resp->setRawHeader("Content-Type", "text/html; charset=utf-8");
+                resp->setText("<h2>Tiny Web Server</h2><h1>"
+                              "404 Not Found"
+                              "<br>∑(っ°Д°;)っ<h1>\n");
+                resp->setHttpState({404, "Not Found"});
+            }
         });
 
         std::cout << "Shared directory: " << workPath << ".\n";

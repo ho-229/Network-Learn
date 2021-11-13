@@ -53,8 +53,6 @@ public:
 
     void toRawData(std::string& response);
 
-    void buildErrorResponse(int state, const std::string& message);
-
     inline HttpResponse& operator<<(const std::string& text)
     {
         m_text.append(text);

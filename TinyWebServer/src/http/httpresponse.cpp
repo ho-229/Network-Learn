@@ -7,12 +7,6 @@
 
 #include "../util/util.h"
 
-#ifdef _WIN32
-# if _MSC_VER >= 1600
-#  pragma execution_character_set("utf-8")
-# endif
-#endif
-
 std::unordered_map<std::string, std::string> HttpResponse::PermissibleStaticTypes
     {
         {".html", "text/html"},
@@ -96,15 +90,6 @@ void HttpResponse::toRawData(std::string &response)
         response.append("\r\n").append(m_text);
     else
         response.append("\r\n");
-}
-
-void HttpResponse::buildErrorResponse(int state, const std::string &message)
-{
-    this->setRawHeader("Content-Type", "text/html; charset=utf-8");
-
-    this->setHttpState({404, "Not found"});
-    this->setText("<h2>Tiny Web Server</h2><h1>" + std::to_string(state)
-                  + " " + message + "<br>∑(っ°Д°;)っ<h1>\n");
 }
 
 inline void HttpResponse::initializatHeaders()
