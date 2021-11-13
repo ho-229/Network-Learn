@@ -105,7 +105,7 @@ void Epoll::epoll(std::vector<AbstractSocket *> &events,
         if(item->events & EPOLLIN)
             events.emplace_back(socket);
         else if(item->events & EPOLLERR || item->events & EPOLLHUP)
-            errorHandler(socket);
+            /*errorHandler(socket)*/;
     }
 #endif
 }

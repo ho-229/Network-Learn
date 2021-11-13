@@ -16,6 +16,7 @@ ConnectionPool::ConnectionPool(const std::atomic_bool &runnable, int timeout,
     m_handler(handler)
 {
     m_manager.setTimeout(timeout);
+    m_queue.reserve(512);
 }
 
 ConnectionPool::~ConnectionPool()

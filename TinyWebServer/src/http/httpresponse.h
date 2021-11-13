@@ -68,13 +68,11 @@ private:
 
     std::pair<int, std::string> m_httpState = {200, "OK"};
 
-    inline void initializatHeaders();
-
     std::string m_text;
     std::shared_ptr<std::istream> m_stream;
 
-    std::map<std::string,   // Name
-             std::string>   // Value
+    std::unordered_map<std::string,   // Name
+                       std::string>   // Value
         m_headers;
 
     BodyType m_type = None;

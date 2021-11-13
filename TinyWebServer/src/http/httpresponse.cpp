@@ -25,7 +25,7 @@ std::unordered_map<std::string, std::string> HttpResponse::PermissibleStaticType
 
 HttpResponse::HttpResponse()
 {
-    this->initializatHeaders();
+
 }
 
 void HttpResponse::setText(const std::string& text)
@@ -63,7 +63,6 @@ void HttpResponse::reset()
     m_type = None;
 
     m_headers.clear();
-    this->initializatHeaders();
 }
 
 void HttpResponse::setHttpState(const HttpState &state)
@@ -83,17 +82,15 @@ void HttpResponse::toRawData(std::string &response)
         .append(" ").append(m_httpState.second).append("\r\n");
 
     // Headers
+    response.append("Date: ").append(Util::currentDateString()).append("\r\n");
+    response.append("Server: TinyWebServer\r\n");
+
     for(const auto &[key, value] : m_headers)
         response.append(key).append(": ").append(value).append("\r\n");
 
+    // Body
     if(m_type == PlainText)
         response.append("\r\n").append(m_text);
     else
         response.append("\r\n");
-}
-
-inline void HttpResponse::initializatHeaders()
-{
-    m_headers["Server"] = "TinyWebServer";
-    m_headers["Date"] = Util::currentDateString();
 }
