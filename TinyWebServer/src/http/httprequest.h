@@ -13,6 +13,13 @@
 #include <string>
 #include <unordered_set>
 
+extern "C"
+{
+#ifndef _WIN32
+#include <strings.h>
+#endif
+}
+
 typedef std::pair<std::string,  // Name
                   std::string>  // Value
     UrlArg;
@@ -33,6 +40,8 @@ public:
 
     void parse(const std::string& data);
 
+    void reset();
+
     std::string method() const { return m_method; }
 
     std::string uri() const { return m_uri; }
@@ -43,9 +52,8 @@ public:
 
     std::string body() const { return m_body; }
 
-    std::string rawHeader(std::string name) const
+    std::string rawHeader(const std::string &name) const
     {
-        Util::toLower(name);
         const auto it = m_headers.find(name);
         return it == m_headers.end() ? std::string() : it->second;
     }
@@ -54,8 +62,13 @@ public:
 
     bool isKeepAlive() const
     {
-        const auto it = m_headers.find("connection");
-        return it == m_headers.end() ? true : it->second != "close";
+        const auto it = m_headers.find("Connection");
+        return it == m_headers.end() ? true :
+#ifdef _WIN32
+                   _stricmp(it->second.c_str(), "close");
+#else
+                   strcasecmp(it->second.c_str(), "close");
+#endif
     }
 
     bool isEmpty() const { return m_method.empty() ||
@@ -66,9 +79,10 @@ public:
     static auto& methodSet() { return MethodSet; }
 
 private:
-    void parseArguments(const std::string_view &args);
+    void parseArguments(const std::string &args);
 
-    bool parseRequestLine(const std::string &data);
+    bool parseRequestLine(std::string::size_type &offset,
+                          const std::string &data);
 
     bool m_isValid = false;
 
@@ -79,8 +93,22 @@ private:
 
     std::vector<UrlArg> m_urlArgs;
 
+    struct NocaseCompare
+    {
+        inline bool operator()(const std::string &left,
+                               const std::string &right) const
+        {
+#ifdef _WIN32
+            return !_stricmp(left.c_str(), right.c_str());
+#else
+            return strcasecmp(left.c_str(), right.c_str()) < 0;
+#endif
+        }
+    };
+
     std::map<std::string,   // Name
-             std::string>   // Value
+             std::string,   // Value
+             NocaseCompare> // Compare
         m_headers;
 };
 

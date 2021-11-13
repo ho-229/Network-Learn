@@ -56,6 +56,68 @@ namespace Util
         return ret;
     }
 
+    template <size_t maxCount = 0>
+    bool copyTil(std::string::size_type &offset,
+                 std::string &dst, const std::string &src,
+                 const char &limit)
+    {
+        if(src.empty())
+            return false;
+
+        const auto str = src.c_str();
+        const size_t size = src.size();
+
+        if constexpr(maxCount > 0)
+        {
+            size_t count = 0;
+
+            for(; offset < size; ++offset)
+            {
+                if(str[offset] == limit)
+                    return true;
+                else if(count == maxCount)
+                    return false;
+
+                dst.append(str + offset, 1);
+                ++count;
+            }
+        }
+        else
+        {
+            for(; offset < size; ++offset)
+            {
+                if(str[offset] == limit)
+                    return true;
+
+                dst.append(str + offset, 1);
+            }
+        }
+
+        return false;
+    }
+
+    template <typename Func>
+    bool copyTil(std::string::size_type &offset,
+                 std::string &dst, const std::string &src,
+                 const Func &limit)
+    {
+        if(src.empty())
+            return false;
+
+        const auto str = src.c_str();
+        const size_t size = src.size();
+
+        for(; offset < size; ++offset)
+        {
+            if(limit(str[offset]))
+                return true;
+
+            dst.append(str + offset, 1);
+        }
+
+        return false;
+    }
+
     template <typename T>
     inline void toHex(std::string& buf, T num)
     {
@@ -63,10 +125,6 @@ namespace Util
         stream << std::hex << num;
         buf += stream.str();
     }
-
-    template <typename Str>
-    inline void toLower(Str& str)
-    { std::transform(str.begin(), str.end(), str.begin(), tolower); }
 }
 
 #endif // UTIL_H

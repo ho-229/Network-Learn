@@ -22,45 +22,54 @@ HttpRequest::HttpRequest(const std::string &data)
 
 void HttpRequest::parse(const std::string &data)
 {
-    m_headers.clear();
-    m_urlArgs.clear();
-    m_isValid = false;
+    this->reset();
 
     std::string::size_type offset = 0;
+    const size_t size = data.size();
 
-    const auto requestLine = Util::getLine(offset, data, "\r\n");
-    if(requestLine.empty() || !this->parseRequestLine(std::string(requestLine)))
+    if(data.empty() || !this->parseRequestLine(offset, data))
         return;
 
-    std::string line;
-    while(true)
+    // Parse headers
+    std::string key, value;
+    while(offset < size && data.at(offset) != '\r')
     {
-        line = Util::getLine(offset, data, "\r\n");
-        if(line.empty())
-            break;
+        if(!Util::copyTil(offset, key, data, ':'))
+            return;
+        ++offset;
 
-        Util::toLower(line);
+        while(offset < size && data.at(offset) == ' ')
+            ++offset;
 
-        const auto splitPos = line.find(':');
-        if(splitPos == std::string_view::npos)
-            break;
+        if(!Util::copyTil(offset, value, data, '\r'))
+            return;
+        offset += 2;
 
-        // Remove spaces forward
-        auto keyEnd = splitPos;
-        while(keyEnd - 1 > 0 && line[keyEnd] == ' ')
-            --keyEnd;
+        m_headers.insert({key, value});
 
-        // Remove spaces backward
-        auto valueStart = splitPos + 1;
-        while(valueStart + 1 < line.size() && line[valueStart] == ' ')
-            ++valueStart;
-
-        m_headers[line.substr(0, keyEnd)] = line.substr(valueStart);
+        key.clear();
+        value.clear();
     }
+    offset += 2;
 
-    m_body = data.substr(offset);
+    // Body
+    if(offset < size)
+        m_body.assign(data.c_str() + offset, size - offset);
 
     m_isValid = true;
+}
+
+void HttpRequest::reset()
+{
+    m_method.clear();
+    m_uri.clear();
+    m_httpVersion.clear();
+    m_body.clear();
+
+    m_headers.clear();
+    m_urlArgs.clear();
+
+    m_isValid = false;
 }
 
 std::pair<int64_t, int64_t> HttpRequest::range() const
@@ -79,57 +88,41 @@ std::pair<int64_t, int64_t> HttpRequest::range() const
     return {atoll(result[1].str().c_str()), atoll(result[2].str().c_str())};
 }
 
-bool HttpRequest::parseRequestLine(const std::string &data)
+bool HttpRequest::parseRequestLine(std::string::size_type &offset,
+                                   const std::string &data)
 {
-    std::string::size_type offset = 0;
-
     // Method
-    const auto method = Util::getLine(offset, data, " ");
-    if(method.empty())
+    if(!Util::copyTil<7>(offset, m_method, data, ' '))
         return false;
-    else
-        m_method = method;
+    ++offset;
 
     // URI
-    const auto uri = Util::getLine(offset, data, " ");
-    if(uri.empty())
-        return false;
-    else
+    if(Util::copyTil(offset, m_uri, data,
+                      [](const char &ch) -> bool { return ch == '?' || ch == ' '; }))
     {
-        std::string::size_type pos;
-
-        while(true)
+        if(data.at(offset) == '?')
         {
-            if((pos = uri.find('?')) == std::string::npos)
-                m_uri = uri;
-            else
-            {
-                if(uri[pos - 1] == '\\')   // Ignore "\?"
-                    continue;
+            std::string args;
+            ++offset;
 
-                m_uri = uri.substr(0, pos);
-                this->parseArguments(uri.substr(pos + 1));
-            }
-
-            break;
+            if(!Util::copyTil(offset, args, data, ' '))
+                return false;
+            this->parseArguments(args);
         }
     }
+    else
+        return false;
+    ++offset;
 
     // Version
-    const auto version = Util::getLine(offset, data, " ");
-    if(version.empty())
+    if(!Util::copyTil(offset, m_httpVersion, data, '\r'))
         return false;
-    else
-    {
-        std::string::size_type pos;
-        if((m_isValid = ((pos = version.find('/')) != std::string::npos)))
-            m_httpVersion = version.substr(pos + 1);
-    }
+    offset += 2;
 
     return true;
 }
 
-void HttpRequest::parseArguments(const std::string_view &args)
+void HttpRequest::parseArguments(const std::string &args)
 {
     std::string::size_type offset = 0;
     std::string_view line;

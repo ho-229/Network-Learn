@@ -66,6 +66,7 @@ void HttpResponse::reset()
 {
     m_text.clear();
     m_stream.reset();
+    m_type = None;
 
     m_headers.clear();
     this->initializatHeaders();
@@ -84,15 +85,15 @@ void HttpResponse::toRawData(std::string &response)
     response.clear();
 
     // Response line
-    response.append("HTTP/1.1 " + std::to_string(m_httpState.first) + ' '
-                    + m_httpState.second + "\r\n");
+    response.append("HTTP/1.1 ").append(std::to_string(m_httpState.first))
+            .append(m_httpState.second).append("\r\n");
 
     // Headers
     for(const auto &[key, value] : m_headers)
-        response.append(key + ": " + value + "\r\n");
+        response.append(key).append(": ").append(value).append("\r\n");
 
     if(m_type == PlainText)
-        response.append("\r\n" + m_text);
+        response.append("\r\n").append(m_text);
     else
         response.append("\r\n");
 }
