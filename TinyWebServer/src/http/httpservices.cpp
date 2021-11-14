@@ -76,7 +76,7 @@ bool HttpServices::process(AbstractSocket *const socket) const
 
     if(response->bodyType() == HttpResponse::Stream)
     {
-        if(!sendStream(socket, &response->stream()))
+        if(!sendStream(socket, response->m_stream.get()))
             return false;
     }
 
@@ -97,7 +97,7 @@ void HttpServices::callHandler(HttpRequest *const request,
         // URI -> Handler
         const auto handlerIt = methodIt->second.uriHandlers.find(request->uri());
         if(handlerIt == methodIt->second.uriHandlers.end())         // URI not found
-            methodIt->second.defaultHandler(request, response);  // Default handler
+            methodIt->second.defaultHandler(request, response);     // Default handler
         else
             handlerIt->second(request, response);
 
@@ -114,7 +114,7 @@ bool HttpServices::sendStream(AbstractSocket *const socket,
     if(!socket || stream->bad())
         return false;
 
-    std::shared_ptr<char[]> sendBuf(new char[SOCKET_BUF_SIZE]());
+    static thread_local std::shared_ptr<char[]> sendBuf(new char[SOCKET_BUF_SIZE]());
 
     while(!stream->eof())
     {

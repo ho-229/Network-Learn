@@ -32,11 +32,11 @@ public:
     std::string text() const { return m_text; }
 
     bool setStream(std::shared_ptr<std::istream> &&stream);
-    std::istream& stream() const { return *m_stream; }
+    const std::istream& stream() const { return *m_stream; }
 
     void reset();
 
-    bool isEmpty() const { return m_text.empty() && m_stream->bad(); }
+    bool isEmpty() const { return m_text.empty() && !m_stream; }
 
     BodyType bodyType() const { return m_type; }
 
@@ -64,6 +64,8 @@ public:
     }
 
 private:
+    friend class HttpServices;
+
     std::pair<int, std::string> m_httpState = {200, "OK"};
 
     inline void initializatHeaders();

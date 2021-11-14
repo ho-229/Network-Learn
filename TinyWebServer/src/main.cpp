@@ -19,10 +19,9 @@
 namespace fs = std::filesystem;
 
 #include "webserver.h"
-#include "http/httpservices.h"
-
 #include "util/util.h"
 #include "core/sslsocket.h"
+#include "http/httpservices.h"
 
 #ifdef _WIN32
 # if _MSC_VER >= 1600
@@ -119,6 +118,12 @@ int main(int argc, char** argv)
         resp->setRawHeader("Content-type", "text/html; charset=utf-8");
         *resp << "Hello world.\n";
     });
+
+    services->addService("POST", "/post",
+                         [](HttpRequest *req, HttpResponse *resp) {
+                             std::cout << "post data: " << req->body() << "\n";
+                             resp->setText(req->body());
+                         });
 
     if(argc > 3 && fs::is_directory(argv[3]))
     {

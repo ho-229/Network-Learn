@@ -80,7 +80,7 @@ void HttpResponse::toRawData(std::string &response)
 
     // Response line
     response.append("HTTP/1.1 ").append(std::to_string(m_httpState.first))
-            .append(m_httpState.second).append("\r\n");
+        .append(" ").append(m_httpState.second).append("\r\n");
 
     // Headers
     for(const auto &[key, value] : m_headers)
