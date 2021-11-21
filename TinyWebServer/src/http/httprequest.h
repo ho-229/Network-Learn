@@ -23,14 +23,6 @@ typedef std::pair<std::string,  // Name
                   std::string>  // Value
     UrlArgument;
 
-static std::unordered_set<std::string> MethodSet
-    {
-        "GET",
-        "POST",
-        "HEAD",
-        "DELETE"
-    };
-
 class HttpRequest
 {
 public:
@@ -75,7 +67,7 @@ public:
 
     bool isValid() const { return m_isValid; }
 
-    static auto& methodSet() { return MethodSet; }
+    static std::unordered_set<std::string> MethodSet;
 
 private:
     void parseArguments(const std::string &args);

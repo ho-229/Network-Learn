@@ -7,8 +7,6 @@
 #define HTTPRESPONSE_H
 
 #include <memory>
-#include <string>
-#include <istream>
 
 #include "../util/headermap.h"
 

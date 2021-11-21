@@ -1,4 +1,9 @@
-﻿#ifndef HEADERMAP_H
+﻿/**
+ * @author Ho 229
+ * @date 2021/11/21
+ */
+
+#ifndef HEADERMAP_H
 #define HEADERMAP_H
 
 #ifndef _WIN32

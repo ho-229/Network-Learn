@@ -7,6 +7,14 @@
 
 #include <regex>
 
+std::unordered_set<std::string> HttpRequest::MethodSet
+    {
+        "GET",
+        "POST",
+        "HEAD",
+        "DELETE"
+    };
+
 HttpRequest::HttpRequest()
 {
 
