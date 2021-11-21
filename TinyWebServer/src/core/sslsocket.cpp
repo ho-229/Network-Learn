@@ -17,6 +17,7 @@ extern "C"
 # include <netdb.h>
 # include <unistd.h>
 # include <string.h>
+# include <sys/mman.h>
 
 # define CLOSE(x) ::close(x)
 #endif
@@ -88,6 +89,18 @@ void SslSocket::close()
 
     m_ssl = nullptr;
 }
+
+#ifdef __linux__
+ssize_t SslSocket::sendFile(int fd, off_t offset, size_t count)
+{
+    char *ptr = static_cast<char *>(
+                mmap(nullptr, count, PROT_READ, MAP_SHARED, fd, offset));
+    const int ret = this->write(ptr, count);
+    munmap(ptr, count);
+
+    return ret;
+}
+#endif
 
 bool SslSocket::initializatSsl(const std::string& certFile,
                                const std::string& privateKey)

@@ -17,6 +17,7 @@ extern "C"
 # include <unistd.h>
 # include <string.h>
 # include <netinet/tcp.h>
+# include <sys/sendfile.h>
 
 # define CLOSE(x) ::close(x)
 #endif
@@ -104,6 +105,13 @@ void TcpSocket::close()
 {
     CLOSE(m_descriptor);
 }
+
+#ifdef __linux__
+ssize_t TcpSocket::sendFile(int fd, off_t offset, size_t count)
+{
+    return sendfile(m_descriptor, fd, &offset, count);
+}
+#endif
 
 bool TcpSocket::listen(const std::string &hostName, const std::string &port, bool sslEnable)
 {

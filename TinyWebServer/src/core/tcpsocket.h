@@ -23,6 +23,10 @@ public:
 
     bool isValid() const override { return AbstractSocket::isValid(m_descriptor); }
 
+#ifdef __linux__
+    ssize_t sendFile(int fd, off_t offset, size_t count) override;
+#endif
+
     /**
      * @ref CS:APP(3) P662: int open_listenfd(char *port)
      * @brief Listen on the given port

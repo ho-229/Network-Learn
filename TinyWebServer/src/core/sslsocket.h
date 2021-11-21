@@ -28,6 +28,10 @@ public:
 
     bool isListening() const override { return false; }
 
+#ifdef __linux__
+    ssize_t sendFile(int fd, off_t offset, size_t count) override;
+#endif
+
     static bool initializatSsl(const std::string& certFile,
                                const std::string& privateKey);
     static void cleanUpSsl();
