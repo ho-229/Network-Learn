@@ -7,10 +7,9 @@
 #define HTTPREQUEST_H
 
 #include "../util/util.h"
+#include "../util/headermap.h"
 
-#include <map>
 #include <vector>
-#include <string>
 #include <unordered_set>
 
 extern "C"
@@ -22,7 +21,7 @@ extern "C"
 
 typedef std::pair<std::string,  // Name
                   std::string>  // Value
-    UrlArg;
+    UrlArgument;
 
 static std::unordered_set<std::string> MethodSet
     {
@@ -46,7 +45,7 @@ public:
 
     std::string uri() const { return m_uri; }
 
-    const std::vector<UrlArg>& urlArguments() const { return m_urlArgs; }
+    const std::vector<UrlArgument>& urlArguments() const { return m_urlArgs; }
 
     std::string httpVersion() const { return m_httpVersion; }
 
@@ -91,25 +90,9 @@ private:
     std::string m_httpVersion;
     std::string m_body;
 
-    std::vector<UrlArg> m_urlArgs;
+    std::vector<UrlArgument> m_urlArgs;
 
-    struct NocaseCompare
-    {
-        inline bool operator()(const std::string &left,
-                               const std::string &right) const
-        {
-#ifdef _WIN32
-            return !_stricmp(left.c_str(), right.c_str());
-#else
-            return strcasecmp(left.c_str(), right.c_str()) < 0;
-#endif
-        }
-    };
-
-    std::map<std::string,   // Name
-             std::string,   // Value
-             NocaseCompare> // Compare
-        m_headers;
+    HeaderMap m_headers;
 };
 
 #endif // HTTPREQUEST_H

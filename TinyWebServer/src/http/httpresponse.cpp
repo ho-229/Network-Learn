@@ -33,7 +33,7 @@ void HttpResponse::setText(const std::string& text)
     m_text = text;
     m_headers["Content-Length"] = std::to_string(m_text.size());
 
-    m_type = PlainText;
+    m_type = BodyType::PlainText;
 }
 
 bool HttpResponse::setStream(std::shared_ptr<std::istream> &&stream)
@@ -51,7 +51,7 @@ bool HttpResponse::setStream(std::shared_ptr<std::istream> &&stream)
 
     m_stream->seekg(0, std::ios::beg);
 
-    m_type = Stream;
+    m_type = BodyType::Stream;
 
     return true;
 }
@@ -60,7 +60,7 @@ void HttpResponse::reset()
 {
     m_text.clear();
     m_stream.reset();
-    m_type = None;
+    m_type = BodyType::None;
 
     m_headers.clear();
 }
@@ -89,7 +89,7 @@ void HttpResponse::toRawData(std::string &response)
         response.append(key).append(": ").append(value).append("\r\n");
 
     // Body
-    if(m_type == PlainText)
+    if(m_type == BodyType::PlainText)
         response.append("\r\n").append(m_text);
     else
         response.append("\r\n");

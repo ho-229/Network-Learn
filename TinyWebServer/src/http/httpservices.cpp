@@ -74,7 +74,7 @@ bool HttpServices::process(AbstractSocket *const socket) const
     if(socket->write(raw) <= 0)
         return false;
 
-    if(response->bodyType() == HttpResponse::Stream)
+    if(response->bodyType() == HttpResponse::BodyType::Stream)
     {
         if(!sendStream(socket, response->m_stream.get()))
             return false;

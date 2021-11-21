@@ -6,18 +6,18 @@
 #ifndef HTTPRESPONSE_H
 #define HTTPRESPONSE_H
 
-#include <map>
 #include <memory>
 #include <string>
 #include <istream>
-#include <unordered_map>
+
+#include "../util/headermap.h"
 
 typedef std::pair<int, std::string> HttpState;
 
 class HttpResponse
 {
 public:
-    enum BodyType
+    enum class BodyType
     {
         None,
         PlainText,
@@ -58,7 +58,7 @@ public:
         m_text.append(text);
         m_headers["Content-Length"] = std::to_string(m_text.size());
 
-        m_type = PlainText;
+        m_type = BodyType::PlainText;
 
         return *this;
     }
@@ -66,16 +66,14 @@ public:
 private:
     friend class HttpServices;
 
-    std::pair<int, std::string> m_httpState = {200, "OK"};
+    HttpState m_httpState = {200, "OK"};
 
     std::string m_text;
     std::shared_ptr<std::istream> m_stream;
 
-    std::unordered_map<std::string,   // Name
-                       std::string>   // Value
-        m_headers;
+    HeaderMap m_headers;
 
-    BodyType m_type = None;
+    BodyType m_type = BodyType::None;
 };
 
 #endif // HTTPRESPONSE_H
