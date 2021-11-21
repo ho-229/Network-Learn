@@ -1,0 +1,43 @@
+﻿/**
+ * @author Ho 229
+ * @date 2021/11/21
+ */
+
+#include "abstractsocket.h"
+
+bool AbstractSocket::sendStream(std::istream * const stream,
+                                std::istream::off_type offset, size_t count)
+{
+    if(!stream)
+        return false;
+
+    stream->seekg(offset, std::ios::beg);
+
+    static thread_local std::shared_ptr<char[]> buffer(new char[SOCKET_BUF_SIZE]());
+
+    if(count)
+    {
+        size_t leftSize = count;
+        int writtenSize = 0;
+
+        while(leftSize > 0 && !stream->eof())
+        {
+            stream->read(buffer.get(),
+                         leftSize > SOCKET_BUF_SIZE ? SOCKET_BUF_SIZE : leftSize);
+            if((writtenSize = this->write(buffer.get(), int(stream->gcount()))) <= 0)
+                return false;
+
+            leftSize -= size_t(writtenSize);
+        }
+    }
+    else
+    {
+        while(!stream->eof())
+        {
+            stream->read(buffer.get(), SOCKET_BUF_SIZE);
+            this->write(buffer.get(), int(stream->gcount()));
+        }
+    }
+
+    return true;
+}

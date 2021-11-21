@@ -7,10 +7,9 @@
 #define ABSTRACTSOCKET_H
 
 #include <string>
+#include <memory>
 
-#define BUF_SIZE 64
 #define SOCKET_BUF_SIZE 4096
-
 #define SOCKET_INFO_ENABLE 0
 
 extern "C"
@@ -73,7 +72,32 @@ public:
     std::string port() const { return m_port; }
 #endif
 
+    template <typename T>
+    int setOption(int level, int option, const T value)
+    {
+        return setsockopt(m_descriptor, level, option,
+                          reinterpret_cast<const char *>(&value), sizeof (T));
+    }
+
+    template <typename T>
+    int option(int level, int option) const
+    {
+        T value;
+        socklen_t len = sizeof (T);
+
+        return getsockopt(m_descriptor, level, option, &value, &len);
+    }
+
+    void setTimer(Timer<AbstractSocket *> *timer) { m_timer = timer; }
+    Timer<AbstractSocket *> *timer() const { return m_timer; }
+
+    void addTimes() { ++m_times; }
+    size_t times() const { return m_times; }
+
     Socket descriptor() const { return m_descriptor; }
+
+    bool sendStream(std::istream *const stream,
+                    std::istream::off_type offset = 0, size_t count = 0);
 
     static inline constexpr bool isValid(const Socket& sock)
     {
@@ -83,12 +107,6 @@ public:
         return sock > 0;
 #endif
     }
-
-    void setTimer(Timer<AbstractSocket *> *timer) { m_timer = timer; }
-    Timer<AbstractSocket *> *timer() const { return m_timer; }
-
-    void addTimes() { ++m_times; }
-    size_t times() const { return m_times; }
 
 protected:
     explicit AbstractSocket(const Socket socket = DEFAULT_SOCKET) :

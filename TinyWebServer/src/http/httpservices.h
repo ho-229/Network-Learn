@@ -7,7 +7,6 @@
 #define HTTPSERVICES_H
 
 #include <memory>
-#include <istream>
 #include <unordered_map>
 
 #include "httprequest.h"
@@ -42,9 +41,6 @@ private:
 
     void callHandler(HttpRequest *const request,
                      HttpResponse *const response) const;
-
-    static bool sendStream(AbstractSocket *const socket,
-                           std::istream * const stream);
 
     std::unordered_map<std::string,     // Method -> {URI -> Handler}
                        UriHandler>      // URI -> Handler

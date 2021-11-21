@@ -76,7 +76,7 @@ bool HttpServices::process(AbstractSocket *const socket) const
 
     if(response->bodyType() == HttpResponse::BodyType::Stream)
     {
-        if(!sendStream(socket, response->m_stream.get()))
+        if(!socket->sendStream(response->m_stream.get()))
             return false;
     }
 
@@ -106,23 +106,4 @@ void HttpServices::callHandler(HttpRequest *const request,
 
     // Method not found
     response->setHttpState({405, "Method Not Allowed"});
-}
-
-bool HttpServices::sendStream(AbstractSocket *const socket,
-                              std::istream *const stream)
-{
-    if(!socket || stream->bad())
-        return false;
-
-    static thread_local std::shared_ptr<char[]> sendBuf(new char[SOCKET_BUF_SIZE]());
-
-    while(!stream->eof())
-    {
-        stream->read(sendBuf.get(), SOCKET_BUF_SIZE);
-
-        if(socket->write(sendBuf.get(), int(stream->gcount())) <= 0)
-            return false;
-    }
-
-    return true;
 }

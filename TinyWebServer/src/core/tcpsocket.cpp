@@ -7,8 +7,6 @@
 
 #include "tcpsocket.h"
 
-#include <memory>
-
 extern "C"
 {
 #ifdef _WIN32
@@ -131,8 +129,7 @@ bool TcpSocket::listen(const std::string &hostName, const std::string &port, boo
             continue;
 
         // Eliminates "Address already in use" error from bind
-        setsockopt(m_descriptor, SOL_SOCKET, SO_REUSEADDR,
-                   reinterpret_cast<const char *>(&optval), sizeof(int));
+        this->setOption(SOL_SOCKET, SO_REUSEADDR, optval);
 
         // Bind the descriptor to the address
         if(!bind(m_descriptor, it->ai_addr, socklen_t(it->ai_addrlen)))
