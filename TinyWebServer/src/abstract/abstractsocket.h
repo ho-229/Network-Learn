@@ -8,6 +8,7 @@
 
 #include <string>
 #include <memory>
+#include <istream>
 
 #define SOCKET_BUF_SIZE 4096
 #define SOCKET_INFO_ENABLE 0
