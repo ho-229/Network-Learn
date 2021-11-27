@@ -17,6 +17,7 @@ ConnectionPool::ConnectionPool(const std::atomic_bool &runnable, int timeout,
 {
     m_manager.setTimeout(timeout);
     m_queue.reserve(512);
+    m_errorQueue.reserve(512);
 }
 
 ConnectionPool::~ConnectionPool()
@@ -28,15 +29,9 @@ void ConnectionPool::exec()
 {
     while(m_runnable)
     {
-        m_epoll.epoll(m_queue, [this](AbstractSocket *const socket) {
-            ConnectEvent event(socket, ConnectEvent::Close);
-            m_handler(&event);
+        m_epoll.epoll(m_queue, m_errorQueue);
 
-            socket->timer()->deleteLater();
-            m_epoll.erase(socket);
-        });
-
-        if(!m_queue.empty())
+        if(!m_queue.empty() || !m_errorQueue.empty())
             this->eventsHandler();
 
         // Clean up timeout connections
@@ -91,4 +86,15 @@ void ConnectionPool::eventsHandler()
     }
 
     m_queue.clear();
+
+    for(auto& socket : m_errorQueue)
+    {
+        ConnectEvent event(socket, ConnectEvent::Close);
+        m_handler(&event);
+
+        socket->timer()->deleteLater();
+        m_epoll.erase(socket);
+    }
+
+    m_errorQueue.clear();
 }

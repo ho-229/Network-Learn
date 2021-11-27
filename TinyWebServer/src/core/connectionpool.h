@@ -48,6 +48,7 @@ private:
     Epoll m_epoll;
 
     std::vector<AbstractSocket *> m_queue;
+    std::vector<AbstractSocket *> m_errorQueue;
 
     const std::atomic_bool &m_runnable;
 

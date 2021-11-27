@@ -34,7 +34,7 @@ public:
     void erase(AbstractSocket *const socket);
 
     void epoll(std::vector<AbstractSocket *> &events,
-               const std::function<void(AbstractSocket *const)> errorHandler);
+               std::vector<AbstractSocket *> &errorEvents);
 
     size_t count() const
     {

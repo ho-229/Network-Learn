@@ -17,8 +17,6 @@ class ConnectionPool;
 class AbstractSocket;
 class AbstractServices;
 
-typedef std::pair<std::string, std::string> ServerPort;
-
 class WebServer
 {
 public:
