@@ -81,12 +81,17 @@ public:
     }
 
     template <typename T>
-    int option(int level, int option) const
+    T option(int level, int option, int *ret = nullptr) const
     {
         T value;
         socklen_t len = sizeof (T);
 
-        return getsockopt(m_descriptor, level, option, &value, &len);
+        if(ret)
+            *ret = getsockopt(m_descriptor, level, option, &value, &len);
+        else
+            getsockopt(m_descriptor, level, option, &value, &len);
+
+        return value;
     }
 
     void setTimer(Timer<AbstractSocket *> *timer) { m_timer = timer; }
@@ -137,6 +142,8 @@ protected:
 #endif
 
     Timer<AbstractSocket *> *m_timer = nullptr;
+
+    static thread_local std::shared_ptr<char[]> buffer;
 };
 
 #endif // ABSTRACTSOCKET_H

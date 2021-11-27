@@ -39,35 +39,34 @@ void TcpSocket::read(std::string &buffer)
         return;
 
     int ret = 0;
-    static thread_local std::shared_ptr<char[]> recvBuf(new char[SOCKET_BUF_SIZE]());
 
     buffer.clear();
     buffer.reserve(SOCKET_BUF_SIZE);
 #ifdef _WIN32
     do
     {
-        if((ret = recv(m_descriptor, recvBuf.get(), SOCKET_BUF_SIZE, 0)) == WSAEMSGSIZE)
+        if((ret = recv(m_descriptor, AbstractSocket::buffer.get(), SOCKET_BUF_SIZE, 0)) == WSAEMSGSIZE)
         {
-            buffer.append(recvBuf.get(), SOCKET_BUF_SIZE);
+            buffer.append(AbstractSocket::buffer.get(), SOCKET_BUF_SIZE);
             continue;
         }
         else if(ret > 0)
-            buffer.append(recvBuf.get(), size_t(ret));
+            buffer.append(AbstractSocket::buffer.get(), size_t(ret));
     }
     while(false);
 #else   // Unix
     do
     {
         do
-            ret = ::read(m_descriptor, recvBuf.get(), SOCKET_BUF_SIZE);
+            ret = ::read(m_descriptor, AbstractSocket::buffer.get(), SOCKET_BUF_SIZE);
         while(ret <= 0 && errno == EINTR);
 
         if(ret <= 0)
             break;  // EOF
 
-        buffer.append(recvBuf.get(), size_t(ret));
+        buffer.append(AbstractSocket::buffer.get(), size_t(ret));
     }
-    while(ret == SOCKET_BUF_SIZE && recvBuf[SOCKET_BUF_SIZE - 1] != '\n');
+    while(ret == SOCKET_BUF_SIZE && AbstractSocket::buffer[SOCKET_BUF_SIZE - 1] != '\n');
 #endif
 }
 

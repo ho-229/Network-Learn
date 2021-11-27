@@ -5,6 +5,9 @@
 
 #include "abstractsocket.h"
 
+thread_local std::shared_ptr<char[]> AbstractSocket::buffer(
+    new char[SOCKET_BUF_SIZE]());
+
 bool AbstractSocket::sendStream(std::istream * const stream,
                                 std::istream::off_type offset, size_t count)
 {
@@ -13,7 +16,7 @@ bool AbstractSocket::sendStream(std::istream * const stream,
 
     stream->seekg(offset, std::ios::beg);
 
-    static thread_local std::shared_ptr<char[]> buffer(new char[SOCKET_BUF_SIZE]());
+    static thread_local std::shared_ptr<char[]> filebuf(new char[SOCKET_BUF_SIZE]());
 
     if(count)
     {
@@ -22,9 +25,9 @@ bool AbstractSocket::sendStream(std::istream * const stream,
 
         while(leftSize > 0 && !stream->eof())
         {
-            stream->read(buffer.get(),
+            stream->read(filebuf.get(),
                          leftSize > SOCKET_BUF_SIZE ? SOCKET_BUF_SIZE : leftSize);
-            if((writtenSize = this->write(buffer.get(), int(stream->gcount()))) <= 0)
+            if((writtenSize = this->write(filebuf.get(), int(stream->gcount()))) <= 0)
                 return false;
 
             leftSize -= size_t(writtenSize);
@@ -34,8 +37,8 @@ bool AbstractSocket::sendStream(std::istream * const stream,
     {
         while(!stream->eof())
         {
-            stream->read(buffer.get(), SOCKET_BUF_SIZE);
-            this->write(buffer.get(), int(stream->gcount()));
+            stream->read(filebuf.get(), SOCKET_BUF_SIZE);
+            this->write(filebuf.get(), int(stream->gcount()));
         }
     }
 

@@ -7,9 +7,10 @@
 #define WEBSERVER_H
 
 #include "util/event.h"
-#include "util/threadpool.h"
-
 #include "abstract/abstractservices.h"
+
+#include <atomic>
+#include <thread>
 
 #define ANY_HOST "0.0.0.0"
 
@@ -65,8 +66,6 @@ private:
     size_t m_loopCount = std::thread::hardware_concurrency();
 
     int m_timeout = 30000;
-
-    //ThreadPool m_pool;
 
     std::vector<std::shared_ptr<ConnectionPool>> m_pools;
     std::vector<std::shared_ptr<AbstractSocket>> m_listeners;

@@ -55,18 +55,17 @@ void SslSocket::read(std::string &buffer)
         return;
 
     int ret = 0;
-    static thread_local std::shared_ptr<char[]> recvBuf(new char[SOCKET_BUF_SIZE]());
 
     buffer.clear();
     buffer.reserve(SOCKET_BUF_SIZE);
     do
     {
-        if((ret = SSL_read(m_ssl, recvBuf.get(), SOCKET_BUF_SIZE - 1)) <= 0)
+        if((ret = SSL_read(m_ssl, AbstractSocket::buffer.get(), SOCKET_BUF_SIZE - 1)) <= 0)
             break;  // EOF
 
-        buffer.append(recvBuf.get(), size_t(ret));
+        buffer.append(AbstractSocket::buffer.get(), size_t(ret));
     }
-    while(ret == SOCKET_BUF_SIZE && recvBuf[SOCKET_BUF_SIZE - 1] != '\n');
+    while(ret == SOCKET_BUF_SIZE && AbstractSocket::buffer[SOCKET_BUF_SIZE - 1] != '\n');
 }
 
 int SslSocket::write(const char *buf, int size)

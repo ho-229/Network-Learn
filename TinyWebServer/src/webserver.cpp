@@ -55,11 +55,12 @@ int WebServer::start()
 }
 
 void WebServer::waitForFinished()
-{   
+{
     for(auto &pool : m_pools)
         pool->waitForFinished();
 
     m_pools.clear();
+    m_listeners.clear();
 }
 
 void WebServer::listen(const std::string &hostName, const std::string &port,
@@ -80,7 +81,7 @@ void WebServer::listen(const std::string &hostName, const std::string &port,
         return;
     }
 
-    auto socket = std::make_shared<TcpSocket>();
+    auto socket = new TcpSocket();
 
     if(!socket->listen(hostName, port, sslEnable))
     {
@@ -90,5 +91,5 @@ void WebServer::listen(const std::string &hostName, const std::string &port,
         return;
     }
 
-    m_listeners.push_back(socket);
+    m_listeners.emplace_back(static_cast<AbstractSocket *>(socket));
 }
