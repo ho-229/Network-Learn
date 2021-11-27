@@ -3,7 +3,7 @@
 ![license](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)
 ![windows](https://github.com/ho229v3666/Network-Learn/workflows/Windows/badge.svg?style=flat-square)
 ![linux](https://github.com/ho229v3666/Network-Learn/workflows/Linux/badge.svg?style=flat-square)  
-A cross-platform network learning ~~demos~~(toys). And I try ~~not~~ use 3rd-party libraries.  
+A cross-platform network learning ~~demos~~(toys). And I try ~~not~~ to use 3rd-party libraries.  
 Welcome to try it out and leave your comments.
 
 | Name | Description |
