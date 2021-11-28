@@ -8,20 +8,20 @@
 
 #include <fstream>
 #include <iostream>
-#include <filesystem>
 
 #include <signal.h>
+
+#include <fcntl.h>
 
 #if PROFILER_ENABLE
 # include <gperftools/profiler.h>
 #endif
 
-namespace fs = std::filesystem;
-
 #include "webserver.h"
 #include "util/util.h"
 #include "core/sslsocket.h"
 #include "http/httpservices.h"
+#include "util/sharedfilepool.h"
 
 #ifdef _WIN32
 # if _MSC_VER >= 1600
@@ -125,6 +125,28 @@ int main(int argc, char** argv)
                              resp->setText(req->body());
                          });
 
+#ifdef __linux__
+    std::shared_ptr<SharedFilePool> pool;
+    if(argc > 3 && fs::is_directory(argv[3]))
+    {
+        pool.reset(new SharedFilePool(argv[3]));
+
+        services->setDefaultService("GET", [&pool](HttpRequest *req, HttpResponse *resp) {
+            if(auto ret = pool->get(req->uri()); !ret.has_value())
+            {
+                resp->setRawHeader("Content-Type", "text/html; charset=utf-8");
+                resp->setText("<h2>Tiny Web Server</h2><h1>"
+                              "404 Not Found"
+                              "<br>∑(っ°Д°;)っ<h1>\n");
+                resp->setHttpState({404, "Not Found"});
+            }
+            else
+                resp->sendFile(ret.value().fd, 0, ret.value().fileSize);
+        });
+
+        std::cout << "Shared directory: " << pool->root() << ".\n";
+    }
+#else
     if(argc > 3 && fs::is_directory(argv[3]))
     {
         const std::string workPath(argv[3]);
@@ -132,7 +154,7 @@ int main(int argc, char** argv)
         services->setDefaultService("GET", [workPath](HttpRequest *req, HttpResponse *resp) {
             fs::path path(workPath + req->uri());
             if(!fs::is_regular_file(path) ||
-                    !resp->setStream(std::shared_ptr<std::istream>(
+                    !resp->sendStream(std::shared_ptr<std::istream>(
                     new std::ifstream(path, std::ios::binary))))
             {
                 resp->setRawHeader("Content-Type", "text/html; charset=utf-8");
@@ -145,6 +167,7 @@ int main(int argc, char** argv)
 
         std::cout << "Shared directory: " << workPath << ".\n";
     }
+#endif
 
     if(argc >= 2)   // HTTP
     {
