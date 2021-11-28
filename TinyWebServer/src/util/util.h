@@ -125,6 +125,16 @@ namespace Util
         stream << std::hex << num;
         buf += stream.str();
     }
+
+    template <typename Func>
+    class DestroyFunction
+    {
+        Func m_func;
+
+    public:
+        explicit DestroyFunction(const Func &func) : m_func(func) {}
+        ~DestroyFunction() { m_func(); }
+    };
 }
 
 #endif // UTIL_H

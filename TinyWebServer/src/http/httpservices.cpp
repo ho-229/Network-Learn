@@ -69,18 +69,40 @@ bool HttpServices::process(AbstractSocket *const socket) const
 
     response->toRawData(raw);
 
-    if(socket->write(raw) <= 0)
-        return false;
+    Util::DestroyFunction destroy([] { response->reset(); });
 
-    if(response->bodyType() == HttpResponse::BodyType::Stream)
+    if(response->bodyType() == HttpResponse::BodyType::PlainText)
     {
-        if(!socket->sendStream(response->m_stream.get()))
+        if(socket->write(raw) <= 0)
             return false;
+    }
+    else
+    {
+//#ifdef __linux__
+//        socket->setOption(IPPROTO_TCP, TCP_CORK, 1);
+//#endif
+        if(socket->write(raw) <= 0)
+            return false;
+//#ifdef __linux__
+//        socket->setOption(IPPROTO_TCP, TCP_CORK, 0);
+//#endif
+        if(response->bodyType() == HttpResponse::BodyType::Stream)
+        {
+            if(!socket->sendStream(response->m_stream.get(), response->m_count))
+                return false;
+        }
+#ifdef __linux__
+        else    // File
+        {
+            if(socket->sendFile(response->m_file.fd,
+                                response->m_file.offset,
+                                response->m_count) < 0)
+                return false;
+        }
+#endif
     }
 
     const bool ret = request->isKeepAlive() && socket->times() <= m_maxTimes;
-
-    response->reset();
 
     return ret;
 }

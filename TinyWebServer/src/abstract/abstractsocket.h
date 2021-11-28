@@ -26,6 +26,8 @@ typedef int Socket;
 # define DEFAULT_SOCKET -1
 
 # include <sys/socket.h>
+# include <netinet/in.h>
+# include <netinet/tcp.h>
 #endif
 }
 
@@ -102,8 +104,7 @@ public:
 
     Socket descriptor() const { return m_descriptor; }
 
-    bool sendStream(std::istream *const stream,
-                    std::istream::off_type offset = 0, size_t count = 0);
+    bool sendStream(std::istream *const stream, size_t count = 0);
 
 #ifdef __linux__
     virtual ssize_t sendFile(int fd, off_t offset, size_t count) = 0;

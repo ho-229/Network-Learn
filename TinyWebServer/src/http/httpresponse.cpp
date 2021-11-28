@@ -36,33 +36,51 @@ void HttpResponse::setText(const std::string& text)
     m_type = BodyType::PlainText;
 }
 
-bool HttpResponse::setStream(std::shared_ptr<std::istream> &&stream)
+bool HttpResponse::sendStream(std::shared_ptr<std::istream> &&stream,
+                              std::istream::off_type offset, size_t count)
 {
     if(stream->bad())
         return false;
 
     m_stream = stream;
 
-    m_stream->seekg(0, std::ios::end);
+    if(count)
+        m_headers["Content-Length"] = std::to_string(count);
+    else    // Compute size
+    {
+        m_stream->seekg(0, std::ios::end);
+        const auto size = m_stream->tellg() - offset;
 
-    const auto size = m_stream->tellg();
-    if(size > 0)
-        m_headers["Content-Length"] = std::to_string(size);
+        if(size > 0)
+            m_headers["Content-Length"] = std::to_string(size);
+    }
+    m_stream->seekg(offset, std::ios::beg);
 
-    m_stream->seekg(0, std::ios::beg);
-
+    m_count = count;
     m_type = BodyType::Stream;
 
     return true;
 }
 
+#ifdef __linux__
+void HttpResponse::sendFile(int fd, off_t offset, size_t count)
+{
+    m_file = {fd, offset};
+    m_count = count;
+
+    m_headers["Content-Length"] = std::to_string(count);
+
+    m_type = BodyType::File;
+}
+#endif
+
 void HttpResponse::reset()
 {
     m_text.clear();
     m_stream.reset();
-    m_type = BodyType::None;
-
     m_headers.clear();
+
+    m_type = BodyType::PlainText;
 }
 
 void HttpResponse::setHttpState(const HttpState &state)
@@ -78,19 +96,19 @@ void HttpResponse::toRawData(std::string &response)
     response.clear();
 
     // Response line
-    response.append("HTTP/1.1 ").append(std::to_string(m_httpState.first))
-        .append(" ").append(m_httpState.second).append("\r\n");
+    response.append("HTTP/1.1 ", 9).append(std::to_string(m_httpState.first))
+        .append(" ", 1).append(m_httpState.second).append("\r\n", 2);
 
     // Headers
-    response.append("Date: ").append(Util::currentDateString()).append("\r\n");
-    response.append("Server: TinyWebServer\r\n");
+    response.append("Date: ", 6).append(Util::currentDateString()).append("\r\n", 2);
+    response.append("Server: TinyWebServer\r\n", 23);
 
     for(const auto &[key, value] : m_headers)
-        response.append(key).append(": ").append(value).append("\r\n");
+        response.append(key).append(": ", 2).append(value).append("\r\n", 2);
 
     // Body
     if(m_type == BodyType::PlainText)
-        response.append("\r\n").append(m_text);
+        response.append("\r\n", 2).append(m_text);
     else
-        response.append("\r\n");
+        response.append("\r\n", 2);
 }

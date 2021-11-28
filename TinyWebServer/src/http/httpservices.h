@@ -6,7 +6,6 @@
 #ifndef HTTPSERVICES_H
 #define HTTPSERVICES_H
 
-#include <memory>
 #include <unordered_map>
 
 #include "httprequest.h"

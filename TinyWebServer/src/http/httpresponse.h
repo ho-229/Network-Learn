@@ -7,6 +7,7 @@
 #define HTTPRESPONSE_H
 
 #include <memory>
+#include <istream>
 
 #include "../util/headermap.h"
 
@@ -17,8 +18,10 @@ class HttpResponse
 public:
     enum class BodyType
     {
-        None,
         PlainText,
+#ifdef __linux__
+        File,
+#endif
         Stream
     };
 
@@ -29,8 +32,12 @@ public:
     void setText(const std::string& text);
     std::string text() const { return m_text; }
 
-    bool setStream(std::shared_ptr<std::istream> &&stream);
-    const std::istream& stream() const { return *m_stream; }
+    bool sendStream(std::shared_ptr<std::istream> &&stream,
+                    std::istream::off_type offset = 0, size_t count = 0);
+
+#ifdef __linux__
+    void sendFile(int fd, off_t offset, size_t count);
+#endif
 
     void reset();
 
@@ -66,12 +73,20 @@ private:
 
     HttpState m_httpState = {200, "OK"};
 
-    std::string m_text;
-    std::shared_ptr<std::istream> m_stream;
+    std::string m_text;                         // Text
+    std::shared_ptr<std::istream> m_stream;     // Stream
+#ifdef __linux__
+    struct
+    {
+        int fd;
+        off_t offset;
+    } m_file;                                   // File
+#endif
+    size_t m_count;
 
     HeaderMap m_headers;
 
-    BodyType m_type = BodyType::None;
+    BodyType m_type = BodyType::PlainText;
 };
 
 #endif // HTTPRESPONSE_H

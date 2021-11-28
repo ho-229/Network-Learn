@@ -11,6 +11,7 @@
 
 #include <atomic>
 #include <thread>
+#include <memory>
 
 #define ANY_HOST "0.0.0.0"
 

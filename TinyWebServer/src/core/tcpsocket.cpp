@@ -108,7 +108,7 @@ void TcpSocket::close()
 #ifdef __linux__
 ssize_t TcpSocket::sendFile(int fd, off_t offset, size_t count)
 {
-    return sendfile(m_descriptor, fd, &offset, count);
+    return sendfile64(m_descriptor, fd, &offset, count);
 }
 #endif
 
@@ -167,8 +167,7 @@ bool TcpSocket::listen(const std::string &hostName, const std::string &port, boo
             fcntl(m_descriptor, F_SETFL, flags | O_NONBLOCK) == -1)
         return false;
 
-//    flags = 1;
-//    setsockopt(m_descriptor, IPPROTO_TCP, TCP_NODELAY, &flags, sizeof (int));
+    //this->setOption(IPPROTO_TCP, TCP_NODELAY, 1);
 #endif
 
     m_sslEnable = sslEnable;
