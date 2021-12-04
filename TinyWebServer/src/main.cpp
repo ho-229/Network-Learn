@@ -168,6 +168,16 @@ int main(int argc, char** argv)
         std::cout << "Shared directory: " << workPath << ".\n";
     }
 #endif
+    else
+    {
+        services->setDefaultService("GET", [](HttpRequest *, HttpResponse *resp) {
+            resp->setRawHeader("Content-Type", "text/html; charset=utf-8");
+            resp->setText("<h2>Tiny Web Server</h2><h1>"
+                          "404 Not Found"
+                          "<br>∑(っ°Д°;)っ<h1>\n");
+            resp->setHttpState({404, "Not Found"});
+        });
+    }
 
     if(argc >= 2)   // HTTP
     {
