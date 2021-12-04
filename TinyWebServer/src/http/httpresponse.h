@@ -32,8 +32,7 @@ public:
     void setText(const std::string& text);
     std::string text() const { return m_text; }
 
-    bool sendStream(std::shared_ptr<std::istream> &&stream,
-                    std::istream::off_type offset = 0, size_t count = 0);
+    bool sendStream(std::shared_ptr<std::istream> &&stream, size_t count = 0);
 
 #ifdef __linux__
     void sendFile(int fd, off_t offset, size_t count);

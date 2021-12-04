@@ -36,25 +36,34 @@ void HttpResponse::setText(const std::string& text)
     m_type = BodyType::PlainText;
 }
 
-bool HttpResponse::sendStream(std::shared_ptr<std::istream> &&stream,
-                              std::istream::off_type offset, size_t count)
+bool HttpResponse::sendStream(std::shared_ptr<std::istream> &&stream, size_t count)
 {
     if(stream->bad())
         return false;
 
-    m_stream = stream;
+    m_stream.swap(stream);
+
+    const auto start = m_stream->tellg();
 
     if(count)
-        m_headers["Content-Length"] = std::to_string(count);
-    else    // Compute size
     {
-        m_stream->seekg(0, std::ios::end);
-        const auto size = m_stream->tellg() - offset;
+        m_stream->seekg(count, std::ios::cur);
 
-        if(size > 0)
-            m_headers["Content-Length"] = std::to_string(size);
+        if(m_stream->fail())
+            goto seekFailed;
+
+        m_headers["Content-Length"] = std::to_string(count);
     }
-    m_stream->seekg(offset, std::ios::beg);
+    else
+    {
+    seekFailed:
+        m_stream->seekg(0, std::ios::end);
+
+        if(const auto size = m_stream->tellg())
+            m_headers["Content-Length"] = std::to_string(size - start);
+    }
+
+    m_stream->seekg(start);
 
     m_count = count;
     m_type = BodyType::Stream;
