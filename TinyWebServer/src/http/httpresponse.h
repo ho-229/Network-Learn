@@ -47,8 +47,14 @@ public:
     void setHttpState(const HttpState& state);
     HttpState httpState() const { return m_httpState; }
 
+    template <bool isInsert = false>
     void setRawHeader(const std::string& name, const std::string& value)
-    { m_headers[name] = value; }
+    {
+        if constexpr(isInsert)
+                m_headers.insert(name, value);
+        else
+            m_headers[name] = value;
+    }
     std::string rawHeader(const std::string& name) const
     {
         const auto it = m_headers.find(name);

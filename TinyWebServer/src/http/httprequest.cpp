@@ -30,8 +30,6 @@ HttpRequest::HttpRequest(const std::string &data)
 
 void HttpRequest::parse(const std::string &data)
 {
-    this->reset();
-
     std::string::size_type offset = 0;
     const size_t size = data.size();
 

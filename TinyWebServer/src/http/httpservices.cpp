@@ -47,7 +47,7 @@ bool HttpServices::process(AbstractSocket *const socket) const
     if(raw.empty())
         return false;
 
-    static thread_local auto request = std::make_shared<HttpRequest>();
+    static thread_local auto request = std::make_unique<HttpRequest>();
 
     request->parse(raw);
 
@@ -57,7 +57,7 @@ bool HttpServices::process(AbstractSocket *const socket) const
     if(m_maxTimes)
         socket->addTimes();
 
-    static thread_local auto response = std::make_shared<HttpResponse>();
+    static thread_local auto response = std::make_unique<HttpResponse>();
 
     this->callHandler(request.get(), response.get());
 
@@ -69,7 +69,10 @@ bool HttpServices::process(AbstractSocket *const socket) const
 
     response->toRawData(raw);
 
-    Util::DestroyFunction destroy([] { response->reset(); });
+    Util::DestroyFunction destroy([] {
+        request->reset();
+        response->reset();
+    });
 
     if(response->bodyType() == HttpResponse::BodyType::PlainText)
     {

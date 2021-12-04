@@ -70,10 +70,10 @@ private:
 
     std::chrono::milliseconds m_timeout = 30s;
 
-    std::vector<std::shared_ptr<ConnectionPool>> m_pools;
+    std::vector<std::unique_ptr<ConnectionPool>> m_pools;
     std::vector<std::shared_ptr<AbstractSocket>> m_listeners;
 
-    std::shared_ptr<AbstractServices> m_services;
+    std::unique_ptr<AbstractServices> m_services;
 
     EventHandler m_handler = [](Event *){};
 };
