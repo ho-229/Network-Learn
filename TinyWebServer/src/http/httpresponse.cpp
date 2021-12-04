@@ -52,6 +52,7 @@ bool HttpResponse::sendStream(std::shared_ptr<std::istream> &&stream, size_t cou
         if(m_stream->fail())
             goto seekFailed;
 
+        m_count = count;
         m_headers["Content-Length"] = std::to_string(count);
     }
     else
@@ -59,13 +60,13 @@ bool HttpResponse::sendStream(std::shared_ptr<std::istream> &&stream, size_t cou
     seekFailed:
         m_stream->seekg(0, std::ios::end);
 
+        m_count = 0;        // Send stream til EOF
         if(const auto size = m_stream->tellg())
             m_headers["Content-Length"] = std::to_string(size - start);
     }
 
     m_stream->seekg(start);
 
-    m_count = count;
     m_type = BodyType::Stream;
 
     return true;
