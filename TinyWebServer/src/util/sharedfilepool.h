@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @author Ho 229
  * @date 2021/11/28
  */
@@ -23,7 +23,8 @@ struct FileInfo
 class SharedFilePool
 {
 public:
-    SharedFilePool(const std::string &root);
+    explicit SharedFilePool(const std::string &root);
+    ~SharedFilePool();
 
     std::string root() const { return m_root; }
 

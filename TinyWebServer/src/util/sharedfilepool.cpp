@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @author Ho 229
  * @date 2021/11/28
  */
@@ -8,6 +8,7 @@
 #ifdef __linux__    // Only for Linux
 
 #include <fcntl.h>
+#include <unistd.h>
 
 SharedFilePool::SharedFilePool(const std::string &root)
 {
@@ -36,6 +37,12 @@ std::optional<FileInfo> SharedFilePool::get(const std::string &fileName)
     }
 
     return {it->second};
+}
+
+SharedFilePool::~SharedFilePool()
+{
+    for(const auto&[key, value] : m_pool)
+        close(value.fd);
 }
 
 #endif
