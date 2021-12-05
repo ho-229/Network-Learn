@@ -20,7 +20,7 @@ class ConnectionPool
 {
 public:
     explicit ConnectionPool(const std::atomic_bool &runnable,
-                            int timeout,
+                            const std::chrono::milliseconds &timeout,
                             AbstractServices *const services,
                             const EventHandler &handler);
     ~ConnectionPool();
@@ -43,7 +43,8 @@ protected:
     void exec();
 
 private:
-    void eventsHandler();
+    void processQueue();
+    void processErrorQueue(const bool deleteTimer = true);
 
     Epoll m_epoll;
 
@@ -51,6 +52,7 @@ private:
     std::vector<AbstractSocket *> m_errorQueue;
 
     const std::atomic_bool &m_runnable;
+    const std::chrono::milliseconds &m_timeout;
 
     TimerManager<AbstractSocket *> m_manager;
 

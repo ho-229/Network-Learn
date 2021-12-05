@@ -31,9 +31,6 @@ typedef int Socket;
 #endif
 }
 
-template <typename T>
-class Timer;
-
 class AbstractSocket
 {
 public:
@@ -96,8 +93,8 @@ public:
         return value;
     }
 
-    void setTimer(Timer<AbstractSocket *> *timer) { m_timer = timer; }
-    Timer<AbstractSocket *> *timer() const { return m_timer; }
+    void setTimer(void *timer) { m_timer = timer; }
+    void *timer() const { return m_timer; }
 
     void addTimes() { ++m_times; }
     size_t times() const { return m_times; }
@@ -142,7 +139,7 @@ protected:
     std::string m_port;
 #endif
 
-    Timer<AbstractSocket *> *m_timer = nullptr;
+    void *m_timer = nullptr;
 
     static thread_local std::shared_ptr<char[]> buffer;
 };

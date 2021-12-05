@@ -15,6 +15,8 @@
 
 #define ANY_HOST "0.0.0.0"
 
+using namespace std::chrono_literals;
+
 class ConnectionPool;
 class AbstractSocket;
 class AbstractServices;
@@ -31,8 +33,8 @@ public:
     /**
      * @brief Keep alive timeout
      */
-    void setTimeout(int ms) { m_timeout = ms; }
-    int timeout() const { return m_timeout; }
+    void setTimeout(const std::chrono::milliseconds &ms) { m_timeout = ms; }
+    std::chrono::milliseconds timeout() const { return m_timeout; }
 
     void setLoopCount(size_t count)
     { m_loopCount = count > 0 ? count : std::thread::hardware_concurrency(); }
@@ -66,7 +68,7 @@ private:
 
     size_t m_loopCount = std::thread::hardware_concurrency();
 
-    int m_timeout = 30000;
+    std::chrono::milliseconds m_timeout = 30s;
 
     std::vector<std::shared_ptr<ConnectionPool>> m_pools;
     std::vector<std::shared_ptr<AbstractSocket>> m_listeners;

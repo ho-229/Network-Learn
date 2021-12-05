@@ -12,28 +12,26 @@
 #include <chrono>
 #include <memory>
 
+#define TIMER_THREAD_SAFE 0
+
 namespace Time = std::chrono;
 
 class AbstractSocket;
 
-template <typename T>
+template <typename T, typename TimeType>
 class Timer
 {
 public:
-    Timer(const T& data) :
+    Timer(const TimeType& timeout, const T& data) :
         m_userData(data),
-        m_active(Time::system_clock::now())
+        m_deadline(Time::system_clock::now() + timeout)
     {}
 
     inline void deleteLater() { m_isDisable = true; }
 
     inline bool isDisable() const { return m_isDisable; }
 
-    inline auto duration() const
-    {
-        return Time::duration_cast<Time::milliseconds>(
-                   Time::system_clock::now() - m_active).count();
-    }
+    inline const auto& deadline() const { return m_deadline; }
 
     inline const T userData() const { return m_userData; }
 
@@ -41,65 +39,71 @@ private:
     std::atomic_bool m_isDisable = false;
 
     const T m_userData;
-    const Time::system_clock::time_point m_active;
+    const Time::system_clock::time_point m_deadline;
 };
 
-template <typename T>
-using TimerItem = std::shared_ptr<Timer<T>>;
+template <typename T, typename TimeType>
+using TimerItem = std::unique_ptr<Timer<T, TimeType>>;
 
-template <typename T>
+template <typename T, typename TimeType = std::chrono::milliseconds>
 class TimerManager
 {
 public:
+    using TimerType = Timer<T, TimeType>;
+
     explicit TimerManager() {}
 
-    void setTimeout(int ms) { m_timeout = ms > 0 ? ms : 10000; }
-    int timeout() const { return m_timeout; }
-
-    Timer<T>* addTimer(const T& data)
+    TimerType* addTimer(const TimeType& timeout, const T& data)
     {
+#if TIMER_THREAD_SAFE
         std::unique_lock<std::mutex> lock(m_mutex);
-
-        auto newTimer = std::make_shared<Timer<T>>(data);
-        m_queue.push(newTimer);
-        return newTimer.get();
+#endif
+        auto timer = new TimerType(timeout, data);
+        m_queue.emplace(timer);
+        return timer;
     }
 
-    /**
-     * @return true if it's timeout
-     */
-    bool checkTop(T &userData)
+    void checkout(std::vector<T>& list)
     {
+#if TIMER_THREAD_SAFE
         std::unique_lock<std::mutex> lock(m_mutex);
+#endif
+        const auto now = std::chrono::system_clock::now();
 
-        while(true)
+        while(!m_queue.empty())
         {
-            if(m_queue.empty())
-                return false;
-            else if(m_queue.front()->isDisable())
+            const auto &top = m_queue.top();
+
+            if(top->isDisable())
+            {
                 m_queue.pop();
+                continue;
+            }
+            else if(top->deadline() <= now)
+            {
+                list.emplace_back(top->userData());
+                m_queue.pop();
+            }
             else
                 break;
         }
-
-        const auto top = m_queue.front();
-
-        if(top->duration() >= m_timeout)
-        {
-            userData = top->userData();
-            m_queue.pop();
-            return true;
-        }
-
-        return false;
     }
 
 private:
-    int m_timeout = 30000;      // 30s
-
+#if TIMER_THREAD_SAFE
     std::mutex m_mutex;
+#endif
 
-    std::queue<TimerItem<T>, std::deque<TimerItem<T>>> m_queue;
+    struct TimerCompare
+    {
+        inline bool operator() (const TimerItem<T, TimeType>& left,
+                                const TimerItem<T, TimeType>& right)
+        { return left->deadline() > right->deadline(); }
+    };
+
+    std::priority_queue<TimerItem<T, TimeType>,
+                        std::deque<TimerItem<T, TimeType>>,
+                        TimerCompare> m_queue;
 };
 
 #endif // TIMERMANAGER_H

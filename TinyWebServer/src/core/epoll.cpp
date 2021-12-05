@@ -88,7 +88,10 @@ void Epoll::epoll(std::vector<AbstractSocket *> &events,
                 this->eraseEvent(it->second.second.get());
         }
         else if(item.revents & POLLERR || item.revents & POLLHUP)
+        {
             errorEvents.emplace_back(it->second.second.get());
+            this->eraseEvent(it->second.second.get());
+        }
     }
 #else   // Unix
     int ret = -1;

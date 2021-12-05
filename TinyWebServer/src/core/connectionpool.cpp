@@ -8,14 +8,15 @@
 #include "connectionpool.h"
 #include "../abstract/abstractservices.h"
 
-ConnectionPool::ConnectionPool(const std::atomic_bool &runnable, int timeout,
+ConnectionPool::ConnectionPool(const std::atomic_bool &runnable,
+                               const std::chrono::milliseconds &timeout,
                                AbstractServices *const services,
                                const EventHandler &handler) :
     m_runnable(runnable),
+    m_timeout(timeout),
     m_services(services),
     m_handler(handler)
 {
-    m_manager.setTimeout(timeout);
     m_queue.reserve(512);
     m_errorQueue.reserve(512);
 }
@@ -31,22 +32,21 @@ void ConnectionPool::exec()
     {
         m_epoll.epoll(m_queue, m_errorQueue);
 
-        if(!m_queue.empty() || !m_errorQueue.empty())
-            this->eventsHandler();
+        if(!m_queue.empty())
+            this->processQueue();
+
+        if(!m_errorQueue.empty())
+            this->processErrorQueue();
 
         // Clean up timeout connections
-        AbstractSocket *socket = nullptr;
-        while(m_manager.checkTop(socket))
-        {
-            ConnectEvent event(socket, ConnectEvent::Close);
-            m_handler(&event);
+        m_manager.checkout(m_errorQueue);
 
-            m_epoll.erase(socket);
-        }
+        if(!m_errorQueue.empty())
+            this->processErrorQueue(false);
     }
 }
 
-void ConnectionPool::eventsHandler()
+void ConnectionPool::processQueue()
 {
     for(auto& socket : m_queue)
     {
@@ -60,10 +60,10 @@ void ConnectionPool::eventsHandler()
                     break;
 
                 AbstractSocket *newSocket = socket->sslEnable() ?
-                    static_cast<AbstractSocket *>(new SslSocket(descriptor)) :
-                    static_cast<AbstractSocket *>(new TcpSocket(descriptor));
+                                                static_cast<AbstractSocket *>(new SslSocket(descriptor)) :
+                                                static_cast<AbstractSocket *>(new TcpSocket(descriptor));
 
-                newSocket->setTimer(m_manager.addTimer(newSocket));
+                newSocket->setTimer(m_manager.addTimer(m_timeout, newSocket));
                 m_epoll.insert(newSocket);
 
                 ConnectEvent event(newSocket, ConnectEvent::Accpet);
@@ -72,9 +72,11 @@ void ConnectionPool::eventsHandler()
         }
         else
         {
-            socket->timer()->deleteLater();
+            static_cast<decltype (m_manager)::TimerType *>(
+                socket->timer())->deleteLater();
+
             if(m_services->process(socket))
-                socket->setTimer(m_manager.addTimer(socket));   // Reset timer
+                socket->setTimer(m_manager.addTimer(m_timeout, socket));   // Reset timer
             else    // Close
             {
                 ConnectEvent event(socket, ConnectEvent::Close);
@@ -86,13 +88,19 @@ void ConnectionPool::eventsHandler()
     }
 
     m_queue.clear();
+}
 
+void ConnectionPool::processErrorQueue(const bool deleteTimer)
+{
     for(auto& socket : m_errorQueue)
     {
         ConnectEvent event(socket, ConnectEvent::Close);
         m_handler(&event);
 
-        socket->timer()->deleteLater();
+        if(deleteTimer)
+            static_cast<decltype (m_manager)::TimerType *>(
+                socket->timer())->deleteLater();
+
         m_epoll.erase(socket);
     }
 
