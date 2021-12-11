@@ -51,6 +51,11 @@ int WebServer::start()
         pool->start();
     }
 
+#ifdef _WIN32
+    for(auto& connect : m_listeners)
+        connect.release();
+#endif
+
     return 0;
 }
 

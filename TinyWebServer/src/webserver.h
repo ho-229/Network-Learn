@@ -71,7 +71,7 @@ private:
     std::chrono::milliseconds m_timeout = 30s;
 
     std::vector<std::unique_ptr<ConnectionPool>> m_pools;
-    std::vector<std::shared_ptr<AbstractSocket>> m_listeners;
+    std::vector<std::unique_ptr<AbstractSocket>> m_listeners;
 
     std::unique_ptr<AbstractServices> m_services;
 

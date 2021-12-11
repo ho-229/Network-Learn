@@ -87,7 +87,7 @@ void ConnectionPool::processQueue()
         }
     }
 
-    m_queue.clear();
+    m_queue.resize(0);
 }
 
 void ConnectionPool::processErrorQueue(const bool deleteTimer)
@@ -104,5 +104,5 @@ void ConnectionPool::processErrorQueue(const bool deleteTimer)
         m_epoll.erase(socket);
     }
 
-    m_errorQueue.clear();
+    m_errorQueue.resize(0);
 }

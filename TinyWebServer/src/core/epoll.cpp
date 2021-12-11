@@ -28,8 +28,8 @@ void Epoll::insert(AbstractSocket * const socket, bool once)
 #ifdef _WIN32
     m_events.emplace_back(pollfd{socket->descriptor(), POLLIN, 0});
 
-    m_connections[socket->descriptor()]
-        = {once, std::shared_ptr<AbstractSocket>(socket)};
+    m_connections.insert(ConnectionItem(socket->descriptor(),
+                                        Connection(once, socket)));
 #else
     epoll_event event{EPOLLIN | (once ? EPOLLONESHOT : EPOLLET), socket};
     epoll_ctl(m_epoll, EPOLL_CTL_ADD, socket->descriptor(), &event);
@@ -88,10 +88,7 @@ void Epoll::epoll(std::vector<AbstractSocket *> &events,
                 this->eraseEvent(it->second.second.get());
         }
         else if(item.revents & POLLERR || item.revents & POLLHUP)
-        {
             errorEvents.emplace_back(it->second.second.get());
-            this->eraseEvent(it->second.second.get());
-        }
     }
 #else   // Unix
     int ret = -1;

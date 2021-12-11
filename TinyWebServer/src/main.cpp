@@ -11,8 +11,6 @@
 
 #include <signal.h>
 
-#include <fcntl.h>
-
 #if PROFILER_ENABLE
 # include <gperftools/profiler.h>
 #endif
@@ -29,7 +27,7 @@
 # endif
 #endif
 
-static auto server = std::make_shared<WebServer>();
+static auto server = std::make_unique<WebServer>();
 
 void signalHandler(int signum)
 {

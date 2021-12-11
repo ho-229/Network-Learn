@@ -50,10 +50,12 @@ private:
     inline void eraseEvent(AbstractSocket *const socket);
 
     typedef std::pair<bool,                             // Once
-                      std::shared_ptr<AbstractSocket>>  // Socket
+                      std::unique_ptr<AbstractSocket>>  // Socket
         Connection;
 
     std::unordered_map<Socket, Connection> m_connections;
+
+    using ConnectionItem = decltype (m_connections)::value_type;
 
     std::vector<pollfd> m_events;
 #else
