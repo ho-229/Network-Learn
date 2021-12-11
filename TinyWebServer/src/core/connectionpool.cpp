@@ -66,8 +66,7 @@ void ConnectionPool::processQueue()
                 newSocket->setTimer(m_manager.addTimer(m_timeout, newSocket));
                 m_epoll.insert(newSocket);
 
-                ConnectEvent event(newSocket, ConnectEvent::Accpet);
-                m_handler(&event);
+                m_handler(new ConnectEvent(newSocket, ConnectEvent::Accpet));
             }
         }
         else
@@ -79,9 +78,7 @@ void ConnectionPool::processQueue()
                 socket->setTimer(m_manager.addTimer(m_timeout, socket));   // Reset timer
             else    // Close
             {
-                ConnectEvent event(socket, ConnectEvent::Close);
-                m_handler(&event);
-
+                m_handler(new ConnectEvent(socket, ConnectEvent::Close));
                 m_epoll.erase(socket);
             }
         }
@@ -94,8 +91,7 @@ void ConnectionPool::processErrorQueue(const bool deleteTimer)
 {
     for(auto& socket : m_errorQueue)
     {
-        ConnectEvent event(socket, ConnectEvent::Close);
-        m_handler(&event);
+        m_handler(new ConnectEvent(socket, ConnectEvent::Close));
 
         if(deleteTimer)
             static_cast<decltype (m_manager)::TimerType *>(

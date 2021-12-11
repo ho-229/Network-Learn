@@ -9,6 +9,13 @@
 #include <string>
 #include <functional>
 
+#define STATIC_ALLOCATOR(Class) \
+static void* operator new (size_t) \
+{ \
+static thread_local char space[sizeof(Class)]; \
+return space; \
+}
+
 /**
  * @brief Abstract Event
  */
@@ -53,6 +60,8 @@ public:
 
     std::string message() const { return m_message; }
 
+    STATIC_ALLOCATOR(ExceptionEvent)
+
 private:
     const Error m_error;
     const std::string m_message;
@@ -82,7 +91,9 @@ public:
 
     const AbstractSocket *socket() const { return m_socket; }
 
-    const State state() const { return m_state; }
+    State state() const { return m_state; }
+
+    STATIC_ALLOCATOR(ConnectEvent)
 
 private:
     const AbstractSocket *m_socket = nullptr;

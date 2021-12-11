@@ -73,16 +73,15 @@ void WebServer::listen(const std::string &hostName, const std::string &port,
 {
     if(!m_isLoaded)
     {
-        ExceptionEvent event(ExceptionEvent::SocketLoadFailed);
-        m_handler(&event);
+        m_handler(new ExceptionEvent(ExceptionEvent::SocketLoadFailed));
         return;
     }
 
     if(sslEnable && !SslSocket::isSslAvailable())
     {
-        ExceptionEvent event(ExceptionEvent::ListenFailed, "Listen "
-            + hostName + ":" + port + " failed, SSL is not available.\n");
-        m_handler(&event);
+        m_handler(new ExceptionEvent(
+            ExceptionEvent::ListenFailed,
+            "Listen " + hostName + ":" + port + " failed, SSL is not available.\n"));
         return;
     }
 
@@ -90,9 +89,9 @@ void WebServer::listen(const std::string &hostName, const std::string &port,
 
     if(!socket->listen(hostName, port, sslEnable))
     {
-        ExceptionEvent event(ExceptionEvent::ListenFailed, "Listen "
-            + hostName + ":" + port + " failed, please rerun with an administrator.\n");
-        m_handler(&event);
+        m_handler(new ExceptionEvent(
+            ExceptionEvent::ListenFailed,
+            "Listen " + hostName + ":" + port + " failed, please rerun with an administrator.\n"));
         return;
     }
 
