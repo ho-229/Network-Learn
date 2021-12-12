@@ -98,8 +98,7 @@ int main(int argc, char** argv)
 //    });
 
     // Add "Adder" Service
-    services->addService("GET", "/adder",
-                                   [](HttpRequest *req, HttpResponse *resp) {
+    services->onGet("/adder", [](HttpRequest *req, HttpResponse *resp) {
         int sum = 0;
         for(const auto& arg : req->urlArguments())
             sum += atoi(arg.second.c_str());
@@ -111,70 +110,57 @@ int main(int argc, char** argv)
                       + std::to_string(sum) + "</p></body></html>\n");
     });
 
-    services->addService("GET", "/hello",
-                                   [](HttpRequest *, HttpResponse *resp) {
-        resp->setRawHeader("Content-type", "text/html; charset=utf-8");
+    services->onGet("/hello", [](HttpRequest *, HttpResponse *resp) {
+        resp->setRawHeader<true>("Content-type", "text/html; charset=utf-8");
         *resp << "Hello world.\n";
     });
 
-    services->addService("POST", "/post",
-                         [](HttpRequest *req, HttpResponse *resp) {
-                             std::cout << "post data: " << req->body() << "\n";
-                             resp->setText(req->body());
-                         });
+    services->onPost("/post", [](HttpRequest *req, HttpResponse *resp) {
+        std::cout << "post data: " << req->body() << "\n";
+        resp->setText(req->body());
+    });
 
-#ifdef __linux__
-    std::shared_ptr<SharedFilePool> pool;
+    constexpr auto build404Response = [](HttpResponse *resp) {
+        resp->setRawHeader("Content-Type", "text/html; charset=utf-8");
+        resp->setText("<h2>Tiny Web Server</h2><h1>"
+                      "404 Not Found"
+                      "<br>∑(っ°Д°;)っ<h1>\n");
+        resp->setHttpState({404, "Not Found"});
+    };
+
+    std::unique_ptr<SharedFilePool> pool;
     if(argc > 3 && fs::is_directory(argv[3]))
     {
+#ifdef __linux__
         pool.reset(new SharedFilePool(argv[3]));
 
-        services->setDefaultService("GET", [&pool](HttpRequest *req, HttpResponse *resp) {
+        services->onGet([&pool, &build404Response]
+                        (HttpRequest *req, HttpResponse *resp) {
             if(auto ret = pool->get(req->uri()); !ret.has_value())
-            {
-                resp->setRawHeader("Content-Type", "text/html; charset=utf-8");
-                resp->setText("<h2>Tiny Web Server</h2><h1>"
-                              "404 Not Found"
-                              "<br>∑(っ°Д°;)っ<h1>\n");
-                resp->setHttpState({404, "Not Found"});
-            }
+                build404Response(resp);
             else
                 resp->sendFile(ret.value().fd, 0, ret.value().fileSize);
         });
 
         std::cout << "Shared directory: " << pool->root() << ".\n";
-    }
 #else
-    if(argc > 3 && fs::is_directory(argv[3]))
-    {
         const std::string workPath(argv[3]);
 
-        services->setDefaultService("GET", [workPath](HttpRequest *req, HttpResponse *resp) {
+        services->onGet([workPath, &build404Response](HttpRequest *req, HttpResponse *resp) {
             fs::path path(workPath + req->uri());
             if(!fs::is_regular_file(path) ||
-                    !resp->sendStream(std::shared_ptr<std::istream>(
-                    new std::ifstream(path, std::ios::binary))))
-            {
-                resp->setRawHeader("Content-Type", "text/html; charset=utf-8");
-                resp->setText("<h2>Tiny Web Server</h2><h1>"
-                              "404 Not Found"
-                              "<br>∑(っ°Д°;)っ<h1>\n");
-                resp->setHttpState({404, "Not Found"});
-            }
+                    !resp->sendStream(std::unique_ptr<std::istream>(
+                                          new std::ifstream(path, std::ios::binary))))
+                build404Response(resp);
         });
 
         std::cout << "Shared directory: " << workPath << ".\n";
-    }
 #endif
+    }
     else
     {
-        services->setDefaultService("GET", [](HttpRequest *, HttpResponse *resp) {
-            resp->setRawHeader("Content-Type", "text/html; charset=utf-8");
-            resp->setText("<h2>Tiny Web Server</h2><h1>"
-                          "404 Not Found"
-                          "<br>∑(っ°Д°;)っ<h1>\n");
-            resp->setHttpState({404, "Not Found"});
-        });
+        services->onGet([&build404Response](HttpRequest *, HttpResponse *resp) {
+            build404Response(resp); });
     }
 
     if(argc >= 2)   // HTTP

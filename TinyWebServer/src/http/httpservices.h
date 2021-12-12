@@ -6,8 +6,6 @@
 #ifndef HTTPSERVICES_H
 #define HTTPSERVICES_H
 
-#include <unordered_map>
-
 #include "httprequest.h"
 #include "httpresponse.h"
 #include "../abstract/abstractservices.h"
@@ -26,6 +24,37 @@ public:
     void setDefaultService(const std::string& method,
                            const Handler& handler);
 
+    inline void onGet(const std::string& uri, const Handler& handler)
+    { this->addService("GET", uri, handler); }
+
+    inline void onGet(const Handler& handler)
+    { this->setDefaultService("GET", handler); }
+
+    inline void onHead(const std::string& uri, const Handler& handler)
+    { this->addService("HEAD", uri, handler); }
+
+    inline void onHead(const Handler& handler)
+    { this->setDefaultService("HEAD", handler); }
+
+    inline void onPost(const std::string& uri, const Handler& handler)
+    { this->addService("POST", uri, handler); }
+
+    inline void onPost(const Handler& handler)
+    { this->setDefaultService("POST", handler); }
+
+    inline void onPut(const std::string& uri, const Handler& handler)
+    { this->addService("PUT", uri, handler); }
+
+    inline void onPut(const Handler& handler)
+    { this->setDefaultService("PUT", handler); }
+
+    inline void onDelete(const std::string& uri, const Handler& handler)
+    { this->addService("DELETE", uri, handler); }
+
+    inline void onDelete(const Handler& handler)
+    { this->setDefaultService("DELETE", handler); }
+
+protected:
     bool process(AbstractSocket *const socket) const override;
 
 private:

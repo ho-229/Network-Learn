@@ -45,4 +45,11 @@ SharedFilePool::~SharedFilePool()
         close(value.fd);
 }
 
+#else
+
+SharedFilePool::~SharedFilePool()
+{
+
+}
+
 #endif
