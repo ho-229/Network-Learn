@@ -141,7 +141,7 @@ protected:
 
     void *m_timer = nullptr;
 
-    static thread_local std::shared_ptr<char[]> buffer;
+    static thread_local std::unique_ptr<char[]> buffer;
 };
 
 #endif // ABSTRACTSOCKET_H

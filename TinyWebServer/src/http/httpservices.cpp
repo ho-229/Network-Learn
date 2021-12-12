@@ -47,7 +47,7 @@ bool HttpServices::process(AbstractSocket *const socket) const
     if(raw.empty())
         return false;
 
-    static thread_local auto request = std::make_unique<HttpRequest>();
+    static thread_local std::unique_ptr<HttpRequest> request(new HttpRequest);
 
     request->parse(raw);
 
@@ -57,11 +57,10 @@ bool HttpServices::process(AbstractSocket *const socket) const
     if(m_maxTimes)
         socket->addTimes();
 
-    static thread_local auto response = std::make_unique<HttpResponse>();
+    static thread_local std::unique_ptr<HttpResponse> response(new HttpResponse);
 
     this->callHandler(request.get(), response.get());
 
-    std::shared_ptr<char[]> sendBuf(new char[SOCKET_BUF_SIZE]);
     if(request->isKeepAlive() && socket->times() <= m_maxTimes)
         response->setRawHeader("Connection", "Keep-Alive");
     else

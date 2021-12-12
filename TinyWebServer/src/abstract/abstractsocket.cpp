@@ -5,7 +5,7 @@
 
 #include "abstractsocket.h"
 
-thread_local std::shared_ptr<char[]> AbstractSocket::buffer(
+thread_local std::unique_ptr<char[]> AbstractSocket::buffer(
     new char[SOCKET_BUF_SIZE]());
 
 bool AbstractSocket::sendStream(std::istream * const stream, size_t count)
@@ -13,7 +13,7 @@ bool AbstractSocket::sendStream(std::istream * const stream, size_t count)
     if(!stream)
         return false;
 
-    static thread_local std::shared_ptr<char[]> filebuf(new char[SOCKET_BUF_SIZE]());
+    static thread_local std::unique_ptr<char[]> filebuf(new char[SOCKET_BUF_SIZE]());
 
     if(count)
     {
