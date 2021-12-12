@@ -14,17 +14,13 @@
 
 #define TIMER_THREAD_SAFE 0
 
-namespace Time = std::chrono;
-
-class AbstractSocket;
-
 template <typename T, typename TimeType>
 class Timer
 {
 public:
     Timer(const TimeType& timeout, const T& data) :
         m_userData(data),
-        m_deadline(Time::system_clock::now() + timeout)
+        m_deadline(std::chrono::system_clock::now() + timeout)
     {}
 
     inline void deleteLater() { m_isDisable = true; }
@@ -39,7 +35,7 @@ private:
     std::atomic_bool m_isDisable = false;
 
     const T m_userData;
-    const Time::system_clock::time_point m_deadline;
+    const std::chrono::system_clock::time_point m_deadline;
 };
 
 template <typename T, typename TimeType>
@@ -103,7 +99,8 @@ private:
 
     std::priority_queue<TimerItem<T, TimeType>,
                         std::deque<TimerItem<T, TimeType>>,
-                        TimerCompare> m_queue;
+                        TimerCompare>
+        m_queue;
 };
 
 #endif // TIMERMANAGER_H
