@@ -36,12 +36,12 @@ void HttpResponse::setText(const std::string& text)
     m_type = BodyType::PlainText;
 }
 
-bool HttpResponse::sendStream(std::shared_ptr<std::istream> &&stream, size_t count)
+bool HttpResponse::sendStream(std::unique_ptr<std::istream> &&stream, size_t count)
 {
     if(stream->bad())
         return false;
 
-    m_stream.swap(stream);
+    m_stream = std::move(stream);
 
     const auto start = m_stream->tellg();
 

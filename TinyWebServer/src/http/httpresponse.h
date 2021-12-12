@@ -32,7 +32,7 @@ public:
     void setText(const std::string& text);
     std::string text() const { return m_text; }
 
-    bool sendStream(std::shared_ptr<std::istream> &&stream, size_t count = 0);
+    bool sendStream(std::unique_ptr<std::istream> &&stream, size_t count = 0);
 
 #ifdef __linux__
     void sendFile(int fd, off_t offset, size_t count);
@@ -51,7 +51,7 @@ public:
     void setRawHeader(const std::string& name, const std::string& value)
     {
         if constexpr(isInsert)
-                m_headers.insert(name, value);
+                m_headers.insert({name, value});
         else
             m_headers[name] = value;
     }
@@ -79,7 +79,7 @@ private:
     HttpState m_httpState = {200, "OK"};
 
     std::string m_text;                         // Text
-    std::shared_ptr<std::istream> m_stream;     // Stream
+    std::unique_ptr<std::istream> m_stream;     // Stream
 #ifdef __linux__
     struct
     {
