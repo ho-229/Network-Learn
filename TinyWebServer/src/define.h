@@ -1,0 +1,12 @@
+#ifndef DEFINE_H
+#define DEFINE_H
+
+#define SOCKET_BUF_SIZE 4096
+#define SOCKET_INFO_ENABLE 0
+
+#define EPOLL_WAIT_TIMEOUT 500
+#define EPOLL_MAX_EVENTS 256
+
+#define TCP_CORK_ENABLE 0
+
+#endif // DEFINE_H

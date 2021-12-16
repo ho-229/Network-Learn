@@ -6,6 +6,7 @@
 #ifndef EPOLL_H
 #define EPOLL_H
 
+#include "../define.h"
 #include "../abstract/abstractsocket.h"
 
 #include <vector>
@@ -18,11 +19,7 @@ typedef std::vector<pollfd> EventList;
 #else
 # include <sys/epoll.h>
 # include <unistd.h>
-
-# define MAX_EVENTS 256
 #endif
-
-#define EPOLL_WAIT_TIMEOUT 500
 
 class Epoll
 {
@@ -61,7 +58,7 @@ private:
 #else
     int m_epoll = 0;
     size_t m_count = 0;
-    epoll_event m_eventBuf[MAX_EVENTS];
+    epoll_event m_eventBuf[EPOLL_MAX_EVENTS];
 #endif
 };
 

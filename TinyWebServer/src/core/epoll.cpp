@@ -92,7 +92,7 @@ void Epoll::epoll(std::vector<AbstractSocket *> &events,
     }
 #else   // Unix
     int ret = -1;
-    if((ret = epoll_wait(m_epoll, m_eventBuf, MAX_EVENTS, EPOLL_WAIT_TIMEOUT)) <= 0)
+    if((ret = epoll_wait(m_epoll, m_eventBuf, EPOLL_MAX_EVENTS, EPOLL_WAIT_TIMEOUT)) <= 0)
         return;
 
     epoll_event *item = nullptr;

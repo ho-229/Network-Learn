@@ -4,6 +4,8 @@
  */
 
 #include "httpservices.h"
+
+#include "../define.h"
 #include "../abstract/abstractsocket.h"
 
 HttpServices::HttpServices()
@@ -80,14 +82,14 @@ bool HttpServices::process(AbstractSocket *const socket) const
     }
     else
     {
-//#ifdef __linux__
-//        socket->setOption(IPPROTO_TCP, TCP_CORK, 1);
-//#endif
+#if defined(__linux__) && TCP_CORK_ENABLE
+        socket->setOption(IPPROTO_TCP, TCP_CORK, 1);
+#endif
         if(socket->write(raw) <= 0)
             return false;
-//#ifdef __linux__
-//        socket->setOption(IPPROTO_TCP, TCP_CORK, 0);
-//#endif
+#if defined(__linux__) && TCP_CORK_ENABLE
+        socket->setOption(IPPROTO_TCP, TCP_CORK, 0);
+#endif
         if(response->bodyType() == HttpResponse::BodyType::Stream)
         {
             if(!socket->sendStream(response->m_stream.get(), response->m_count))
