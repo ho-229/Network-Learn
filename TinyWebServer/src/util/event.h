@@ -14,6 +14,10 @@ static void* operator new (size_t) \
 { \
 static thread_local char space[sizeof(Class)]; \
 return space; \
+} \
+static void operator delete (void *object, size_t) \
+{ \
+    static_cast<Class *>(object)->~Class(); \
 }
 
 /**
