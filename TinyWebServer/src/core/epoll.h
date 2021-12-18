@@ -46,8 +46,8 @@ private:
 #ifdef _WIN32
     inline void eraseEvent(AbstractSocket *const socket);
 
-    typedef std::pair<bool,                             // Once
-                      std::unique_ptr<AbstractSocket>>  // Socket
+    typedef std::pair<bool,                 // Once
+                      AbstractSocket *>     // Socket
         Connection;
 
     std::unordered_map<Socket, Connection> m_connections;

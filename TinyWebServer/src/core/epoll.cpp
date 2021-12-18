@@ -43,6 +43,8 @@ void Epoll::erase(AbstractSocket * const socket)
 #ifdef _WIN32
     this->eraseEvent(socket);
     m_connections.erase(socket->descriptor());
+
+    delete socket;
 #else
     epoll_ctl(m_epoll, EPOLL_CTL_DEL, socket->descriptor(), nullptr);
     delete socket;
@@ -82,13 +84,13 @@ void Epoll::epoll(std::vector<AbstractSocket *> &events,
 
         if(item.revents & POLLIN)
         {
-            events.emplace_back(it->second.second.get());
+            events.emplace_back(it->second.second);
 
             if(it->second.first)
-                this->eraseEvent(it->second.second.get());
+                this->eraseEvent(it->second.second);
         }
         else if(item.revents & POLLERR || item.revents & POLLHUP)
-            errorEvents.emplace_back(it->second.second.get());
+            errorEvents.emplace_back(it->second.second);
     }
 #else   // Unix
     int ret = -1;
