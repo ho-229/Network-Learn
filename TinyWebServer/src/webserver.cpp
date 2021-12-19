@@ -64,18 +64,18 @@ void WebServer::waitForFinished()
 }
 
 void WebServer::listen(const std::string &hostName, const std::string &port,
-                       bool sslEnable)
+                       bool sslEnable, std::pair<int, int> linger)
 {
     if(!m_isLoaded)
     {
-        m_handler(new ExceptionEvent(ExceptionEvent::SocketLoadFailed));
+        m_handler(new ExceptionEvent(ExceptionEvent::SocketLoadError));
         return;
     }
 
     if(sslEnable && !SslSocket::isSslAvailable())
     {
         m_handler(new ExceptionEvent(
-            ExceptionEvent::ListenFailed,
+            ExceptionEvent::ListenerError,
             "Listen " + hostName + ":" + port + " failed, SSL is not available.\n"));
         return;
     }
@@ -85,10 +85,12 @@ void WebServer::listen(const std::string &hostName, const std::string &port,
     if(!socket->listen(hostName, port, sslEnable))
     {
         m_handler(new ExceptionEvent(
-            ExceptionEvent::ListenFailed,
+            ExceptionEvent::ListenerError,
             "Listen " + hostName + ":" + port + " failed, please rerun with an administrator.\n"));
         return;
     }
+
+    socket->setOption(SOL_SOCKET, SO_LINGER, linger);
 
     m_listeners.emplace_back(static_cast<AbstractSocket *>(socket));
 }
