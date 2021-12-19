@@ -93,7 +93,10 @@ void ConnectionPool::processErrorQueue(const bool deleteTimer)
     {
         m_handler(new ConnectEvent(socket, ConnectEvent::Close));
 
-        if(deleteTimer)
+        if(socket->isListening())
+            m_handler(new ExceptionEvent(ExceptionEvent::ListenerError,
+                                         "An error occurred in the listener"));
+        else if(deleteTimer)
             static_cast<decltype (m_manager)::TimerType *>(
                 socket->timer())->deleteLater();
 

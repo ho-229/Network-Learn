@@ -51,8 +51,8 @@ public:
     enum Error
     {
         UnknownError,
-        SocketLoadFailed,
-        ListenFailed
+        SocketLoadError,
+        ListenerError
     };
 
     explicit ExceptionEvent(const Error err, const std::string& message = {})
