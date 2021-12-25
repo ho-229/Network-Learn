@@ -33,6 +33,12 @@ void signalHandler(int signum)
 {
     if(signum == SIGINT)
         server->quit();
+#ifdef _WIN32
+    else if(signum == SIGBREAK)
+#else
+    else if(signum == SIGUSR2)
+#endif
+        server->requestQuit();
 }
 
 int main(int argc, char** argv)

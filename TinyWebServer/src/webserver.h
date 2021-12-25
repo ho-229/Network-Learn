@@ -48,6 +48,8 @@ public:
 
     int start();
     void quit() { m_runnable = false; }
+    void requestQuit();
+
     void waitForFinished();
 
     inline int exec()
@@ -64,7 +66,7 @@ public:
 
 private:
     bool m_isLoaded = true;
-    std::atomic_bool m_runnable = true;
+    volatile bool m_runnable = true;
 
     size_t m_loopCount = std::thread::hardware_concurrency();
 

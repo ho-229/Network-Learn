@@ -39,19 +39,27 @@ int WebServer::start()
     if(m_listeners.empty() || !m_services || !m_pools.empty())
         return -1;
 
+    m_runnable = true;
+
     ConnectionPool *pool = nullptr;
     for(size_t i = 0; i < m_loopCount; ++i)
     {
         m_pools.emplace_back(pool = new ConnectionPool(
             m_runnable, m_timeout, m_services.get(), m_handler));
 
-        for(const auto& connect : m_listeners)
-            pool->registerListener(connect.get());
-
+        pool->registerListeners(m_listeners.begin(), m_listeners.end());
         pool->start();
     }
 
     return 0;
+}
+
+void WebServer::requestQuit()
+{
+    for(auto &pool : m_pools)
+        pool->unregisterListeners(m_listeners.begin(), m_listeners.end());
+
+    m_listeners.clear();
 }
 
 void WebServer::waitForFinished()
@@ -59,8 +67,10 @@ void WebServer::waitForFinished()
     for(auto &pool : m_pools)
         pool->waitForFinished();
 
+    if(!m_listeners.empty())
+        m_listeners.clear();
+
     m_pools.clear();
-    m_listeners.clear();
 }
 
 void WebServer::listen(const std::string &hostName, const std::string &port,
