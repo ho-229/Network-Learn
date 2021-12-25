@@ -14,11 +14,13 @@
 #include <functional>
 
 #ifdef _WIN32
+# include <mutex>
 # include <unordered_map>
 typedef std::vector<pollfd> EventList;
 #else
 # include <sys/epoll.h>
 # include <unistd.h>
+# include <atomic>
 #endif
 
 class Epoll
@@ -55,9 +57,10 @@ private:
     using ConnectionItem = decltype (m_connections)::value_type;
 
     std::vector<pollfd> m_events;
+    std::mutex m_mutex;
 #else
     int m_epoll = 0;
-    size_t m_count = 0;
+    std::atomic_uint m_count = 0;
     epoll_event m_eventBuf[EPOLL_MAX_EVENTS];
 #endif
 };

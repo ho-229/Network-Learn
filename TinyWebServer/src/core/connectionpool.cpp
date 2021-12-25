@@ -8,7 +8,7 @@
 #include "connectionpool.h"
 #include "../abstract/abstractservices.h"
 
-ConnectionPool::ConnectionPool(const std::atomic_bool &runnable,
+ConnectionPool::ConnectionPool(const volatile bool &runnable,
                                const std::chrono::milliseconds &timeout,
                                AbstractServices *const services,
                                const EventHandler &handler) :
@@ -28,7 +28,7 @@ ConnectionPool::~ConnectionPool()
 
 void ConnectionPool::exec()
 {
-    while(m_runnable)
+    while(m_runnable && m_epoll.count())
     {
         m_epoll.epoll(m_queue, m_errorQueue);
 
@@ -80,6 +80,7 @@ void ConnectionPool::processQueue()
             {
                 m_handler(new ConnectEvent(socket, ConnectEvent::Close));
                 m_epoll.erase(socket);
+                delete socket;
             }
         }
     }
@@ -94,13 +95,17 @@ void ConnectionPool::processErrorQueue(const bool deleteTimer)
         m_handler(new ConnectEvent(socket, ConnectEvent::Close));
 
         if(socket->isListening())
+        {
             m_handler(new ExceptionEvent(ExceptionEvent::ListenerError,
                                          "An error occurred in the listener"));
+            continue;
+        }
         else if(deleteTimer)
             static_cast<decltype (m_manager)::TimerType *>(
                 socket->timer())->deleteLater();
 
         m_epoll.erase(socket);
+        delete socket;
     }
 
     m_errorQueue.resize(0);

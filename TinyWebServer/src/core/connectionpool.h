@@ -19,7 +19,7 @@ class AbstractServices;
 class ConnectionPool
 {
 public:
-    explicit ConnectionPool(const std::atomic_bool &runnable,
+    explicit ConnectionPool(const volatile bool &runnable,
                             const std::chrono::milliseconds &timeout,
                             AbstractServices *const services,
                             const EventHandler &handler);
@@ -27,8 +27,19 @@ public:
 
     size_t count() const { return m_epoll.count(); }
 
-    void registerListener(AbstractSocket *const socket)
-    { m_epoll.insert(socket); }
+    template <typename Iter>
+    void registerListeners(const Iter begin, const Iter end)
+    {
+        for(auto it = begin; it < end; ++it)
+            m_epoll.insert(it->get());
+    }
+
+    template <typename Iter>
+    void unregisterListeners(const Iter begin, const Iter end)
+    {
+        for(auto it = begin; it < end; ++it)
+            m_epoll.erase(it->get());
+    }
 
     inline void start()
     { m_thread = std::thread(std::bind(&ConnectionPool::exec, this)); }
@@ -51,7 +62,7 @@ private:
     std::vector<AbstractSocket *> m_queue;
     std::vector<AbstractSocket *> m_errorQueue;
 
-    const std::atomic_bool &m_runnable;
+    const volatile bool &m_runnable;
     const std::chrono::milliseconds &m_timeout;
 
     TimerManager<AbstractSocket *> m_manager;

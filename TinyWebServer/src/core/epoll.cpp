@@ -26,6 +26,8 @@ Epoll::~Epoll()
 void Epoll::insert(AbstractSocket * const socket, bool once)
 {
 #ifdef _WIN32
+    std::unique_lock<std::mutex> lock(m_mutex);
+
     m_events.emplace_back(pollfd{socket->descriptor(), POLLIN, 0});
 
     m_connections.insert(ConnectionItem(socket->descriptor(),
@@ -41,14 +43,12 @@ void Epoll::insert(AbstractSocket * const socket, bool once)
 void Epoll::erase(AbstractSocket * const socket)
 {
 #ifdef _WIN32
+    std::unique_lock<std::mutex> lock(m_mutex);
+
     this->eraseEvent(socket);
     m_connections.erase(socket->descriptor());
-
-    delete socket;
 #else
     epoll_ctl(m_epoll, EPOLL_CTL_DEL, socket->descriptor(), nullptr);
-    delete socket;
-
     --m_count;
 #endif
 }
@@ -72,7 +72,10 @@ void Epoll::epoll(std::vector<AbstractSocket *> &events,
     if(m_events.empty())
         return;
 
+    m_mutex.lock();
     auto temp = m_events;
+    m_mutex.unlock();
+
     if(WSAPoll(&temp[0], ULONG(temp.size()), EPOLL_WAIT_TIMEOUT) <= 0)
         return;
 
@@ -87,7 +90,7 @@ void Epoll::epoll(std::vector<AbstractSocket *> &events,
             events.emplace_back(it->second.second);
 
             if(it->second.first)
-                this->eraseEvent(it->second.second);
+                this->erase(it->second.second);
         }
         else if(item.revents & POLLERR || item.revents & POLLHUP)
             errorEvents.emplace_back(it->second.second);
