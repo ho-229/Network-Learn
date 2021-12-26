@@ -5,10 +5,13 @@
 
 #include "sharedfilepool.h"
 
-#ifdef __linux__    // Only for Linux
+// Only for Linux
 
-#include <fcntl.h>
-#include <unistd.h>
+#ifdef _WIN32
+#else
+# include <fcntl.h>
+# include <unistd.h>
+#endif
 
 SharedFilePool::SharedFilePool(const std::string &root)
 {
@@ -28,11 +31,16 @@ std::optional<FileInfo> SharedFilePool::get(const std::string &fileName)
         int fd = -1;
         fs::path newPath(m_root + fileName);
 
+#ifdef _WIN32
+        if(!(fd = fs::is_regular_file(newPath)))     // TODO
+            return {};
+#else
         if((fd = open(newPath.c_str(), O_RDONLY)) < 0)
             return {};
+#endif
 
         WriteLock lock(m_mutex);
-        const FileInfo ret{fd, fs::file_size(newPath)};
+        const FileInfo ret{fd, static_cast<size_t>(fs::file_size(newPath))};
         return {m_pool.emplace(fileName, ret).first->second};
     }
 
@@ -41,15 +49,9 @@ std::optional<FileInfo> SharedFilePool::get(const std::string &fileName)
 
 SharedFilePool::~SharedFilePool()
 {
+#ifdef _WIN32
+#else
     for(const auto&[key, value] : m_pool)
         close(value.fd);
-}
-
-#else
-
-SharedFilePool::~SharedFilePool()
-{
-
-}
-
 #endif
+}

@@ -137,9 +137,17 @@ int main(int argc, char** argv)
     std::unique_ptr<SharedFilePool> pool;
     if(argc > 3 && fs::is_directory(argv[3]))
     {
-#ifdef __linux__
         pool.reset(new SharedFilePool(argv[3]));
 
+        services->onHead([&pool](HttpRequest *req, HttpResponse *resp) {
+            if(auto ret = pool->get(req->uri()); !ret.has_value())
+                resp->setHttpState({404, "Not Found"});
+            else
+                resp->setRawHeader<true>("Content-Length",
+                                         std::to_string(ret->fileSize));
+        });
+
+#ifdef __linux__
         services->onGet([&pool, &build404Response]
                         (HttpRequest *req, HttpResponse *resp) {
             if(auto ret = pool->get(req->uri()); !ret.has_value())
