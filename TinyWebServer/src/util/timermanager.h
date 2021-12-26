@@ -42,6 +42,13 @@ template <typename T, typename TimeType>
 using TimerItem = std::unique_ptr<Timer<T, TimeType>>;
 
 template <typename T, typename TimeType = std::chrono::milliseconds>
+
+#if __cplusplus > 201703L   // C++20
+#include <type_traits>
+requires requires
+{ typename std::common_type<TimeType, std::chrono::milliseconds>::type; }
+#endif
+
 class TimerManager
 {
 public:
