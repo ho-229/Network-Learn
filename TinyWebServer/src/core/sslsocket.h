@@ -26,7 +26,7 @@ public:
     bool isValid() const override { return AbstractSocket::isValid(m_descriptor)
                && m_ssl; }
 
-    bool isListening() const override { return false; }
+    bool isListener() const override { return false; }
 
 #ifdef __linux__
     ssize_t sendFile(int fd, off_t offset, size_t count) override;

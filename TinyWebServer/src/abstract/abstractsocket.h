@@ -16,13 +16,12 @@ extern "C"
 {
 #ifdef _WIN32
 typedef unsigned int Socket;
-# define DEFAULT_SOCKET Socket(~0)
 
 # include <WinSock2.h>
 # include <WS2tcpip.h>
 #else
 typedef int Socket;
-# define DEFAULT_SOCKET -1
+# define INVALID_SOCKET -1
 
 # include <sys/socket.h>
 # include <netinet/in.h>
@@ -47,7 +46,7 @@ public:
 
     virtual bool isValid() const = 0;
 
-    virtual bool isListening() const = 0;
+    virtual bool isListener() const = 0;
 
 #if SOCKET_INFO_ENABLE
     inline void initializeInfo()
@@ -116,7 +115,7 @@ public:
     }
 
 protected:
-    explicit AbstractSocket(const Socket socket = DEFAULT_SOCKET) :
+    explicit AbstractSocket(const Socket socket = INVALID_SOCKET) :
         m_descriptor(socket)
     {
 #if SOCKET_INFO_ENABLE

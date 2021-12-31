@@ -46,7 +46,8 @@ SslSocket::SslSocket(const Socket socket) :
 
 SslSocket::~SslSocket()
 {
-    this->SslSocket::close();
+    if(this->SslSocket::isValid())
+        this->SslSocket::close();
 }
 
 void SslSocket::read(std::string &buffer)
@@ -84,7 +85,9 @@ void SslSocket::close()
     SSL_shutdown(m_ssl);
     SSL_free(m_ssl);
 
-    CLOSE(m_descriptor);
+    Socket descriptor = INVALID_SOCKET;
+    std::swap(m_descriptor, descriptor);
+    CLOSE(descriptor);
 
     m_ssl = nullptr;
 }

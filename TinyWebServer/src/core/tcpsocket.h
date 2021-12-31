@@ -11,7 +11,7 @@
 class TcpSocket : public AbstractSocket
 {
 public:
-    explicit TcpSocket(const Socket socket = DEFAULT_SOCKET);
+    explicit TcpSocket(const Socket socket = INVALID_SOCKET);
     ~TcpSocket() override;
 
     void read(std::string& buffer) override;
@@ -33,7 +33,7 @@ public:
      * @return true when successful
      */
     bool listen(const std::string& hostName, const std::string& port, bool sslEnable);
-    bool isListening() const override { return m_isListening; }
+    bool isListener() const override { return m_isListener; }
 
     Socket accept() const;
 
@@ -43,7 +43,7 @@ public:
 #endif
 
 private:
-    bool m_isListening = false;
+    bool m_isListener = false;
     bool m_sslEnable = false;
 };
 

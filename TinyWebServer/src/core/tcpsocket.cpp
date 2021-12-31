@@ -30,12 +30,13 @@ TcpSocket::TcpSocket(const Socket socket) : AbstractSocket(socket)
 
 TcpSocket::~TcpSocket()
 {
-    this->TcpSocket::close();
+    if(this->TcpSocket::isValid())
+        this->TcpSocket::close();
 }
 
 void TcpSocket::read(std::string &buffer)
 {
-    if(m_isListening)
+    if(m_isListener)
         return;
 
     int ret = 0;
@@ -72,7 +73,7 @@ void TcpSocket::read(std::string &buffer)
 
 int TcpSocket::write(const char *buf, int size)
 {
-    if(m_isListening || !buf || !size)
+    if(m_isListener || !buf || !size)
         return -1;
 
 #ifdef _WIN32
@@ -102,7 +103,9 @@ int TcpSocket::write(const char *buf, int size)
 
 void TcpSocket::close()
 {
-    CLOSE(m_descriptor);
+    Socket descriptor = INVALID_SOCKET;
+    std::swap(m_descriptor, descriptor);
+    CLOSE(descriptor);
 }
 
 #ifdef __linux__
@@ -114,7 +117,7 @@ ssize_t TcpSocket::sendFile(int fd, off_t offset, size_t count)
 
 bool TcpSocket::listen(const std::string &hostName, const std::string &port, bool sslEnable)
 {
-    if(m_isListening)
+    if(m_isListener)
         return false;
 
     addrinfo hints, *addrList, *it;
@@ -177,13 +180,13 @@ bool TcpSocket::listen(const std::string &hostName, const std::string &port, boo
     m_port = port;
 #endif
 
-    m_isListening = true;
+    m_isListener = true;
     return true;
 }
 
 Socket TcpSocket::accept() const
 {
-    if(!m_isListening)
+    if(!m_isListener)
         return {};
 
     sockaddr_storage addr;

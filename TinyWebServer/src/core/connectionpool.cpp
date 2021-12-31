@@ -50,9 +50,9 @@ void ConnectionPool::processQueue()
 {
     for(auto& socket : m_queue)
     {
-        if(socket->isListening())
+        if(socket->isListener())
         {
-            while(true)
+            while(socket->isValid())
             {
                 const Socket descriptor = static_cast<TcpSocket *>(socket)->accept();
 
@@ -94,7 +94,7 @@ void ConnectionPool::processErrorQueue(const bool deleteTimer)
     {
         m_handler(new ConnectEvent(socket, ConnectEvent::Close));
 
-        if(socket->isListening())
+        if(socket->isListener())
         {
             m_handler(new ExceptionEvent(ExceptionEvent::ListenerError,
                                          "An error occurred in the listener"));
