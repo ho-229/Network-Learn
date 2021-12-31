@@ -90,10 +90,10 @@ int main(int argc, char** argv)
 
 //            switch (exception->error())
 //            {
-//            case ExceptionEvent::SocketLoadFailed:
+//            case ExceptionEvent::SocketLoadError:
 //                std::cerr << "WinSock2 load failed.\n";
 //                break;
-//            case ExceptionEvent::ListenFailed:
+//            case ExceptionEvent::ListenerError:
 //                std::cerr << exception->message();
 //                break;
 //            case ExceptionEvent::UnknownError:
@@ -109,7 +109,7 @@ int main(int argc, char** argv)
         for(const auto& arg : req->urlArguments())
             sum += atoi(arg.second.c_str());
 
-        resp->setRawHeader("Content-type", "text/html; charset=utf-8");
+        resp->setRawHeader("Content-Type", "text/html; charset=utf-8");
 
         resp->setText("<html><title>Tiny Web Server</title><body bgcolor\"#fffff\">"
                           "<h1>Tiny Web Server / Adder</h1><p>Result: "
@@ -117,7 +117,7 @@ int main(int argc, char** argv)
     });
 
     services->onGet("/hello", [](HttpRequest *, HttpResponse *resp) {
-        resp->setRawHeader<true>("Content-type", "text/html; charset=utf-8");
+        resp->setRawHeader<true>("Content-Type", "text/html; charset=utf-8");
         *resp << "Hello world.\n";
     });
 
@@ -163,8 +163,8 @@ int main(int argc, char** argv)
         services->onGet([workPath, &build404Response](HttpRequest *req, HttpResponse *resp) {
             fs::path path(workPath + req->uri());
             if(!fs::is_regular_file(path) ||
-                    !resp->sendStream(std::unique_ptr<std::istream>(
-                                          new std::ifstream(path, std::ios::binary))))
+                !resp->sendStream(std::unique_ptr<std::istream>(
+                    new std::ifstream(path, std::ios::binary))))
                 build404Response(resp);
         });
 

@@ -91,6 +91,7 @@ void HttpResponse::reset()
     m_headers.clear();
 
     m_type = BodyType::PlainText;
+    m_httpState = {200, "OK"};
 }
 
 void HttpResponse::setHttpState(const HttpState &state)
