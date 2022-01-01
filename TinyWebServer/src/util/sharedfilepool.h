@@ -12,11 +12,13 @@
 #include <shared_mutex>
 #include <unordered_map>
 
+#include "../define.h"
+
 namespace fs = std::filesystem;
 
 struct FileInfo
 {
-    int fd;
+    File file;
     size_t fileSize;
 };
 

@@ -153,7 +153,7 @@ int main(int argc, char** argv)
             if(auto ret = pool->get(req->uri()); !ret.has_value())
                 build404Response(resp);
             else
-                resp->sendFile(ret.value().fd, 0, ret.value().fileSize);
+                resp->sendFile(ret.value().file, 0, ret.value().fileSize);
         });
 
         std::cout << "Shared directory: " << pool->root() << ".\n";

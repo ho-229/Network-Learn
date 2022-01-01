@@ -15,14 +15,9 @@
 extern "C"
 {
 #ifdef _WIN32
-typedef unsigned int Socket;
-
 # include <WinSock2.h>
 # include <WS2tcpip.h>
 #else
-typedef int Socket;
-# define INVALID_SOCKET -1
-
 # include <sys/socket.h>
 # include <netinet/in.h>
 # include <netinet/tcp.h>
