@@ -31,8 +31,8 @@ std::optional<FileInfo> SharedFilePool::get(const std::string &fileName)
         fs::path filePath(m_root + fileName);
 
 #ifdef _WIN32
-        if((file = CreateFile(filePath.c_str(), GENERIC_READ,
-                               FILE_SHARE_READ, nullptr,
+        if((file = CreateFile(reinterpret_cast<LPCSTR>(filePath.c_str()),
+                               GENERIC_READ, FILE_SHARE_READ, nullptr,
                                OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL,
                                nullptr)) == INVALID_HANDLE_VALUE)
             return {};
