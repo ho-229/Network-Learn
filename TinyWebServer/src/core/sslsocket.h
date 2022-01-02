@@ -17,7 +17,7 @@ public:
     ~SslSocket() override;
 
     void read(std::string& buffer) override;
-    int write(const char* buf, int size) override;
+    ssize_t write(const char* buf, size_t count) override;
 
     void close() override;
 
@@ -28,9 +28,7 @@ public:
 
     bool isListener() const override { return false; }
 
-#ifdef __linux__
-    ssize_t sendFile(int fd, off_t offset, size_t count) override;
-#endif
+    ssize_t sendFile(File file, off_t offset, size_t count) override;
 
     static bool initializatSsl(const std::string& certFile,
                                const std::string& privateKey);

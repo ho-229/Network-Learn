@@ -69,12 +69,12 @@ void SslSocket::read(std::string &buffer)
     while(ret == SOCKET_BUF_SIZE && AbstractSocket::buffer[SOCKET_BUF_SIZE - 1] != '\n');
 }
 
-int SslSocket::write(const char *buf, int size)
+ssize_t SslSocket::write(const char *buf, size_t count)
 {
     if(!m_ssl || !buf)
         return 0;
 
-    return SSL_write(m_ssl, buf, size);
+    return SSL_write(m_ssl, buf, int /*WTF*/ (count));
 }
 
 void SslSocket::close()
@@ -92,17 +92,41 @@ void SslSocket::close()
     m_ssl = nullptr;
 }
 
-#ifdef __linux__
-ssize_t SslSocket::sendFile(int fd, off_t offset, size_t count)
+ssize_t SslSocket::sendFile(File file, off_t offset, size_t count)
 {
+#ifdef _WIN32
+    // Create a page space
+    HANDLE page = CreateFileMapping(file, nullptr, PAGE_READONLY,
+                                    static_cast<DWORD>(uint64_t(count) >> 32),
+                                    static_cast<DWORD>(count & 0xffffffff),
+                                    nullptr);
+    if(!page)
+        return -1;
+
+    // Map data from the file
+    void *ptr = MapViewOfFile(page, FILE_MAP_READ,
+                              static_cast<DWORD>(uint64_t(offset) >> 32),
+                              static_cast<DWORD>(
+                                  static_cast<unsigned long>(offset) & 0xffffffff),
+                              count);
+    if(!ptr)
+        return -1;
+
+    const ssize_t ret = this->write(reinterpret_cast<const char *>(ptr), count);
+
+    UnmapViewOfFile(ptr);
+    CloseHandle(page);
+
+    return ret;
+#else
     char *ptr = static_cast<char *>(
-                mmap(nullptr, count, PROT_READ, MAP_SHARED, fd, offset));
+                mmap(nullptr, count, PROT_READ, MAP_SHARED, file, offset));
     const int ret = this->write(ptr, count);
     munmap(ptr, count);
 
     return ret;
-}
 #endif
+}
 
 bool SslSocket::initializatSsl(const std::string& certFile,
                                const std::string& privateKey)

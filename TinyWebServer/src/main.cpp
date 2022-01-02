@@ -147,7 +147,6 @@ int main(int argc, char** argv)
                                          std::to_string(ret->fileSize));
         });
 
-#ifdef __linux__
         services->onGet([&pool, &build404Response]
                         (HttpRequest *req, HttpResponse *resp) {
             if(auto ret = pool->get(req->uri()); !ret.has_value())
@@ -157,19 +156,6 @@ int main(int argc, char** argv)
         });
 
         std::cout << "Shared directory: " << pool->root() << ".\n";
-#else
-        const std::string workPath(argv[3]);
-
-        services->onGet([workPath, &build404Response](HttpRequest *req, HttpResponse *resp) {
-            fs::path path(workPath + req->uri());
-            if(!fs::is_regular_file(path) ||
-                !resp->sendStream(std::unique_ptr<std::istream>(
-                    new std::ifstream(path, std::ios::binary))))
-                build404Response(resp);
-        });
-
-        std::cout << "Shared directory: " << workPath << ".\n";
-#endif
     }
     else
     {

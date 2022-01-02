@@ -15,7 +15,7 @@ public:
     ~TcpSocket() override;
 
     void read(std::string& buffer) override;
-    int write(const char* buf, int size) override;
+    ssize_t write(const char* buf, size_t count) override;
 
     void close() override;
 
@@ -23,9 +23,7 @@ public:
 
     bool isValid() const override { return AbstractSocket::isValid(m_descriptor); }
 
-#ifdef __linux__
-    ssize_t sendFile(int fd, off_t offset, size_t count) override;
-#endif
+    ssize_t sendFile(File file, off_t offset, size_t count) override;
 
     /**
      * @ref CS:APP(3) P662: int open_listenfd(char *port)

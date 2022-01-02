@@ -4,6 +4,7 @@
 #ifdef _WIN32
 typedef unsigned int Socket;    // Socket handle
 typedef void* File;             // File handle
+# define ssize_t SSIZE_T
 #else   // Unix
 typedef int Socket;             // Socket descriptor
 typedef int File;               // File descriptor

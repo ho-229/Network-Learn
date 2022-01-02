@@ -82,28 +82,30 @@ bool HttpServices::process(AbstractSocket *const socket) const
     }
     else
     {
+
 #if defined(__linux__) && TCP_CORK_ENABLE
         socket->setOption(IPPROTO_TCP, TCP_CORK, 1);
 #endif
+
         if(socket->write(raw) <= 0)
             return false;
+
 #if defined(__linux__) && TCP_CORK_ENABLE
         socket->setOption(IPPROTO_TCP, TCP_CORK, 0);
 #endif
+
         if(response->bodyType() == HttpResponse::BodyType::Stream)
         {
             if(!socket->sendStream(response->m_stream.get(), response->m_count))
                 return false;
         }
-#ifdef __linux__
         else    // File
         {
-            if(socket->sendFile(response->m_file.fd,
+            if(socket->sendFile(response->m_file.file,
                                 response->m_file.offset,
                                 response->m_count) < 0)
                 return false;
         }
-#endif
     }
 
     const bool ret = request->isKeepAlive() && socket->times() <= m_maxTimes;

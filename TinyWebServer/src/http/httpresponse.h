@@ -9,6 +9,7 @@
 #include <memory>
 #include <istream>
 
+#include "../define.h"
 #include "../util/headermap.h"
 
 typedef std::pair<int, std::string> HttpState;
@@ -19,9 +20,7 @@ public:
     enum class BodyType
     {
         PlainText,
-#ifdef __linux__
         File,
-#endif
         Stream
     };
 
@@ -34,9 +33,7 @@ public:
 
     bool sendStream(std::unique_ptr<std::istream> &&stream, size_t count = 0);
 
-#ifdef __linux__
-    void sendFile(int fd, off_t offset, size_t count);
-#endif
+    void sendFile(File fd, off_t offset, size_t count);
 
     void reset();
 
@@ -80,13 +77,13 @@ private:
 
     std::string m_text;                         // Text
     std::unique_ptr<std::istream> m_stream;     // Stream
-#ifdef __linux__
+
     struct
     {
-        int fd;
+        File file;
         off_t offset;
     } m_file;                                   // File
-#endif
+
     size_t m_count;
 
     HeaderMap m_headers;

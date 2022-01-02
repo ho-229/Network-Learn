@@ -30,9 +30,9 @@ public:
     virtual ~AbstractSocket() = default;
 
     virtual void read(std::string& buffer) = 0;
-    virtual int write(const char* buf, int size) = 0;
+    virtual ssize_t write(const char* buf, size_t count) = 0;
 
-    inline int write(const std::string& data)
+    inline ssize_t write(const std::string& data)
     { return this->write(data.c_str(), int(data.size())); }
 
     virtual void close() = 0;
@@ -96,9 +96,7 @@ public:
 
     bool sendStream(std::istream *const stream, size_t count = 0);
 
-#ifdef __linux__
-    virtual ssize_t sendFile(int fd, off_t offset, size_t count) = 0;
-#endif
+    virtual ssize_t sendFile(File file, off_t offset, size_t count) = 0;
 
     static inline constexpr bool isValid(const Socket& sock)
     {

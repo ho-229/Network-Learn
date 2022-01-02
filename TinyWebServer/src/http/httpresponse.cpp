@@ -72,17 +72,15 @@ bool HttpResponse::sendStream(std::unique_ptr<std::istream> &&stream, size_t cou
     return true;
 }
 
-#ifdef __linux__
-void HttpResponse::sendFile(int fd, off_t offset, size_t count)
+void HttpResponse::sendFile(File file, off_t offset, size_t count)
 {
-    m_file = {fd, offset};
+    m_file = {file, offset};
     m_count = count;
 
     m_headers["Content-Length"] = std::to_string(count);
 
     m_type = BodyType::File;
 }
-#endif
 
 void HttpResponse::reset()
 {
