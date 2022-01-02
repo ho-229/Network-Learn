@@ -40,8 +40,6 @@ private:
     std::unordered_map<std::string, FileInfo> m_pool;
     std::unordered_set<std::string> m_invalidPaths;
 
-    std::deque<std::string> m_queue;
-
     const std::string m_root;
 
     std::shared_mutex m_mutex;

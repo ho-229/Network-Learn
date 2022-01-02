@@ -1,6 +1,8 @@
 ﻿#ifndef DEFINE_H
 #define DEFINE_H
 
+#define ANY_HOST "0.0.0.0"
+
 #ifdef _WIN32
 typedef unsigned int Socket;    // Socket handle
 typedef void* File;             // File handle

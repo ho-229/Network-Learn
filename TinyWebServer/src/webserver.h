@@ -13,8 +13,6 @@
 #include <thread>
 #include <memory>
 
-#define ANY_HOST "0.0.0.0"
-
 using namespace std::chrono_literals;
 
 class ConnectionPool;

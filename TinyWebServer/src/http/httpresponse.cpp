@@ -110,7 +110,7 @@ void HttpResponse::toRawData(std::string &response)
 
     // Headers
     response.append("Date: ", 6).append(Util::currentDateString()).append("\r\n", 2);
-    response.append("Server: TinyWebServer\r\n", 23);
+    response.append("Server: HinyWebServer\r\n", 23);   // awa
 
     for(const auto &[key, value] : m_headers)
         response.append(key).append(": ", 2).append(value).append("\r\n", 2);
