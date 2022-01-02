@@ -24,8 +24,6 @@ public:
         Stream
     };
 
-    static std::unordered_map<std::string, std::string> PermissibleStaticTypes;
-
     HttpResponse();
 
     void setText(const std::string& text);
@@ -68,6 +66,14 @@ public:
         m_type = BodyType::PlainText;
 
         return *this;
+    }
+
+    static std::unordered_map<std::string, std::string> PermissibleStaticTypes;
+
+    static inline std::string matchContentType(const std::string &extension)
+    {
+        const auto it = PermissibleStaticTypes.find(extension);
+        return it == PermissibleStaticTypes.end() ? std::string() : it->second;
     }
 
 private:

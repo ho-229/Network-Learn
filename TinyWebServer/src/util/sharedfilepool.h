@@ -11,8 +11,11 @@
 #include <filesystem>
 #include <shared_mutex>
 #include <unordered_map>
+#include <unordered_set>
 
 #include "../define.h"
+
+#define MAX_SHARED_FILE 128
 
 namespace fs = std::filesystem;
 
@@ -20,6 +23,7 @@ struct FileInfo
 {
     File file;
     size_t fileSize;
+    std::string extension;
 };
 
 class SharedFilePool
@@ -34,8 +38,11 @@ public:
 
 private:
     std::unordered_map<std::string, FileInfo> m_pool;
+    std::unordered_set<std::string> m_invalidPaths;
 
-    std::string m_root;
+    std::deque<std::string> m_queue;
+
+    const std::string m_root;
 
     std::shared_mutex m_mutex;
 

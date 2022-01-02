@@ -134,25 +134,40 @@ int main(int argc, char** argv)
         resp->setHttpState({404, "Not Found"});
     };
 
+    constexpr auto sendFileResponse = [](HttpResponse *resp,
+                                         const std::optional<FileInfo> &file) {
+        resp->sendFile(file.value().file, 0, file.value().fileSize);
+        if(const auto type = HttpResponse::matchContentType(file->extension);
+            !type.empty())
+            resp->setRawHeader<true>("Content-Type", type);
+    };
+
     std::unique_ptr<SharedFilePool> pool;
     if(argc > 3 && fs::is_directory(argv[3]))
     {
         pool.reset(new SharedFilePool(argv[3]));
 
         services->onHead([&pool](HttpRequest *req, HttpResponse *resp) {
-            if(auto ret = pool->get(req->uri()); !ret.has_value())
-                resp->setHttpState({404, "Not Found"});
-            else
+            if(auto ret = pool->get(req->uri()); ret.has_value())
+            {
                 resp->setRawHeader<true>("Content-Length",
                                          std::to_string(ret->fileSize));
+                if(const auto type = HttpResponse::matchContentType(ret->extension);
+                    !type.empty())
+                    resp->setRawHeader<true>("Content-Type", type);
+            }
+            else
+                resp->setHttpState({404, "Not Found"});
         });
 
-        services->onGet([&pool, &build404Response]
+        services->onGet([&pool, &build404Response, &sendFileResponse]
                         (HttpRequest *req, HttpResponse *resp) {
-            if(auto ret = pool->get(req->uri()); !ret.has_value())
-                build404Response(resp);
+            if(auto ret = pool->get(req->uri()); ret.has_value())
+                sendFileResponse(resp, ret);
+            else if(ret = pool->get(req->uri().append("/index.html")); ret.has_value())
+                sendFileResponse(resp, ret);
             else
-                resp->sendFile(ret.value().file, 0, ret.value().fileSize);
+                build404Response(resp);
         });
 
         std::cout << "Shared directory: " << pool->root() << ".\n";
