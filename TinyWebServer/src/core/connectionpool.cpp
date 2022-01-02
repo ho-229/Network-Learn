@@ -92,7 +92,7 @@ void ConnectionPool::processErrorQueue(const bool deleteTimer)
 {
     for(auto& socket : m_errorQueue)
     {
-        m_handler(new ConnectEvent(socket, ConnectEvent::Close));
+        m_epoll.erase(socket);
 
         if(socket->isListener())
         {
@@ -100,12 +100,15 @@ void ConnectionPool::processErrorQueue(const bool deleteTimer)
                                          "An error occurred in the listener"));
             continue;
         }
-        else if(deleteTimer)
-            static_cast<decltype (m_manager)::TimerType *>(
-                socket->timer())->deleteLater();
+        else
+        {
+            m_handler(new ConnectEvent(socket, ConnectEvent::Close));
 
-        m_epoll.erase(socket);
-        delete socket;
+            if(auto timer = socket->timer())
+                static_cast<decltype (m_manager)::TimerType *>(timer)->deleteLater();
+
+            delete socket;
+        }
     }
 
     m_errorQueue.resize(0);

@@ -37,7 +37,7 @@ std::optional<FileInfo> SharedFilePool::get(const std::string &fileName)
                                nullptr)) == INVALID_HANDLE_VALUE)
             return {};
 #else
-        if((file = open(filePath.c_str(), O_RDONLY)) < 0)
+        if(fs::is_regular_file(filePath) && (file = open(filePath.c_str(), O_RDONLY)) < 0)
             return {};
 #endif
 
