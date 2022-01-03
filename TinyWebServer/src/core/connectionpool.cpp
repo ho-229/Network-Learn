@@ -42,7 +42,7 @@ void ConnectionPool::exec()
         m_manager.checkout(m_errorQueue);
 
         if(!m_errorQueue.empty())
-            this->processErrorQueue(false);
+            this->processErrorQueue();
     }
 }
 
@@ -88,7 +88,7 @@ void ConnectionPool::processQueue()
     m_queue.resize(0);
 }
 
-void ConnectionPool::processErrorQueue(const bool deleteTimer)
+void ConnectionPool::processErrorQueue()
 {
     for(auto& socket : m_errorQueue)
     {

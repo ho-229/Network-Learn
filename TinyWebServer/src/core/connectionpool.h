@@ -55,7 +55,7 @@ protected:
 
 private:
     void processQueue();
-    void processErrorQueue(const bool deleteTimer = true);
+    void processErrorQueue();
 
     Epoll m_epoll;
 
