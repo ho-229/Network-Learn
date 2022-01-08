@@ -32,7 +32,7 @@ public:
     inline const T userData() const { return m_userData; }
 
 private:
-    std::atomic_bool m_isDisable = false;
+    volatile bool m_isDisable = false;
 
     const T m_userData;
     const std::chrono::system_clock::time_point m_deadline;

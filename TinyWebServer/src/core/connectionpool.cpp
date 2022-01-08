@@ -42,7 +42,7 @@ void ConnectionPool::exec()
         m_manager.checkout(m_errorQueue);
 
         if(!m_errorQueue.empty())
-            this->processErrorQueue();
+            this->processTimeoutQueue();
     }
 }
 
@@ -80,12 +80,13 @@ void ConnectionPool::processQueue()
             {
                 m_handler(new ConnectEvent(socket, ConnectEvent::Close));
                 m_epoll.erase(socket);
+
                 delete socket;
             }
         }
     }
 
-    m_queue.clear();
+    m_queue.resize(0);
 }
 
 void ConnectionPool::processErrorQueue()
@@ -111,5 +112,18 @@ void ConnectionPool::processErrorQueue()
         }
     }
 
-    m_errorQueue.clear();
+    m_errorQueue.resize(0);
+}
+
+void ConnectionPool::processTimeoutQueue()
+{
+    for(auto& socket : m_errorQueue)
+    {
+        m_epoll.erase(socket);
+        m_handler(new ConnectEvent(socket, ConnectEvent::Close));
+
+        delete socket;
+    }
+
+    m_errorQueue.resize(0);
 }
