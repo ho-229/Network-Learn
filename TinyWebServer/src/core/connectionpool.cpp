@@ -71,8 +71,8 @@ void ConnectionPool::processQueue()
         }
         else
         {
-            static_cast<decltype (m_manager)::TimerType *>(
-                socket->timer())->deleteLater();
+            if(auto timer = static_cast<decltype(m_manager)::TimerType *>(socket->timer()))
+                timer->deleteLater();
 
             if(m_services->process(socket))
                 socket->setTimer(m_manager.addTimer(m_timeout, socket));   // Reset timer
@@ -85,7 +85,7 @@ void ConnectionPool::processQueue()
         }
     }
 
-    m_queue.resize(0);
+    m_queue.clear();
 }
 
 void ConnectionPool::processErrorQueue()
@@ -104,12 +104,12 @@ void ConnectionPool::processErrorQueue()
         {
             m_handler(new ConnectEvent(socket, ConnectEvent::Close));
 
-            if(auto timer = socket->timer())
-                static_cast<decltype (m_manager)::TimerType *>(timer)->deleteLater();
+            if(auto timer = static_cast<decltype(m_manager)::TimerType *>(socket->timer()))
+                timer->deleteLater();
 
             delete socket;
         }
     }
 
-    m_errorQueue.resize(0);
+    m_errorQueue.clear();
 }

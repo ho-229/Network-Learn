@@ -10,6 +10,7 @@
 #include "../util/headermap.h"
 
 #include <vector>
+#include <ostream>
 #include <unordered_set>
 
 extern "C"
@@ -69,6 +70,27 @@ public:
     bool isValid() const { return m_isValid; }
 
     static std::unordered_set<std::string> MethodSet;
+
+    friend std::ostream& operator<<(std::ostream &stream, const HttpRequest &req)
+    {
+        stream << "Method: " << req.method()
+               << "|\nURI: " << req.uri()
+               << "|\nVersion: " << req.httpVersion()
+
+               << "|\n\nUrl Arguments:\n";
+
+        for(const auto& arg : req.urlArguments())
+            stream << arg << "|\n";
+
+        stream << "\nHeaders:\n";
+
+        for(const auto& item : req.rawHeaders())
+            stream << item.first << "==>" << item.second << "|\n";
+
+        stream << "\nBody:\n" << req.body();
+
+        return stream;
+    }
 
 private:
     bool parseRequestLine(std::string::size_type &offset,

@@ -79,7 +79,7 @@ bool HttpRequest::parseRequestLine(std::string::size_type &offset,
                                    const std::string &data)
 {
     // Method
-    if(!Util::referTil<8>(offset, m_method, data, [](const char &ch)
+    if(!Util::referTil(offset, m_method, data, [](const char &ch)
     { return ch == ' '; }))
         return false;
     ++offset;
@@ -91,16 +91,18 @@ bool HttpRequest::parseRequestLine(std::string::size_type &offset,
         if(data.at(offset) == '?')
         {
             std::string_view arg;
-            ++offset;
 
-            while(Util::referTil(offset, arg, data, [](const char &ch)
-            { return ch == '&' || ch == ' '; }))
+            do
             {
-                if(data[offset] == ' ')
-                    break;
+                ++offset;
+
+                if(!Util::referTil(offset, arg, data, [](const char &ch)
+                                   { return ch == '&' || ch == ' '; }))
+                    return false;
 
                 m_urlArguments.emplace_back(arg);
             }
+            while(data[offset] == '&');
         }
     }
     else
