@@ -89,7 +89,7 @@ void WebServer::listen(const std::string &hostName, const std::string &port,
         return;
     }
 
-    auto socket = new TcpSocket();
+    auto socket = std::make_unique<TcpSocket>();
 
     if(!socket->listen(hostName, port, sslEnable))
     {
@@ -101,5 +101,5 @@ void WebServer::listen(const std::string &hostName, const std::string &port,
 
     socket->setOption(SOL_SOCKET, SO_LINGER, linger);
 
-    m_listeners.emplace_back(static_cast<AbstractSocket *>(socket));
+    m_listeners.emplace_back(std::unique_ptr<AbstractSocket>(std::move(socket)));
 }

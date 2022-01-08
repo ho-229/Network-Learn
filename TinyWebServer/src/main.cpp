@@ -107,7 +107,7 @@ int main(int argc, char** argv)
     services->onGet("/adder", [](HttpRequest *req, HttpResponse *resp) {
         int sum = 0;
         for(const auto& arg : req->urlArguments())
-            sum += atoi(arg.second.c_str());
+            sum += atoi(arg.c_str());
 
         resp->setRawHeader("Content-Type", "text/html; charset=utf-8");
 
