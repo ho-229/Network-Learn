@@ -92,7 +92,7 @@ private:
 
     size_t m_count;
 
-    HeaderMap m_headers;
+    HeaderMap<std::string, std::string> m_headers;
 
     BodyType m_type = BodyType::PlainText;
 };

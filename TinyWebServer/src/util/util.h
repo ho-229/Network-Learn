@@ -9,6 +9,7 @@
 #include <string_view>
 #include <algorithm>
 #include <sstream>
+#include <wchar.h>
 #include <iomanip>
 #include <chrono>
 #include <ctime>
@@ -34,87 +35,43 @@ namespace Util
         return ss.str();
     }
 
-    template <typename Str>
-    std::string_view getLine(std::string::size_type &offset,
-                             const Str &text,
-                             const std::string &limit)
+    inline std::wstring fromLocal8Bit(const std::string &src)
     {
-        if(offset >= text.size())       // Out of range
-            return {};
-
-        const auto pos = text.find(limit, offset);
-        if(pos == std::string::npos)    // Not found
-        {
-            const auto begin = offset;
-            offset = text.size();
-            return {text.data() + begin};
-        }
-
-        std::string_view ret(text.data() + offset, pos - offset);
-        offset += pos - offset + limit.size();
+        std::wstring ret;
+        ret.resize(ret.size() + 1);
+        mbstowcs(ret.data(), src.c_str(), ret.size() + 1);
 
         return ret;
     }
 
-    template <size_t maxCount = 0>
-    bool copyTil(std::string::size_type &offset,
-                 std::string &dst, const std::string &src,
-                 const char &limit)
+    template <size_t maxCount = 0, typename Compare>
+    bool referTil(std::string::size_type &offset,
+                  std::string_view &dst, const std::string &src,
+                  const Compare &limit)
     {
         if(src.empty())
             return false;
 
-        const auto str = src.c_str();
-        const size_t size = src.size();
+        const size_t srcSize = src.size();
+        const auto start = offset;
+        size_t count = 0;
 
-        if constexpr(maxCount > 0)
+        for(; offset < srcSize; ++offset, ++count)
         {
-            size_t count = 0;
-
-            for(; offset < size; ++offset)
+            if constexpr(maxCount)
             {
-                if(str[offset] == limit)
-                    return true;
-                else if(count == maxCount)
-                    return false;
-
-                dst.append(str + offset, 1);
-                ++count;
+                if(maxCount <= count)
+                    break;
             }
-        }
-        else
-        {
-            for(; offset < size; ++offset)
+
+            if(limit(src[offset]))
             {
-                if(str[offset] == limit)
-                    return true;
-
-                dst.append(str + offset, 1);
-            }
-        }
-
-        return false;
-    }
-
-    template <typename Func>
-    bool copyTil(std::string::size_type &offset,
-                 std::string &dst, const std::string &src,
-                 const Func &limit)
-    {
-        if(src.empty())
-            return false;
-
-        const auto str = src.c_str();
-        const size_t size = src.size();
-
-        for(; offset < size; ++offset)
-        {
-            if(limit(str[offset]))
+                dst = {src.data() + start, count};
                 return true;
-
-            dst.append(str + offset, 1);
+            }
         }
 
+        dst = {src.data() + start, count};
         return false;
     }
 

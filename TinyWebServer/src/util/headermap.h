@@ -20,22 +20,24 @@ extern "C"
 #define HASH_MAP 1
 
 #if HASH_MAP
+template <typename T>
 struct NocaseCompare
 {
-    inline bool operator()(const std::string &left,
-                           const std::string &right) const
+    inline bool operator()(const T &left,
+                           const T &right) const
     {
 # ifdef _WIN32
-        return !_stricmp(left.c_str(), right.c_str());
+        return !_stricmp(left.data(), right.data());
 # else
-        return !strcasecmp(left.c_str(), right.c_str());
+        return !strcasecmp(left.data(), right.data());
 # endif
     }
 };
 
+template <typename T>
 struct NocaseHash
 {
-    size_t operator()(const std::string &str) const
+    size_t operator()(const T &str) const
     {
         if(str.empty())
             return 0;
@@ -51,31 +53,29 @@ struct NocaseHash
     }
 };
 
-typedef std::unordered_map<std::string,     // Name
-                           std::string,     // Value
-                           NocaseHash,      // Hash
-                           NocaseCompare>   // Compare
-    HeaderMap;
+template <typename Key, typename Value>
+using HeaderMap = std::unordered_map<Key, Value,
+                                     NocaseHash<Key>,           // Hash
+                                     NocaseCompare<Value>>;     // Compare;
 
 #else
+template <typename T>
 struct NocaseCompare
 {
-    inline bool operator()(const std::string &left,
-                           const std::string &right) const
+    inline bool operator()(const T &left,
+                           const T &right) const
     {
 # ifdef _WIN32
-        return _stricmp(left.c_str(), right.c_str()) < 0;
+        return _stricmp(left.data(), right.data()) < 0;
 # else
-        return strcasecmp(left.c_str(), right.c_str()) < 0;
+        return strcasecmp(left.data(), right.data()) < 0;
 # endif
     }
 };
 
-typedef std::map<std::string,   // Name
-                 std::string,   // Value
-                 NocaseCompare> // Compare
-    HeaderMap;
-
+template <typename Key, typename Value>
+using HeaderMap = std::map<Key, Value,
+                           NocaseCompare<Value>>;
 #endif
 
 #endif // HEADERMAP_H

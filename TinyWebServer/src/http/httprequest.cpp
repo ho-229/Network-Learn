@@ -3,9 +3,8 @@
  * @date 2021/7/26
  */
 
+#include "url.h"
 #include "httprequest.h"
-
-#include <regex>
 
 std::unordered_set<std::string> HttpRequest::MethodSet
     {
@@ -20,100 +19,88 @@ HttpRequest::HttpRequest()
 
 }
 
-HttpRequest::HttpRequest(const std::string &data)
-{
-    if(data.empty())
-        return;
-
-    this->parse(data);
-}
-
-void HttpRequest::parse(const std::string &data)
+void HttpRequest::parse()
 {
     std::string::size_type offset = 0;
-    const size_t size = data.size();
+    const size_t size = m_rawData.size();
 
-    if(data.empty() || !this->parseRequestLine(offset, data))
+    if(m_rawData.empty() || !this->parseRequestLine(offset, m_rawData))
         return;
 
     // Parse headers
-    std::string key, value;
-    while(offset < size && data.at(offset) != '\r')
+    while(offset < size && m_rawData.at(offset) != '\r')
     {
-        if(!Util::copyTil(offset, key, data, ':'))
+        std::pair<std::string_view, std::string_view> item;
+
+        if(!Util::referTil(offset, item.first, m_rawData, [](const char &ch)
+        { return ch == ':'; }))
             return;
         ++offset;
 
-        while(offset < size && data.at(offset) == ' ')
+        // Ignore spaces
+        while(offset < size && m_rawData.at(offset) == ' ')
             ++offset;
 
-        if(!Util::copyTil(offset, value, data, '\r'))
+        if(!Util::referTil(offset, item.second, m_rawData, [](const char &ch)
+        { return ch == '\r'; }))
             return;
         offset += 2;
 
-        m_headers.insert({key, value});
-
-        key.clear();
-        value.clear();
+        m_headers.emplace(item);
     }
     offset += 2;
 
     // Body
     if(offset < size)
-        m_body.assign(data.c_str() + offset, size - offset);
+        m_body = {m_rawData.data() + offset, size - offset};
 
     m_isValid = true;
 }
 
 void HttpRequest::reset()
 {
-    m_method.clear();
-    m_uri.clear();
-    m_httpVersion.clear();
-    m_body.clear();
+    m_isValid = false;
 
     m_headers.clear();
-    m_urlArgs.clear();
+    m_urlArguments.clear();
 
-    m_isValid = false;
+    m_rawData.clear();
 }
 
-std::pair<int64_t, int64_t> HttpRequest::range() const
+std::string HttpRequest::uri() const
 {
-    const auto it = m_headers.find("range");
+    if(!m_isValid)
+        return {};
 
-    if(it == m_headers.end())
-        return {0, 0};
-
-    const std::regex express("bytes=(\\d+)-(\\d+)");
-    std::smatch result;
-
-    if(!std::regex_match(it->second, result, express))
-        return {0, 0};
-
-    return {atoll(result[1].str().c_str()), atoll(result[2].str().c_str())};
+    return std::move(uriUnescape(std::move(std::string(m_uri))));
 }
 
 bool HttpRequest::parseRequestLine(std::string::size_type &offset,
                                    const std::string &data)
 {
     // Method
-    if(!Util::copyTil<7>(offset, m_method, data, ' '))
+    if(!Util::referTil<8>(offset, m_method, data, [](const char &ch)
+    { return ch == ' '; }))
         return false;
     ++offset;
 
     // URI
-    if(Util::copyTil(offset, m_uri, data,
-                      [](const char &ch) -> bool { return ch == '?' || ch == ' '; }))
+    if(Util::referTil(offset, m_uri, data, [](const char &ch)
+    { return ch == '?' || ch == ' '; }))
     {
         if(data.at(offset) == '?')
         {
-            std::string args;
+            std::string_view arg;
             ++offset;
 
-            if(!Util::copyTil(offset, args, data, ' '))
-                return false;
-            this->parseArguments(args);
+            while(Util::referTil(offset, arg, data, [](const char &ch)
+            { return ch == '&' || ch == ' '; }))
+            {
+                if(data[offset] == ' ')
+                    break;
+
+                m_urlArguments.emplace_back(arg);
+            }
         }
     }
     else
@@ -121,25 +108,10 @@ bool HttpRequest::parseRequestLine(std::string::size_type &offset,
     ++offset;
 
     // Version
-    if(!Util::copyTil(offset, m_httpVersion, data, '\r'))
+    if(!Util::referTil(offset, m_httpVersion, data, [](const char &ch)
+    { return ch == '\r'; }))
         return false;
     offset += 2;
 
     return true;
-}
-
-void HttpRequest::parseArguments(const std::string &args)
-{
-    std::string::size_type offset = 0;
-    std::string_view line;
-
-    while(!(line = Util::getLine(offset, args, "&")).empty())
-    {
-        std::string::size_type pos;
-        if((pos = line.find('=')) == std::string::npos)
-            m_urlArgs.push_back({{}, std::string(line)});
-        else
-            m_urlArgs.push_back({std::string(line.substr(0, pos)),
-                                 std::string(line.substr(pos + 1))});
-    }
 }

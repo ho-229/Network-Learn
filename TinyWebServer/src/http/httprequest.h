@@ -19,46 +19,47 @@ extern "C"
 #endif
 }
 
-typedef std::pair<std::string,  // Name
-                  std::string>  // Value
-    UrlArgument;
-
 class HttpRequest
 {
 public:
     HttpRequest();
-    HttpRequest(const std::string& data);
 
-    void parse(const std::string& data);
+    void parse();
+
+    std::string& rawData() { return m_rawData; }
 
     void reset();
 
-    std::string method() const { return m_method; }
+    std::string method() const
+    { return m_isValid ? std::move(std::string(m_method)) : std::string(); }
 
-    std::string uri() const { return m_uri; }
+    std::string uri() const;
 
-    const std::vector<UrlArgument>& urlArguments() const { return m_urlArgs; }
+    const std::vector<std::string>& urlArguments() const { return m_urlArguments; }
 
-    std::string httpVersion() const { return m_httpVersion; }
+    std::string httpVersion() const
+    { return m_isValid ? std::move(std::string(m_httpVersion)) : std::string(); }
 
-    std::string body() const { return m_body; }
+    std::string body() const
+    { return m_isValid ? std::move(std::string(m_body)) : std::string(); }
 
     std::string rawHeader(const std::string &name) const
     {
         const auto it = m_headers.find(name);
-        return it == m_headers.end() ? std::string() : it->second;
+        return it == m_headers.end() ? std::string()
+                                     : std::move(std::string(it->second));
     }
 
-    std::pair<int64_t, int64_t> range() const;
+    const auto& rawHeaders() const { return m_headers; }
 
     bool isKeepAlive() const
     {
         const auto it = m_headers.find("Connection");
         return it == m_headers.end() ? true :
 #ifdef _WIN32
-                   _stricmp(it->second.c_str(), "close");
+                   _stricmp(it->second.data(), "close");
 #else
-                   strcasecmp(it->second.c_str(), "close");
+                   strcasecmp(it->second.data(), "close");
 #endif
     }
 
@@ -70,21 +71,21 @@ public:
     static std::unordered_set<std::string> MethodSet;
 
 private:
-    void parseArguments(const std::string &args);
-
     bool parseRequestLine(std::string::size_type &offset,
                           const std::string &data);
 
     bool m_isValid = false;
 
-    std::string m_method;
-    std::string m_uri;
-    std::string m_httpVersion;
-    std::string m_body;
+    std::string m_rawData;
 
-    std::vector<UrlArgument> m_urlArgs;
+    std::string_view m_method;
+    std::string_view m_uri;
+    std::string_view m_httpVersion;
+    std::string_view m_body;
 
-    HeaderMap m_headers;
+    std::vector<std::string> m_urlArguments;
+
+    HeaderMap<std::string_view, std::string_view> m_headers;
 };
 
 #endif // HTTPREQUEST_H
