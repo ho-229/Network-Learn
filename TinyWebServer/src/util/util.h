@@ -37,10 +37,9 @@ namespace Util
 
     inline std::wstring fromLocal8Bit(const std::string &src)
     {
-        size_t converted = 0;
         std::wstring ret;
         ret.resize(ret.size() + 1);
-        mbstowcs_s(&converted, ret.data(), ret.size() + 1, src.c_str(), _TRUNCATE);
+        mbstowcs(ret.data(), src.c_str(), src.size() + 1);
 
         return ret;
     }

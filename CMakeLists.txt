@@ -7,7 +7,12 @@ project(Network-Learn)
 set(CXX_FLAGS
    -j4
 #   -fsanitize=address
+#   -fsanitize=undefined
+#   -fsanitize=leak
+#   -fsanitize-recover=all
 #   -fno-omit-frame-pointer
+#   -fno-stack-protector
+#   -fsanitize=leak
 )
 
 set(CMAKE_CXX_STANDARD 17)
