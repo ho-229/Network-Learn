@@ -42,16 +42,11 @@ void HttpServices::setDefaultService(const std::string &method,
 
 bool HttpServices::process(AbstractSocket *const socket) const
 {
-    static thread_local std::string raw;
+    std::unique_ptr<HttpRequest> request(new HttpRequest);
 
-    socket->read(raw);
+    socket->read(request->rawData());
 
-    if(raw.empty())
-        return false;
-
-    static thread_local std::unique_ptr<HttpRequest> request(new HttpRequest);
-
-    request->parse(raw);
+    request->parse();
 
     if(!request->isValid())
         return false;
@@ -59,7 +54,7 @@ bool HttpServices::process(AbstractSocket *const socket) const
     if(m_maxTimes)
         socket->addTimes();
 
-    static thread_local std::unique_ptr<HttpResponse> response(new HttpResponse);
+    std::unique_ptr<HttpResponse> response(new HttpResponse);
 
     this->callHandler(request.get(), response.get());
 
@@ -68,16 +63,13 @@ bool HttpServices::process(AbstractSocket *const socket) const
     else
         response->setRawHeader("Connection", "Close");
 
-    response->toRawData(raw);
+    std::string sendBuffer;
 
-    Util::DestroyFunction destroy([] {
-        request->reset();
-        response->reset();
-    });
+    response->toRawData(sendBuffer);
 
     if(response->bodyType() == HttpResponse::BodyType::PlainText)
     {
-        if(socket->write(raw) <= 0)
+        if(socket->write(sendBuffer) <= 0)
             return false;
     }
     else
@@ -87,7 +79,7 @@ bool HttpServices::process(AbstractSocket *const socket) const
         socket->setOption(IPPROTO_TCP, TCP_CORK, 1);
 #endif
 
-        if(socket->write(raw) <= 0)
+        if(socket->write(sendBuffer) <= 0)
             return false;
 
 #if defined(__linux__) && TCP_CORK_ENABLE

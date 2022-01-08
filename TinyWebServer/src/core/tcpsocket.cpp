@@ -41,7 +41,6 @@ void TcpSocket::read(std::string &buffer)
 
     int ret = 0;
 
-    buffer.clear();
     buffer.reserve(SOCKET_BUF_SIZE);
 #ifdef _WIN32
     do

@@ -31,23 +31,23 @@ public:
     void reset();
 
     std::string method() const
-    { return m_isValid ? std::move(std::string(m_method)) : std::string(); }
+    { return m_isValid ? std::string(m_method) : std::string(); }
 
     std::string uri() const;
 
     const std::vector<std::string>& urlArguments() const { return m_urlArguments; }
 
     std::string httpVersion() const
-    { return m_isValid ? std::move(std::string(m_httpVersion)) : std::string(); }
+    { return m_isValid ? std::string(m_httpVersion) : std::string(); }
 
     std::string body() const
-    { return m_isValid ? std::move(std::string(m_body)) : std::string(); }
+    { return m_isValid ? std::string(m_body) : std::string(); }
 
     std::string rawHeader(const std::string &name) const
     {
         const auto it = m_headers.find(name);
         return it == m_headers.end() ? std::string()
-                                     : std::move(std::string(it->second));
+                                     : std::string(it->second);
     }
 
     const auto& rawHeaders() const { return m_headers; }

@@ -37,9 +37,10 @@ namespace Util
 
     inline std::wstring fromLocal8Bit(const std::string &src)
     {
+        size_t converted = 0;
         std::wstring ret;
         ret.resize(ret.size() + 1);
-        mbstowcs(ret.data(), src.c_str(), ret.size() + 1);
+        mbstowcs_s(&converted, ret.data(), ret.size() + 1, src.c_str(), _TRUNCATE);
 
         return ret;
     }
@@ -82,16 +83,6 @@ namespace Util
         stream << std::hex << num;
         buf += stream.str();
     }
-
-    template <typename Func>
-    class DestroyFunction
-    {
-        Func m_func;
-
-    public:
-        explicit DestroyFunction(const Func &func) : m_func(func) {}
-        ~DestroyFunction() { m_func(); }
-    };
 }
 
 #endif // UTIL_H

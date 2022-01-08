@@ -72,7 +72,7 @@ std::string HttpRequest::uri() const
     if(!m_isValid)
         return {};
 
-    return std::move(uriUnescape(std::move(std::string(m_uri))));
+    return uriUnescape(std::move(std::string(m_uri)));
 }
 
 bool HttpRequest::parseRequestLine(std::string::size_type &offset,
