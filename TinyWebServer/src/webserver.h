@@ -63,7 +63,6 @@ public:
     void installEventHandler(const Func& handler) { m_handler = handler; }
 
 private:
-    bool m_isLoaded = true;
     volatile bool m_runnable = true;
 
     size_t m_loopCount = std::thread::hardware_concurrency();

@@ -6,8 +6,8 @@
 #ifndef EVENT_H
 #define EVENT_H
 
-#include <string>
 #include <functional>
+#include <string_view>
 
 #define STATIC_ALLOCATOR(Class) \
 static void* operator new (size_t) \
@@ -51,24 +51,23 @@ public:
     enum Error
     {
         UnknownError,
-        SocketLoadError,
         ListenerError
     };
 
-    explicit ExceptionEvent(const Error err, const std::string& message = {})
+    explicit ExceptionEvent(const Error err, const std::string_view& message = {})
         : m_error(err), m_message(message) {}
 
     virtual Type type() const override { return Event::ExceptionEvent; }
 
     Error error() const { return m_error; }
 
-    std::string message() const { return m_message; }
+    std::string_view message() const { return m_message; }
 
     STATIC_ALLOCATOR(ExceptionEvent)
 
 private:
     const Error m_error;
-    const std::string m_message;
+    const std::string_view m_message;
 };
 
 

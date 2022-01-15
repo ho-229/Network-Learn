@@ -15,7 +15,8 @@
 WebServer::WebServer()
 {
 #ifdef _WIN32
-    m_isLoaded = TcpSocket::initializatWsa();
+    if(!TcpSocket::initializatWsa())
+        throw std::runtime_error("WebServer: initializat WSA failed.");
 #else   // Unix
     // Ignore SIGPIPE
     struct sigaction sa;
@@ -72,12 +73,6 @@ void WebServer::waitForFinished()
 void WebServer::listen(const std::string &hostName, const std::string &port,
                        bool sslEnable, std::pair<int, int> linger)
 {
-    if(!m_isLoaded)
-    {
-        m_handler(new ExceptionEvent(ExceptionEvent::SocketLoadError));
-        return;
-    }
-
     if(sslEnable && !SslSocket::isSslAvailable())
     {
         m_handler(new ExceptionEvent(
@@ -86,7 +81,7 @@ void WebServer::listen(const std::string &hostName, const std::string &port,
         return;
     }
 
-    auto socket = std::make_unique<TcpSocket>();
+    std::unique_ptr<TcpSocket> socket(new TcpSocket());
 
     if(!socket->listen(hostName, port, sslEnable))
     {
