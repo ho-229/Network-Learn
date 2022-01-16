@@ -90,9 +90,6 @@ int main(int argc, char** argv)
 
 //            switch (exception->error())
 //            {
-//            case ExceptionEvent::SocketLoadError:
-//                std::cerr << "WinSock2 load failed.\n";
-//                break;
 //            case ExceptionEvent::ListenerError:
 //                std::cerr << exception->message();
 //                break;
@@ -162,9 +159,12 @@ int main(int argc, char** argv)
 
         services->onGet([&pool, &build404Response, &sendFileResponse]
                         (HttpRequest *req, HttpResponse *resp) {
-            if(auto ret = pool->get(req->uri()); ret.has_value())
-                sendFileResponse(resp, ret);
-            else if(ret = pool->get(req->uri().append("/index.html")); ret.has_value())
+            std::string uri = req->uri();
+
+            if(uri.back() == '/')
+                uri.append("index.html");
+
+            if(auto ret = pool->get(uri); ret.has_value())
                 sendFileResponse(resp, ret);
             else
                 build404Response(resp);
