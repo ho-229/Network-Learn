@@ -54,7 +54,7 @@ void ConnectionPool::processQueue()
         {
             while(socket->isValid())
             {
-                const Socket descriptor = static_cast<TcpSocket *>(socket)->accept();
+                const Socket descriptor = socket->accept();
 
                 if(!AbstractSocket::isValid(descriptor))
                     break;

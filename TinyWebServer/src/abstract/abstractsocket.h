@@ -18,6 +18,7 @@ extern "C"
 # include <WinSock2.h>
 # include <WS2tcpip.h>
 #else
+# include <unistd.h>
 # include <sys/socket.h>
 # include <netinet/in.h>
 # include <netinet/tcp.h>
@@ -29,11 +30,14 @@ class AbstractSocket
 public:
     virtual ~AbstractSocket() = default;
 
-    virtual void read(std::string& buffer) = 0;
+    virtual ssize_t read(char *buf, size_t count) = 0;
     virtual ssize_t write(const char* buf, size_t count) = 0;
 
-    inline ssize_t write(const std::string& data)
-    { return this->write(data.c_str(), int(data.size())); }
+    void readAll(std::string &buffer, size_t limit = size_t(~0));
+
+    template <typename String>
+    inline ssize_t write(const String& data)
+    { return this->write(data.c_str(), data.size()); }
 
     virtual void close() = 0;
 
@@ -41,26 +45,9 @@ public:
 
     virtual bool isValid() const = 0;
 
-    virtual bool isListener() const = 0;
+    bool isListener() const { return m_isListener; }
 
 #if SOCKET_INFO_ENABLE
-    inline void initializeInfo()
-    {
-        sockaddr_in addr;
-        socklen_t len = sizeof (addr);
-
-        if(this->isListening())
-            getsockname(m_descriptor, reinterpret_cast<sockaddr *>(&addr), &len);
-        else
-            getpeername(m_descriptor, reinterpret_cast<sockaddr *>(&addr), &len);
-
-        char hostName[32];
-        m_hostName = inet_ntop(addr.sin_family, &addr.sin_addr,
-                               hostName, sizeof (hostName));
-        m_port = std::to_string(ntohs(addr.sin_port));
-    }
-
-
     std::string hostName() const { return m_hostName; }
     std::string port() const { return m_port; }
 #endif
@@ -98,24 +85,43 @@ public:
 
     virtual ssize_t sendFile(File file, off_t offset, size_t count) = 0;
 
-    static inline constexpr bool isValid(const Socket& sock)
+    /**
+     * @ref CS:APP(3) P662: int open_listenfd(char *port)
+     * @brief Listen on the given port
+     * @return true when successful
+     */
+    bool listen(const std::string& hostName, const std::string& port);
+
+    Socket accept() const;
+
+#ifdef _WIN32
+    static bool initializatWsa();
+    static void cleanUpWsa();
+#endif
+
+    static inline constexpr bool isValid(const Socket& socket)
     {
 #ifdef _WIN32
-        return sock != Socket(~0);
+        return socket != Socket(~0);
 #else
-        return sock > 0;
+        return socket > 0;
+#endif
+    }
+
+    static inline void close(Socket& socket)
+    {
+        Socket descriptor = INVALID_SOCKET;
+        std::swap(descriptor, socket);
+
+#ifdef _WIN32
+        closesocket(descriptor);
+#else
+        ::close(descriptor);
 #endif
     }
 
 protected:
-    explicit AbstractSocket(const Socket socket = INVALID_SOCKET) :
-        m_descriptor(socket)
-    {
-#if SOCKET_INFO_ENABLE
-        if(isValid(socket))
-            this->initializeInfo();
-#endif
-    }
+    explicit AbstractSocket(const Socket socket = INVALID_SOCKET);
 
     // Disable copy
     AbstractSocket(AbstractSocket& other) = delete;
@@ -125,14 +131,14 @@ protected:
 
     size_t m_times = 0;
 
+    void *m_timer = nullptr;
+
+    bool m_isListener = false;
+
 #if SOCKET_INFO_ENABLE
     std::string m_hostName;
     std::string m_port;
 #endif
-
-    void *m_timer = nullptr;
-
-    static thread_local std::unique_ptr<char[]> buffer;
 };
 
 #endif // ABSTRACTSOCKET_H

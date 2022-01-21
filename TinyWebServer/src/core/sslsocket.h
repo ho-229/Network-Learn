@@ -13,10 +13,10 @@
 class SslSocket : public AbstractSocket
 {
 public:
-    explicit SslSocket(const Socket socket);
+    explicit SslSocket(const Socket socket = INVALID_SOCKET);
     ~SslSocket() override;
 
-    void read(std::string& buffer) override;
+    ssize_t read(char *buf, size_t count) override;
     ssize_t write(const char* buf, size_t count) override;
 
     void close() override;
@@ -25,8 +25,6 @@ public:
 
     bool isValid() const override { return AbstractSocket::isValid(m_descriptor)
                && m_ssl; }
-
-    bool isListener() const override { return false; }
 
     ssize_t sendFile(File file, off_t offset, size_t count) override;
 

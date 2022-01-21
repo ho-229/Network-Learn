@@ -7,19 +7,14 @@
 
 #include <openssl/err.h>
 
-#include <memory>
-
 extern "C"
 {
 #ifdef _WIN32
-# define CLOSE(x) closesocket(x)
 #else   // Unix
 # include <netdb.h>
 # include <unistd.h>
 # include <string.h>
 # include <sys/mman.h>
-
-# define CLOSE(x) ::close(x)
 #endif
 }
 
@@ -37,7 +32,7 @@ SslSocket::SslSocket(const Socket socket) :
     if(SSL_accept(m_ssl) < 0)
     {
         ERR_print_errors_fp(stdout);
-        CLOSE(m_descriptor);
+        AbstractSocket::close(m_descriptor);
         SSL_free(m_ssl);
 
         m_ssl = nullptr;
@@ -50,31 +45,48 @@ SslSocket::~SslSocket()
         this->SslSocket::close();
 }
 
-void SslSocket::read(std::string &buffer)
+ssize_t SslSocket::read(char *buf, size_t count)
 {
-    if(!m_ssl)
-        return;
+    if(m_isListener || !m_ssl || !buf || !count)
+        return -1;
 
-    int ret = 0;
+    ssize_t ret = 0;
+    size_t leftSize = count;
 
-    buffer.clear();
-    buffer.reserve(SOCKET_BUF_SIZE);
     do
     {
-        if((ret = SSL_read(m_ssl, AbstractSocket::buffer.get(), SOCKET_BUF_SIZE - 1)) <= 0)
-            break;  // EOF
+        if(ret = SSL_read(m_ssl, buf, count > INT32_MAX ? INT32_MAX : int(count));
+                ret <= 0)
+            return ret;
 
-        buffer.append(AbstractSocket::buffer.get(), size_t(ret));
+        leftSize -= size_t(ret);
+        buf += ret;
     }
-    while(ret == SOCKET_BUF_SIZE && AbstractSocket::buffer[SOCKET_BUF_SIZE - 1] != '\n');
+    while(leftSize);
+
+    return ssize_t(count);
 }
 
 ssize_t SslSocket::write(const char *buf, size_t count)
 {
-    if(!m_ssl || !buf)
-        return 0;
+    if(m_isListener || !m_ssl || !buf || !count)
+        return -1;
 
-    return SSL_write(m_ssl, buf, int /*WTF*/ (count));
+    ssize_t ret = 0;
+    size_t leftSize = count;
+
+    do
+    {
+        if(ret = SSL_write(m_ssl, buf, count > INT32_MAX ? INT32_MAX : int(count));
+                ret <= 0)
+            return ret;
+
+        leftSize -= size_t(ret);
+        buf += ret;
+    }
+    while(leftSize);
+
+    return ssize_t(count);
 }
 
 void SslSocket::close()
@@ -85,9 +97,7 @@ void SslSocket::close()
     SSL_shutdown(m_ssl);
     SSL_free(m_ssl);
 
-    Socket descriptor = INVALID_SOCKET;
-    std::swap(m_descriptor, descriptor);
-    CLOSE(descriptor);
+    AbstractSocket::close(m_descriptor);
 
     m_ssl = nullptr;
 }

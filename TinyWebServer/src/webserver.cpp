@@ -15,8 +15,8 @@
 WebServer::WebServer()
 {
 #ifdef _WIN32
-    if(!TcpSocket::initializatWsa())
-        throw std::runtime_error("WebServer: initializat WSA failed.");
+    if(!AbstractSocket::initializatWsa())
+        throw std::runtime_error("WebServer: initializat WinSock2 failed.");
 #else   // Unix
     // Ignore SIGPIPE
     struct sigaction sa;
@@ -81,9 +81,11 @@ void WebServer::listen(const std::string &hostName, const std::string &port,
         return;
     }
 
-    std::unique_ptr<TcpSocket> socket(new TcpSocket());
+    std::unique_ptr<AbstractSocket> socket(sslEnable ?
+            static_cast<AbstractSocket *>(new SslSocket()) :
+            static_cast<AbstractSocket *>(new TcpSocket()));
 
-    if(!socket->listen(hostName, port, sslEnable))
+    if(!socket->listen(hostName, port))
     {
         m_handler(new ExceptionEvent(
             ExceptionEvent::ListenerError,
@@ -93,5 +95,5 @@ void WebServer::listen(const std::string &hostName, const std::string &port,
 
     socket->setOption(SOL_SOCKET, SO_LINGER, linger);
 
-    m_listeners.emplace_back(std::unique_ptr<AbstractSocket>(std::move(socket)));
+    m_listeners.emplace_back(std::move(socket));
 }

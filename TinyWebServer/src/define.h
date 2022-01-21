@@ -2,6 +2,7 @@
 #define DEFINE_H
 
 #define ANY_HOST "0.0.0.0"
+#define LISTENQ 1024
 
 #ifdef _WIN32
 typedef unsigned int Socket;    // Socket handle
@@ -23,6 +24,8 @@ typedef int File;               // File descriptor
 #define EPOLL_MAX_EVENTS 256
 
 #define TCP_CORK_ENABLE 0
+
+#define MAX_REQUEST_SIZE 32768  // 32 KiB
 /**********************
  *  User definitions  *
  **********************/
