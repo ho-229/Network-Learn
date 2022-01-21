@@ -50,13 +50,12 @@ public:
         else
             m_headers[name] = value;
     }
+
     std::string rawHeader(const std::string& name) const
     {
         const auto it = m_headers.find(name);
         return it == m_headers.end() ? std::string() : it->second;
     }
-
-    void toRawData(std::string& response);
 
     inline HttpResponse& operator<<(const std::string& text)
     {
@@ -78,6 +77,8 @@ public:
 
 private:
     friend class HttpServices;
+
+    void toRawData(std::string& response);
 
     HttpState m_httpState = {200, "OK"};
 

@@ -44,7 +44,7 @@ bool HttpServices::process(AbstractSocket *const socket) const
 {
     std::unique_ptr<HttpRequest> request(new HttpRequest);
 
-    socket->read(request->rawData());
+    socket->readAll(request->m_rawData, MAX_REQUEST_SIZE);
 
     request->parse();
 
@@ -74,7 +74,6 @@ bool HttpServices::process(AbstractSocket *const socket) const
     }
     else
     {
-
 #if defined(__linux__) && TCP_CORK_ENABLE
         socket->setOption(IPPROTO_TCP, TCP_CORK, 1);
 #endif

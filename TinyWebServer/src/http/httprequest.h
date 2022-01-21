@@ -25,10 +25,6 @@ class HttpRequest
 public:
     HttpRequest();
 
-    void parse();
-
-    std::string& rawData() { return m_rawData; }
-
     void reset();
 
     std::string method() const
@@ -93,6 +89,9 @@ public:
     }
 
 private:
+    friend class HttpServices;
+
+    void parse();
     bool parseRequestLine(std::string::size_type &offset,
                           const std::string &data);
 
