@@ -38,7 +38,7 @@ public:
     void unregisterListeners(const Iter begin, const Iter end)
     {
         for(auto it = begin; it < end; ++it)
-            (*it)->close();
+            m_epoll.erase(it->get());
     }
 
     inline void start()
