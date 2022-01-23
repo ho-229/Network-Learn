@@ -7,9 +7,8 @@
 #define UTIL_H
 
 #include <string_view>
-#include <algorithm>
+#include <string.h>
 #include <sstream>
-#include <wchar.h>
 #include <iomanip>
 #include <chrono>
 #include <ctime>
@@ -35,13 +34,17 @@ namespace Util
         return ss.str();
     }
 
-    inline std::wstring fromLocal8Bit(const std::string &src)
+    inline constexpr int strcasecmp(const std::string_view &left,
+                                    const std::string_view &right)
     {
-        std::wstring ret;
-        ret.resize(ret.size() + 1);
-        mbstowcs(ret.data(), src.c_str(), src.size() + 1);
+        if(const auto diff = left.size() - right.size(); diff)
+            return int(diff);
 
-        return ret;
+#ifdef _WIN32
+        return _strnicmp(left.data(), right.data(), left.size());
+#else
+        return ::strncasecmp(left.data(), right.data(), left.size());
+#endif
     }
 
     template <size_t maxCount = 0, typename Compare>
@@ -82,6 +85,16 @@ namespace Util
         stream << std::hex << num;
         buf += stream.str();
     }
+
+    template <typename Func>
+    class ScopeFunction
+    {
+        const Func m_func;
+
+    public:
+        explicit ScopeFunction(const Func &func) : m_func(func) {}
+        ~ScopeFunction() { m_func(); }
+    };
 }
 
 #endif // UTIL_H

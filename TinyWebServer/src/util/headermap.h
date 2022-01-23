@@ -17,6 +17,8 @@ extern "C"
 #include <string>
 #include <unordered_map>
 
+#include "util.h"
+
 #define HASH_MAP 1
 
 #if HASH_MAP
@@ -25,13 +27,7 @@ struct NocaseCompare
 {
     inline bool operator()(const T &left,
                            const T &right) const
-    {
-# ifdef _WIN32
-        return !_stricmp(left.data(), right.data());
-# else
-        return !strcasecmp(left.data(), right.data());
-# endif
-    }
+    { return !Util::strcasecmp(left, right); }
 };
 
 template <typename T>
@@ -64,13 +60,7 @@ struct NocaseCompare
 {
     inline bool operator()(const T &left,
                            const T &right) const
-    {
-# ifdef _WIN32
-        return _stricmp(left.data(), right.data()) < 0;
-# else
-        return strcasecmp(left.data(), right.data()) < 0;
-# endif
-    }
+    { return Util::strcasecmp(left, right) < 0; }
 };
 
 template <typename Key, typename Value>
