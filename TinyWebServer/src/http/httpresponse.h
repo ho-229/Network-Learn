@@ -37,6 +37,9 @@ public:
 
     bool isEmpty() const { return m_text.empty() && !m_stream; }
 
+    void setKeepAlive(bool isKeepAlive);
+    bool isKeepAlive() const { return m_isKeepAlive; }
+
     BodyType bodyType() const { return m_type; }
 
     void setHttpState(const HttpState& state);
@@ -67,12 +70,10 @@ public:
         return *this;
     }
 
-    static std::unordered_map<std::string, std::string> PermissibleStaticTypes;
-
     static inline std::string matchContentType(const std::string &extension)
     {
-        const auto it = PermissibleStaticTypes.find(extension);
-        return it == PermissibleStaticTypes.end() ? std::string() : it->second;
+        const auto it = mimeTypes.find(extension);
+        return it == mimeTypes.end() ? "application/text" : std::string{it->second};
     }
 
 private:
@@ -96,6 +97,10 @@ private:
     HeaderMap<std::string, std::string> m_headers;
 
     BodyType m_type = BodyType::PlainText;
+
+    bool m_isKeepAlive = true;
+
+    const static std::unordered_map<std::string_view, std::string_view> mimeTypes;
 };
 
 #endif // HTTPRESPONSE_H

@@ -55,6 +55,11 @@ void HttpRequest::parse()
         m_body = {m_rawData.data() + offset, size - offset};
 
     m_isValid = true;
+
+    // Parse keep-alive
+    const auto it = m_headers.find("Connection");
+    m_isKeepAlive = it == m_headers.end() ?
+                true : Util::strcasecmp(it->second, "close");
 }
 
 void HttpRequest::reset()

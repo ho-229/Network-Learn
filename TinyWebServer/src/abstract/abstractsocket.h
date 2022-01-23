@@ -33,7 +33,7 @@ public:
     virtual ssize_t read(char *buf, size_t count) = 0;
     virtual ssize_t write(const char* buf, size_t count) = 0;
 
-    void readAll(std::string &buffer, size_t limit = size_t(~0));
+    void read(std::string &buffer);
 
     template <typename String>
     inline ssize_t write(const String& data)

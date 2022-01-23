@@ -24,6 +24,9 @@ public:
     void setDefaultService(const std::string& method,
                            const Handler& handler);
 
+    void setAutoKeepAlive(bool isEnable) { m_isAutoKeepAlive = isEnable; }
+    bool isAutoKeepAlive() const { return m_isAutoKeepAlive; }
+
     inline void onGet(const std::string& uri, const Handler& handler)
     { this->addService("GET", uri, handler); }
 
@@ -73,6 +76,8 @@ private:
     std::unordered_map<std::string,     // Method -> {URI -> Handler}
                        UriHandler>      // URI -> Handler
         m_services;
+
+    bool m_isAutoKeepAlive = true;
 };
 
 #endif // HTTPSERVICES_H

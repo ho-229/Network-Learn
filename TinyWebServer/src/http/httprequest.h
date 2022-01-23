@@ -6,19 +6,11 @@
 #ifndef HTTPREQUEST_H
 #define HTTPREQUEST_H
 
-#include "../util/util.h"
 #include "../util/headermap.h"
 
 #include <vector>
 #include <ostream>
 #include <unordered_set>
-
-extern "C"
-{
-#ifndef _WIN32
-#include <strings.h>
-#endif
-}
 
 class HttpRequest
 {
@@ -49,16 +41,7 @@ public:
 
     const auto& rawHeaders() const { return m_headers; }
 
-    bool isKeepAlive() const
-    {
-        const auto it = m_headers.find("Connection");
-        return it == m_headers.end() ? true :
-#ifdef _WIN32
-                   _stricmp(it->second.data(), "close");
-#else
-                   strcasecmp(it->second.data(), "close");
-#endif
-    }
+    bool isKeepAlive() const { return m_isKeepAlive; }
 
     bool isEmpty() const { return m_method.empty() ||
                m_uri.empty() || m_headers.empty(); }
@@ -81,7 +64,7 @@ public:
         stream << "\nHeaders:\n";
 
         for(const auto& item : req.rawHeaders())
-            stream << item.first << "==>" << item.second << "|\n";
+            stream << item.first << "| => |" << item.second << "|\n";
 
         stream << "\nBody:\n" << req.body();
 
@@ -107,6 +90,8 @@ private:
     std::vector<std::string> m_urlArguments;
 
     HeaderMap<std::string_view, std::string_view> m_headers;
+
+    bool m_isKeepAlive = true;
 };
 
 #endif // HTTPREQUEST_H

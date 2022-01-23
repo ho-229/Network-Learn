@@ -35,7 +35,7 @@ AbstractSocket::AbstractSocket(const Socket socket) : m_descriptor(socket)
 #endif
 }
 
-void AbstractSocket::readAll(std::string &buffer, size_t limit)
+void AbstractSocket::read(std::string &buffer)
 {
     ssize_t ret = 0;
 

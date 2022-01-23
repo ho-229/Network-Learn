@@ -42,9 +42,9 @@ void HttpServices::setDefaultService(const std::string &method,
 
 bool HttpServices::process(AbstractSocket *const socket) const
 {
-    std::unique_ptr<HttpRequest> request(new HttpRequest);
+    static thread_local std::unique_ptr<HttpRequest> request(new HttpRequest);
 
-    socket->readAll(request->m_rawData, MAX_REQUEST_SIZE);
+    socket->read(request->m_rawData);
 
     request->parse();
 
@@ -54,22 +54,25 @@ bool HttpServices::process(AbstractSocket *const socket) const
     if(m_maxTimes)
         socket->addTimes();
 
-    std::unique_ptr<HttpResponse> response(new HttpResponse);
+    static thread_local std::string buffer;
+    static thread_local std::unique_ptr<HttpResponse> response(new HttpResponse);
+
+    const Util::ScopeFunction func([] {
+        request->reset();
+        response->reset();
+        buffer.clear();
+    });
+
+    if(m_isAutoKeepAlive)
+        response->setKeepAlive(request->isKeepAlive());
 
     this->callHandler(request.get(), response.get());
 
-    if(request->isKeepAlive() && socket->times() <= m_maxTimes)
-        response->setRawHeader("Connection", "Keep-Alive");
-    else
-        response->setRawHeader("Connection", "Close");
-
-    std::string sendBuffer;
-
-    response->toRawData(sendBuffer);
+    response->toRawData(buffer);
 
     if(response->bodyType() == HttpResponse::BodyType::PlainText)
     {
-        if(socket->write(sendBuffer) <= 0)
+        if(socket->write(buffer) <= 0)
             return false;
     }
     else
@@ -78,7 +81,7 @@ bool HttpServices::process(AbstractSocket *const socket) const
         socket->setOption(IPPROTO_TCP, TCP_CORK, 1);
 #endif
 
-        if(socket->write(sendBuffer) <= 0)
+        if(socket->write(buffer) <= 0)
             return false;
 
 #if defined(__linux__) && TCP_CORK_ENABLE
@@ -99,9 +102,7 @@ bool HttpServices::process(AbstractSocket *const socket) const
         }
     }
 
-    const bool ret = request->isKeepAlive() && socket->times() <= m_maxTimes;
-
-    return ret;
+    return response->isKeepAlive() && socket->times() <= m_maxTimes;
 }
 
 void HttpServices::callHandler(HttpRequest *const request,

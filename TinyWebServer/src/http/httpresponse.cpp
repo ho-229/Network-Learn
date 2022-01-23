@@ -5,23 +5,24 @@
 
 #include "httpresponse.h"
 
-#include "../util/util.h"
-
-std::unordered_map<std::string, std::string> HttpResponse::PermissibleStaticTypes
-    {
-        {".html", "text/html"},
-        {".css", "text/css"},
-        {".js", "text/javascript"},
-        {".png", "image/png"},
-        {".jpg", "image/jpg"},
-        {".jpeg", "image/jpeg"},
-        {".gif", "image/gif"},
-        {".svg", "image/svg+xml"},
-        {".txt", "text/plain"},
-        {".pdf", "application/pdf"},
-        {".ico", "image/x-icon"},
-        {".swf", "application/x-shockwave-flash"}
-    };
+const std::unordered_map<std::string_view, std::string_view> HttpResponse::mimeTypes
+{
+    {".js",   "application/javascript"},
+    {".json", "application/json"},
+    {".pdf",  "application/pdf"},
+    {".swf",  "application/x-shockwave-flash"},
+    {".xml",  "application/xml"},
+    {".htm",  "text/html"},
+    {".html", "text/html"},
+    {".css",  "text/css"},
+    {".txt",  "text/plain"},
+    {".png",  "image/png"},
+    {".jpg",  "image/jpg"},
+    {".jpeg", "image/jpeg"},
+    {".gif",  "image/gif"},
+    {".svg",  "image/svg+xml"},
+    {".ico",  "image/x-icon"},
+};
 
 HttpResponse::HttpResponse()
 {
@@ -90,6 +91,13 @@ void HttpResponse::reset()
 
     m_type = BodyType::PlainText;
     m_httpState = {200, "OK"};
+    m_isKeepAlive = true;
+}
+
+void HttpResponse::setKeepAlive(bool isKeepAlive)
+{
+    m_headers["Connection"] = isKeepAlive ? "keep-alive" : "close";
+    m_isKeepAlive = isKeepAlive;
 }
 
 void HttpResponse::setHttpState(const HttpState &state)
