@@ -121,6 +121,19 @@ ssize_t TcpSocket::sendFile(File file, off_t offset, size_t count)
 
     return ret;
 #else   // Unix
-    return sendfile64(m_descriptor, file, &offset, count);
+    ssize_t ret = 0;
+    size_t leftSize = count;
+
+    do
+    {
+        if(ret = sendfile64(m_descriptor, file, &offset, SOCKET_BUF_SIZE);
+                ret <= 0)
+            return count - leftSize;
+
+        leftSize -= size_t(ret);
+    }
+    while(leftSize);
+
+    return count;
 #endif
 }
