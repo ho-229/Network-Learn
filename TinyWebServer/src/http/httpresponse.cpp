@@ -5,93 +5,61 @@
 
 #include "httpresponse.h"
 
-const std::unordered_map<std::string_view, std::string_view> HttpResponse::mimeTypes
-{
-    {".js",   "application/javascript"},
-    {".json", "application/json"},
-    {".pdf",  "application/pdf"},
-    {".swf",  "application/x-shockwave-flash"},
-    {".xml",  "application/xml"},
-    {".htm",  "text/html"},
-    {".html", "text/html"},
-    {".css",  "text/css"},
-    {".txt",  "text/plain"},
-    {".png",  "image/png"},
-    {".jpg",  "image/jpg"},
-    {".jpeg", "image/jpeg"},
-    {".gif",  "image/gif"},
-    {".svg",  "image/svg+xml"},
-    {".ico",  "image/x-icon"},
-};
-
 HttpResponse::HttpResponse()
 {
 
 }
 
-void HttpResponse::setText(const std::string& text)
+void HttpResponse::setBody(const StringBody &text)
 {
-    m_text = text;
-    m_headers["Content-Length"] = std::to_string(m_text.size());
+    if(m_isVaild = !text.empty(); !m_isVaild)
+        return;
 
-    m_type = BodyType::PlainText;
+    m_headers["Content-Length"] = std::to_string(text.size());
+
+    new (&m_body) Body(text);
 }
 
-bool HttpResponse::sendStream(std::unique_ptr<std::istream> &&stream, size_t count)
+void HttpResponse::setBody(StreamBody &&stream)
 {
-    if(stream->bad())
-        return false;
+    if(m_isVaild = stream->good(); !m_isVaild)
+        return;
 
-    m_stream = std::move(stream);
+    const auto start = stream->tellg();
+    stream->seekg(0, std::ios::end);
 
-    const auto start = m_stream->tellg();
+    if(const auto size = stream->tellg(); size)
+        m_headers["Content-Length"] = std::to_string(size);
 
-    if(count)
-    {
-        m_stream->seekg(count, std::ios::cur);
+    stream->seekg(start);
 
-        if(m_stream->fail())
-            goto seekFailed;
-
-        m_count = count;
-        m_headers["Content-Length"] = std::to_string(count);
-    }
-    else
-    {
-    seekFailed:
-        m_stream->seekg(0, std::ios::end);
-
-        m_count = 0;        // Send stream til EOF
-        if(const auto size = m_stream->tellg())
-            m_headers["Content-Length"] = std::to_string(size - start);
-    }
-
-    m_stream->seekg(start);
-
-    m_type = BodyType::Stream;
-
-    return true;
+    new (&m_body) Body(std::move(stream));
 }
 
-void HttpResponse::sendFile(File file, off_t offset, size_t count)
+void HttpResponse::setBody(const FileBody &file)
 {
-    m_file = {file, offset};
-    m_count = count;
+    if(m_isVaild = file.count; !m_isVaild)
+        return;
 
-    m_headers["Content-Length"] = std::to_string(count);
+    m_headers["Content-Length"] = std::to_string(file.count);
 
-    m_type = BodyType::File;
+    new (&m_body) Body(file);
 }
 
 void HttpResponse::reset()
 {
-    m_text.clear();
-    m_stream.reset();
+    this->visitBody(Util::overloaded {
+                        [](StringBody &text) { text.clear(); },
+                        [](StreamBody &stream) { stream.reset(); },
+                        [](FileBody &file) { file = {}; }
+                    });
+
     m_headers.clear();
 
-    m_type = BodyType::PlainText;
     m_httpState = {200, "OK"};
+
     m_isKeepAlive = true;
+    m_isVaild = false;
 }
 
 void HttpResponse::setKeepAlive(bool isKeepAlive)
@@ -108,24 +76,47 @@ void HttpResponse::setHttpState(const HttpState &state)
     m_httpState = state;
 }
 
+std::string HttpResponse::matchContentType(const std::string &extension)
+{
+    static const std::unordered_map<std::string_view, std::string_view> mimeTypes
+    {
+        {".js",   "application/javascript"},
+        {".json", "application/json"},
+        {".pdf",  "application/pdf"},
+        {".swf",  "application/x-shockwave-flash"},
+        {".xml",  "application/xml"},
+        {".htm",  "text/html"},
+        {".html", "text/html"},
+        {".css",  "text/css"},
+        {".txt",  "text/plain"},
+        {".png",  "image/png"},
+        {".jpg",  "image/jpg"},
+        {".jpeg", "image/jpeg"},
+        {".gif",  "image/gif"},
+        {".svg",  "image/svg+xml"},
+        {".ico",  "image/x-icon"},
+    };
+
+    const auto it = mimeTypes.find(extension);
+    return it == mimeTypes.end() ? "" : std::string{it->second};
+}
+
 void HttpResponse::toRawData(std::string &response)
 {
-    response.clear();
-
     // Response line
     response.append("HTTP/1.1 ", 9).append(std::to_string(m_httpState.first))
         .append(" ", 1).append(m_httpState.second).append("\r\n", 2);
 
     // Headers
     response.append("Date: ", 6).append(Util::currentDateString()).append("\r\n", 2);
-    response.append("Server: HinyWebServer\r\n", 23);   // awa
+    response.append("Server: TinyWebServer\r\n", 23);
 
     for(const auto &[key, value] : m_headers)
         response.append(key).append(": ", 2).append(value).append("\r\n", 2);
 
     // Body
-    if(m_type == BodyType::PlainText)
-        response.append("\r\n", 2).append(m_text);
+    if(m_body.type == Body::Text)
+        response.append("\r\n", 2).append(m_body.text);
     else
         response.append("\r\n", 2);
 }

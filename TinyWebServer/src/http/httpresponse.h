@@ -7,6 +7,7 @@
 #define HTTPRESPONSE_H
 
 #include <memory>
+#include <variant>
 #include <istream>
 
 #include "../define.h"
@@ -17,30 +18,64 @@ typedef std::pair<int, std::string> HttpState;
 class HttpResponse
 {
 public:
-    enum class BodyType
+    using StringBody = std::string;
+
+    using StreamBody = std::unique_ptr<std::istream>;
+
+    struct FileBody
     {
-        PlainText,
-        File,
-        Stream
+        File file;
+        off_t offset;
+        size_t count;
+    };
+
+    struct Body
+    {
+        enum Type
+        {
+            Text,
+            Stream,
+            File
+        };
+
+        Body(const StringBody &text = {}) : text(text), type(Text) {}
+        Body(StreamBody &&stream) : stream(std::move(stream)), type(Stream) {}
+        Body(const FileBody &file) : file(file), type(File) {}
+
+        StringBody text;
+        StreamBody stream;
+        FileBody file = {};
+
+        const Type type;
     };
 
     HttpResponse();
 
-    void setText(const std::string& text);
-    std::string text() const { return m_text; }
+    void setBody(const StringBody &text);
+    void setBody(StreamBody &&stream);
+    void setBody(const FileBody &file);
 
-    bool sendStream(std::unique_ptr<std::istream> &&stream, size_t count = 0);
+    template <typename Visitor>
+    decltype(auto) visitBody(Visitor &&visitor)
+    { return visitBody(visitor, m_body); }
 
-    void sendFile(File fd, off_t offset, size_t count);
+    template <typename Visitor>
+    static decltype(auto) visitBody(Visitor &&visitor, Body &body)
+    {
+        if(body.type == Body::Stream)
+            return visitor(body.stream);
+        else if(body.type == Body::File)
+            return visitor(body.file);
+
+        return visitor(body.text);
+    }
 
     void reset();
 
-    bool isEmpty() const { return m_text.empty() && !m_stream; }
+    bool isVaild() const { return m_isVaild; }
 
     void setKeepAlive(bool isKeepAlive);
     bool isKeepAlive() const { return m_isKeepAlive; }
-
-    BodyType bodyType() const { return m_type; }
 
     void setHttpState(const HttpState& state);
     HttpState httpState() const { return m_httpState; }
@@ -60,21 +95,14 @@ public:
         return it == m_headers.end() ? std::string() : it->second;
     }
 
-    inline HttpResponse& operator<<(const std::string& text)
+    template<typename T>
+    inline HttpResponse& operator<<(T &&body)
     {
-        m_text.append(text);
-        m_headers["Content-Length"] = std::to_string(m_text.size());
-
-        m_type = BodyType::PlainText;
-
+        this->setBody(std::move(body));
         return *this;
     }
 
-    static inline std::string matchContentType(const std::string &extension)
-    {
-        const auto it = mimeTypes.find(extension);
-        return it == mimeTypes.end() ? "application/text" : std::string{it->second};
-    }
+    static std::string matchContentType(const std::string &extension);
 
 private:
     friend class HttpServices;
@@ -82,25 +110,12 @@ private:
     void toRawData(std::string& response);
 
     HttpState m_httpState = {200, "OK"};
-
-    std::string m_text;                         // Text
-    std::unique_ptr<std::istream> m_stream;     // Stream
-
-    struct
-    {
-        File file;
-        off_t offset;
-    } m_file;                                   // File
-
-    size_t m_count;
-
     HeaderMap<std::string, std::string> m_headers;
 
-    BodyType m_type = BodyType::PlainText;
+    Body m_body;
 
+    bool m_isVaild = false;
     bool m_isKeepAlive = true;
-
-    const static std::unordered_map<std::string_view, std::string_view> mimeTypes;
 };
 
 #endif // HTTPRESPONSE_H

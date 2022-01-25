@@ -10,11 +10,12 @@
 
 #include <vector>
 #include <ostream>
-#include <unordered_set>
 
 class HttpRequest
 {
 public:
+    using Body = std::string_view;
+
     HttpRequest();
 
     void reset();
@@ -22,15 +23,14 @@ public:
     std::string method() const
     { return m_isValid ? std::string(m_method) : std::string(); }
 
-    std::string uri() const;
+    std::string uri() const { return m_isValid ? m_uri : std::string(); }
 
     const std::vector<std::string>& urlArguments() const { return m_urlArguments; }
 
     std::string httpVersion() const
     { return m_isValid ? std::string(m_httpVersion) : std::string(); }
 
-    std::string body() const
-    { return m_isValid ? std::string(m_body) : std::string(); }
+    const Body body() const { return m_body; }
 
     std::string rawHeader(const std::string &name) const
     {
@@ -43,12 +43,7 @@ public:
 
     bool isKeepAlive() const { return m_isKeepAlive; }
 
-    bool isEmpty() const { return m_method.empty() ||
-               m_uri.empty() || m_headers.empty(); }
-
     bool isValid() const { return m_isValid; }
-
-    static std::unordered_set<std::string> MethodSet;
 
     friend std::ostream& operator<<(std::ostream &stream, const HttpRequest &req)
     {
@@ -83,9 +78,9 @@ private:
     std::string m_rawData;
 
     std::string_view m_method;
-    std::string_view m_uri;
+    std::string      m_uri;
     std::string_view m_httpVersion;
-    std::string_view m_body;
+    Body m_body;
 
     std::vector<std::string> m_urlArguments;
 

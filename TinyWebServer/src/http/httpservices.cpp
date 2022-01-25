@@ -70,37 +70,31 @@ bool HttpServices::process(AbstractSocket *const socket) const
 
     response->toRawData(buffer);
 
-    if(response->bodyType() == HttpResponse::BodyType::PlainText)
-    {
-        if(socket->write(buffer) <= 0)
-            return false;
-    }
-    else
-    {
 #if defined(__linux__) && TCP_CORK_ENABLE
-        socket->setOption(IPPROTO_TCP, TCP_CORK, 1);
+    socket->setOption(IPPROTO_TCP, TCP_CORK, 1);
 #endif
 
-        if(socket->write(buffer) <= 0)
-            return false;
+    // Write Header and text body
+    if(socket->write(buffer) <= 0)
+        return false;
 
 #if defined(__linux__) && TCP_CORK_ENABLE
-        socket->setOption(IPPROTO_TCP, TCP_CORK, 0);
+    socket->setOption(IPPROTO_TCP, TCP_CORK, 0);
 #endif
 
-        if(response->bodyType() == HttpResponse::BodyType::Stream)
-        {
-            if(!socket->sendStream(response->m_stream.get(), response->m_count))
-                return false;
-        }
-        else    // File
-        {
-            if(socket->sendFile(response->m_file.file,
-                                response->m_file.offset,
-                                response->m_count) < 0)
-                return false;
-        }
-    }
+    const bool ok = response->visitBody(
+                Util::overloaded {
+                    [](const HttpResponse::StringBody &) { return true; },
+
+                    [&socket](HttpResponse::StreamBody &stream) -> bool
+                    { return socket->sendStream(stream.get()); },
+
+                    [&socket](const HttpResponse::FileBody &file) -> bool
+                    { return socket->sendFile(file.file, file.offset, file.count) > 0; }
+                });;
+
+    if(!ok)
+        return false;
 
     return response->isKeepAlive() && socket->times() <= m_maxTimes;
 }

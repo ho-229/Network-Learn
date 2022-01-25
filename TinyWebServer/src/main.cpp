@@ -108,7 +108,7 @@ int main(int argc, char** argv)
 
         resp->setRawHeader("Content-Type", "text/html; charset=utf-8");
 
-        resp->setText("<html><title>Tiny Web Server</title><body bgcolor\"#fffff\">"
+        resp->setBody("<html><title>Tiny Web Server</title><body bgcolor\"#fffff\">"
                           "<h1>Tiny Web Server / Adder</h1><p>Result: "
                       + std::to_string(sum) + "</p></body></html>\n");
     });
@@ -120,12 +120,12 @@ int main(int argc, char** argv)
 
     services->onPost("/post", [](HttpRequest *req, HttpResponse *resp) {
         std::cout << "post data: " << req->body() << "\n";
-        resp->setText(req->body());
+        resp->setBody(std::string(req->body()));
     });
 
     constexpr auto build404Response = [](HttpResponse *resp) {
         resp->setRawHeader("Content-Type", "text/html; charset=utf-8");
-        resp->setText("<h2>Tiny Web Server</h2><h1>"
+        resp->setBody("<h2>Tiny Web Server</h2><h1>"
                       "404 Not Found"
                       "<br>∑(っ°Д°;)っ<h1>\n");
         resp->setHttpState({404, "Not Found"});
@@ -133,7 +133,8 @@ int main(int argc, char** argv)
 
     constexpr auto sendFileResponse = [](HttpResponse *resp,
                                          const std::optional<FileInfo> &file) {
-        resp->sendFile(file.value().file, 0, file.value().fileSize);
+        resp->setBody(HttpResponse::FileBody{file.value().file, 0, file.value().fileSize});
+        resp->setRawHeader<true>("Accept-Range", "none");
         if(const auto type = HttpResponse::matchContentType(file->extension);
             !type.empty())
             resp->setRawHeader<true>("Content-Type", type);
@@ -145,6 +146,7 @@ int main(int argc, char** argv)
         pool.reset(new SharedFilePool(argv[3]));
 
         services->onHead([&pool](HttpRequest *req, HttpResponse *resp) {
+            resp->setRawHeader<true>("Accept-Ranges", "none");
             if(auto ret = pool->get(req->uri()); ret.has_value())
             {
                 resp->setRawHeader<true>("Content-Length",
@@ -159,7 +161,7 @@ int main(int argc, char** argv)
 
         services->onGet([&pool, &build404Response, &sendFileResponse]
                         (HttpRequest *req, HttpResponse *resp) {
-            std::string uri = req->uri();
+            std::string &&uri = req->uri();
 
             if(uri.back() == '/')
                 uri.append("index.html");

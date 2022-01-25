@@ -6,14 +6,6 @@
 #include "url.h"
 #include "httprequest.h"
 
-std::unordered_set<std::string> HttpRequest::MethodSet
-    {
-        "GET",
-        "POST",
-        "HEAD",
-        "DELETE"
-    };
-
 HttpRequest::HttpRequest()
 {
 
@@ -72,27 +64,22 @@ void HttpRequest::reset()
     m_rawData.clear();
 }
 
-std::string HttpRequest::uri() const
-{
-    if(!m_isValid)
-        return {};
-
-    return uriUnescape(std::move(std::string(m_uri)));
-}
-
 bool HttpRequest::parseRequestLine(std::string::size_type &offset,
                                    const std::string &data)
 {
     // Method
-    if(!Util::referTil(offset, m_method, data, [](const char &ch)
+    if(!Util::referTil<8>(offset, m_method, data, [](const char &ch)
     { return ch == ' '; }))
         return false;
     ++offset;
 
     // URI
-    if(Util::referTil(offset, m_uri, data, [](const char &ch)
+    std::string_view uri;
+    if(Util::referTil(offset, uri, data, [](const char &ch)
     { return ch == '?' || ch == ' '; }))
     {
+        m_uri = std::move(uriUnescape(uri));
+
         if(data.at(offset) == '?')
         {
             std::string_view arg;
@@ -115,7 +102,7 @@ bool HttpRequest::parseRequestLine(std::string::size_type &offset,
     ++offset;
 
     // Version
-    if(!Util::referTil(offset, m_httpVersion, data, [](const char &ch)
+    if(!Util::referTil<10>(offset, m_httpVersion, data, [](const char &ch)
     { return ch == '\r'; }))
         return false;
     offset += 2;
