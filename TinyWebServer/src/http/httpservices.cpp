@@ -75,7 +75,7 @@ bool HttpServices::process(AbstractSocket *const socket) const
 #endif
 
     // Write Header and text body
-    if(socket->write(buffer) <= 0)
+    if(socket->write(buffer) != buffer.size())
         return false;
 
 #if defined(__linux__) && TCP_CORK_ENABLE
@@ -90,7 +90,8 @@ bool HttpServices::process(AbstractSocket *const socket) const
                     { return socket->sendStream(stream.get()); },
 
                     [&socket](const HttpResponse::FileBody &file) -> bool
-                    { return socket->sendFile(file.file, file.offset, file.count) > 0; }
+                    { return socket->sendFile(
+                      file.file, file.offset, file.count) == file.count; }
                 });;
 
     if(!ok)

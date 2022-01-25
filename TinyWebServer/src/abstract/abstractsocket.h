@@ -81,7 +81,7 @@ public:
 
     Socket descriptor() const { return m_descriptor; }
 
-    bool sendStream(std::istream *const stream, size_t count = 0);
+    bool sendStream(std::istream *const stream);
 
     virtual ssize_t sendFile(File file, off_t offset, size_t count) = 0;
 
