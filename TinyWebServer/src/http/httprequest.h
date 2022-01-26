@@ -66,6 +66,8 @@ public:
         return stream;
     }
 
+    static std::pair<size_t, size_t> parseRange(const std::string &range);
+
 private:
     friend class HttpServices;
 

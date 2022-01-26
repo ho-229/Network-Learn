@@ -6,6 +6,8 @@
 #include "url.h"
 #include "httprequest.h"
 
+#include <regex>
+
 HttpRequest::HttpRequest()
 {
 
@@ -62,6 +64,24 @@ void HttpRequest::reset()
     m_urlArguments.clear();
 
     m_rawData.clear();
+}
+
+std::pair<size_t, size_t> HttpRequest::parseRange(const std::string &range)
+{
+    const std::regex reg("bytes=(\\d+)-(\\d*)");
+    std::smatch results;
+
+    size_t start = 0, end = 0;
+    if(std::regex_match(range.cbegin(), range.cend(), results, reg))
+    {
+        if(const std::string &&num = results[1]; !num.empty())
+            start = std::stoul(num);
+
+        if(const std::string &&num = results[2]; !num.empty())
+            end = std::stoul(num);
+    }
+
+    return {start, end};
 }
 
 bool HttpRequest::parseRequestLine(std::string::size_type &offset,

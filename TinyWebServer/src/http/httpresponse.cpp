@@ -12,7 +12,7 @@ HttpResponse::HttpResponse()
 
 void HttpResponse::setBody(const StringBody &text)
 {
-    if(m_isVaild = !text.empty(); !m_isVaild)
+    if(m_isValid = !text.empty(); !m_isValid)
         return;
 
     m_headers["Content-Length"] = std::to_string(text.size());
@@ -22,7 +22,7 @@ void HttpResponse::setBody(const StringBody &text)
 
 void HttpResponse::setBody(StreamBody &&stream)
 {
-    if(m_isVaild = stream->good(); !m_isVaild)
+    if(m_isValid = stream->good(); !m_isValid)
         return;
 
     const auto start = stream->tellg();
@@ -38,7 +38,7 @@ void HttpResponse::setBody(StreamBody &&stream)
 
 void HttpResponse::setBody(const FileBody &file)
 {
-    if(m_isVaild = file.count; !m_isVaild)
+    if(m_isValid = file.count; !m_isValid)
         return;
 
     m_headers["Content-Length"] = std::to_string(file.count);
@@ -59,7 +59,7 @@ void HttpResponse::reset()
     m_httpState = {200, "OK"};
 
     m_isKeepAlive = true;
-    m_isVaild = false;
+    m_isValid = false;
 }
 
 void HttpResponse::setKeepAlive(bool isKeepAlive)
@@ -99,6 +99,27 @@ std::string HttpResponse::matchContentType(const std::string &extension)
 
     const auto it = mimeTypes.find(extension);
     return it == mimeTypes.end() ? "" : std::string{it->second};
+}
+
+std::string HttpResponse::replyRange(std::pair<size_t, size_t> range,
+                                     const size_t total, size_t &offset, size_t &count)
+{
+    // To valid range
+    if(range.first >= total || range.second >= total)
+    {
+        range.first = 0;
+        range.second = total - 1;
+    }
+    else if(range.second <= range.first)
+        range.second = total - 1;
+
+    offset = range.first;
+    count = range.second - range.first + 1;
+
+    return std::string("bytes ")
+            .append(std::to_string(range.first)).append("-")
+            .append(std::to_string(range.second)).append("/")
+            .append(std::to_string(total));
 }
 
 void HttpResponse::toRawData(std::string &response)

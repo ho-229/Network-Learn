@@ -68,6 +68,9 @@ bool HttpServices::process(AbstractSocket *const socket) const
 
     this->callHandler(request.get(), response.get());
 
+    if(!response->isValid())
+        return true;
+
     response->toRawData(buffer);
 
 #if defined(__linux__) && TCP_CORK_ENABLE
@@ -83,16 +86,18 @@ bool HttpServices::process(AbstractSocket *const socket) const
 #endif
 
     const bool ok = response->visitBody(
-                Util::overloaded {
-                    [](const HttpResponse::StringBody &) { return true; },
+        Util::overloaded {
+            [](const HttpResponse::StringBody &) { return true; },
 
-                    [&socket](HttpResponse::StreamBody &stream) -> bool
-                    { return socket->sendStream(stream.get()); },
+            [&socket](HttpResponse::StreamBody &stream) -> bool
+            { return socket->sendStream(stream.get()); },
 
-                    [&socket](const HttpResponse::FileBody &file) -> bool
-                    { return socket->sendFile(
-                      file.file, file.offset, file.count) == file.count; }
-                });;
+            [&socket](const HttpResponse::FileBody &file) -> bool
+            {
+                return socket->sendFile(
+                        file.file, file.offset, file.count) == file.count;
+            }
+        });
 
     if(!ok)
         return false;

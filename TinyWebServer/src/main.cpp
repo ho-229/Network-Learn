@@ -131,22 +131,12 @@ int main(int argc, char** argv)
         resp->setHttpState({404, "Not Found"});
     };
 
-    constexpr auto sendFileResponse = [](HttpResponse *resp,
-                                         const std::optional<FileInfo> &file) {
-        resp->setBody(HttpResponse::FileBody{file.value().file, 0, file.value().fileSize});
-        resp->setRawHeader<true>("Accept-Range", "none");
-        if(const auto type = HttpResponse::matchContentType(file->extension);
-            !type.empty())
-            resp->setRawHeader<true>("Content-Type", type);
-    };
-
     std::unique_ptr<SharedFilePool> pool;
     if(argc > 3 && fs::is_directory(argv[3]))
     {
         pool.reset(new SharedFilePool(argv[3]));
 
         services->onHead([&pool](HttpRequest *req, HttpResponse *resp) {
-            resp->setRawHeader<true>("Accept-Ranges", "none");
             if(auto ret = pool->get(req->uri()); ret.has_value())
             {
                 resp->setRawHeader<true>("Content-Length",
@@ -159,7 +149,7 @@ int main(int argc, char** argv)
                 resp->setHttpState({404, "Not Found"});
         });
 
-        services->onGet([&pool, &build404Response, &sendFileResponse]
+        services->onGet([&pool, &build404Response]
                         (HttpRequest *req, HttpResponse *resp) {
             std::string &&uri = req->uri();
 
@@ -167,7 +157,29 @@ int main(int argc, char** argv)
                 uri.append("index.html");
 
             if(auto ret = pool->get(uri); ret.has_value())
-                sendFileResponse(resp, ret);
+            {
+                const auto file = ret.value();
+
+                resp->setRawHeader<true>("Accept-Ranges", "bytes");
+                if(const auto type = HttpResponse::matchContentType(file.extension);
+                    !type.empty())
+                    resp->setRawHeader<true>("Content-Type", type);
+
+                size_t offset = 0, count = file.fileSize;
+
+                if(const auto value = req->rawHeader("Range"); !value.empty())
+                {
+                    const auto range = HttpRequest::parseRange(value);
+                    resp->setRawHeader<true>("Content-Range",
+                                             HttpResponse::replyRange(
+                                                 range, file.fileSize, offset, count));
+
+                    resp->setHttpState({206, "Partial Content"});
+                }
+
+                resp->setBody(HttpResponse::FileBody{
+                                  file.file, off_t(offset), count});
+            }
             else
                 build404Response(resp);
         });

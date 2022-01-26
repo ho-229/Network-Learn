@@ -72,7 +72,7 @@ public:
 
     void reset();
 
-    bool isVaild() const { return m_isVaild; }
+    bool isValid() const { return m_isValid; }
 
     void setKeepAlive(bool isKeepAlive);
     bool isKeepAlive() const { return m_isKeepAlive; }
@@ -104,6 +104,9 @@ public:
 
     static std::string matchContentType(const std::string &extension);
 
+    static std::string replyRange(std::pair<size_t, size_t> range,
+                                  const size_t total, size_t &offset, size_t &count);
+
 private:
     friend class HttpServices;
 
@@ -114,7 +117,7 @@ private:
 
     Body m_body;
 
-    bool m_isVaild = false;
+    bool m_isValid = false;
     bool m_isKeepAlive = true;
 };
 
