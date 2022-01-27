@@ -72,7 +72,7 @@ public:
 
     void reset();
 
-    bool isValid() const { return m_isValid; }
+    bool isValid() const;
 
     void setKeepAlive(bool isKeepAlive);
     bool isKeepAlive() const { return m_isKeepAlive; }
@@ -117,7 +117,6 @@ private:
 
     Body m_body;
 
-    bool m_isValid = false;
     bool m_isKeepAlive = true;
 };
 

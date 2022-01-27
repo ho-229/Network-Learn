@@ -52,8 +52,8 @@ void HttpRequest::parse()
 
     // Parse keep-alive
     const auto it = m_headers.find("Connection");
-    m_isKeepAlive = it == m_headers.end() ?
-                true : Util::strcasecmp(it->second, "close");
+    m_isKeepAlive = it == m_headers.end() ? true :
+                        Util::strcasecmp<std::string_view>(it->second, "close");
 }
 
 void HttpRequest::reset()
@@ -98,7 +98,7 @@ bool HttpRequest::parseRequestLine(std::string::size_type &offset,
     if(Util::referTil(offset, uri, data, [](const char &ch)
     { return ch == '?' || ch == ' '; }))
     {
-        m_uri = std::move(uriUnescape(uri));
+        m_uri = uriUnescape(uri);
 
         if(data.at(offset) == '?')
         {

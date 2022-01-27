@@ -25,6 +25,15 @@ namespace Util
     template<class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
     template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
 
+    inline const std::string toGmtFormat(const std::time_t time)
+    {
+        std::tm gmt;
+        std::ostringstream ss;
+        gmtime_s(&gmt, &time);
+        ss << std::put_time(&gmt, "%a, %d %b %Y %H:%M:%S GMT");
+        return ss.str();
+    }
+
     /**
      * @return Current time in GMT format
      */
@@ -33,15 +42,24 @@ namespace Util
         const auto now = std::chrono::system_clock::now();
         const auto itt = std::chrono::system_clock::to_time_t(now);
 
-        std::tm gmt;
-        std::ostringstream ss;
-        gmtime_s(&gmt, &itt);
-        ss << std::put_time(&gmt, "%a, %d %b %Y %H:%M:%S GMT");
-        return ss.str();
+        return toGmtFormat(itt);
     }
 
-    inline constexpr int strcasecmp(const std::string_view &left,
-                                    const std::string_view &right)
+    /**
+     * @ref https://stackoverflow.com/questions/61030383/how-to-convert-stdfilesystemfile-time-type-to-time-t
+     */
+    template <typename TP>
+    std::time_t to_time_t(TP tp)
+    {
+        using namespace std::chrono;
+        auto sctp = time_point_cast<system_clock::duration>(tp - TP::clock::now()
+                                                            + system_clock::now());
+        return system_clock::to_time_t(sctp);
+    }
+
+    template <typename String>
+    inline constexpr int strcasecmp(const String &left,
+                                    const String &right)
     {
         if(const auto diff = left.size() - right.size(); diff)
             return int(diff);

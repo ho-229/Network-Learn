@@ -12,7 +12,7 @@ HttpResponse::HttpResponse()
 
 void HttpResponse::setBody(const StringBody &text)
 {
-    if(m_isValid = !text.empty(); !m_isValid)
+    if(text.empty())
         return;
 
     m_headers["Content-Length"] = std::to_string(text.size());
@@ -22,7 +22,7 @@ void HttpResponse::setBody(const StringBody &text)
 
 void HttpResponse::setBody(StreamBody &&stream)
 {
-    if(m_isValid = stream->good(); !m_isValid)
+    if(stream->bad())
         return;
 
     const auto start = stream->tellg();
@@ -38,7 +38,7 @@ void HttpResponse::setBody(StreamBody &&stream)
 
 void HttpResponse::setBody(const FileBody &file)
 {
-    if(m_isValid = file.count; !m_isValid)
+    if(!file.count)
         return;
 
     m_headers["Content-Length"] = std::to_string(file.count);
@@ -53,13 +53,19 @@ void HttpResponse::reset()
                         [](StreamBody &stream) { stream.reset(); },
                         [](FileBody &file) { file = {}; }
                     });
+    new (&m_body) Body();
 
     m_headers.clear();
 
     m_httpState = {200, "OK"};
 
     m_isKeepAlive = true;
-    m_isValid = false;
+}
+
+bool HttpResponse::isValid() const
+{
+    return m_httpState.first >= 200 && m_httpState.first <= 500 &&
+           !m_httpState.second.empty();
 }
 
 void HttpResponse::setKeepAlive(bool isKeepAlive)
