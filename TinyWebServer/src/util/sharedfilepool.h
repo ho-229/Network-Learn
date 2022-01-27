@@ -24,6 +24,7 @@ struct FileInfo
     File file;
     size_t fileSize;
     std::string extension;
+    std::string lastModified;
 };
 
 class SharedFilePool

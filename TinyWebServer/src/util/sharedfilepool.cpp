@@ -5,6 +5,8 @@
 
 #include "sharedfilepool.h"
 
+#include "util.h"
+
 #ifdef _WIN32
 # include <Windows.h>
 #else
@@ -57,7 +59,8 @@ std::optional<FileInfo> SharedFilePool::get(const std::string &fileName)
 
         WriteLock lock(m_mutex);
         const FileInfo ret{file, static_cast<size_t>(fs::file_size(filePath)),
-                           filePath.extension().string()};
+                           filePath.extension().string(),
+                           Util::toGmtFormat(Util::to_time_t(fs::last_write_time(filePath)))};
 
         if(m_pool.size() >= MAX_SHARED_FILE)
             m_pool.erase(m_pool.begin());

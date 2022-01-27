@@ -160,15 +160,29 @@ int main(int argc, char** argv)
             {
                 const auto file = ret.value();
 
-                resp->setRawHeader<true>("Accept-Ranges", "bytes");
                 if(const auto type = HttpResponse::matchContentType(file.extension);
                     !type.empty())
                     resp->setRawHeader<true>("Content-Type", type);
 
                 size_t offset = 0, count = file.fileSize;
 
+                resp->setRawHeader<true>("Accept-Ranges", "bytes");
                 if(const auto value = req->rawHeader("Range"); !value.empty())
                 {
+                    // Cache control
+                    resp->setRawHeader<true>("Last-Modified", file.lastModified);
+                    if(req->rawHeader("If-Modified-Since") == file.lastModified)
+                    {
+                        resp->setRawHeader<true>("Cache-Control", "max-age=0, public");
+                        resp->setHttpState({304, "Not Modified"});
+                        return;
+                    }
+                    else
+                        resp->setRawHeader<true>("Cache-Control", "public");
+                }
+                else
+                {
+                    // Range
                     const auto range = HttpRequest::parseRange(value);
                     resp->setRawHeader<true>("Content-Range",
                                              HttpResponse::replyRange(
