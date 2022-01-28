@@ -210,14 +210,20 @@ int main(int argc, char** argv)
 
     if(argc >= 2)   // HTTP
     {
-        std::cout << "Listening HTTP port: " << argv[1] << "\n";
-        server->listen(ANY_HOST, argv[1], false);
+        if(server->listen(ANY_HOST, argv[1], false))
+            std::cout << "Listening HTTP port: " << argv[1] << "\n";
+        else
+            std::cerr << "Listen 0.0.0.0" + std::string(argv[1])
+                    + " failed, please rerun with an administrator.\n";
     }
 
     if(argc >= 3 && SslSocket::isSslAvailable())    // HTTPS
     {
-        std::cout << "Listening HTTPS port: " << argv[2] << "\n";
-        server->listen(ANY_HOST, argv[2], true);
+        if(server->listen(ANY_HOST, argv[2], true))
+            std::cout << "Listening HTTPS port: " << argv[2] << "\n";
+        else
+            std::cerr << "Listen 0.0.0.0" + std::string(argv[2])
+                    + " failed, please rerun with an administrator.\n";
     }
 
     std::cout << "\n";

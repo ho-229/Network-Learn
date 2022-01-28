@@ -72,30 +72,22 @@ void WebServer::waitForFinished()
     m_pools.clear();
 }
 
-void WebServer::listen(const std::string &hostName, const std::string &port,
+bool WebServer::listen(const std::string &hostName, const std::string &port,
                        bool sslEnable, std::pair<int, int> linger)
 {
     if(sslEnable && !SslSocket::isSslAvailable())
-    {
-        m_handler(new ExceptionEvent(
-            ExceptionEvent::ListenerError,
-            "Listen " + hostName + ":" + port + " failed, SSL is not available.\n"));
-        return;
-    }
+        return false;
 
     std::unique_ptr<AbstractSocket> socket(sslEnable ?
             static_cast<AbstractSocket *>(new SslSocket()) :
             static_cast<AbstractSocket *>(new TcpSocket()));
 
     if(!socket->listen(hostName, port))
-    {
-        m_handler(new ExceptionEvent(
-            ExceptionEvent::ListenerError,
-            "Listen " + hostName + ":" + port + " failed, please rerun with an administrator.\n"));
-        return;
-    }
+        return false;
 
     socket->setOption(SOL_SOCKET, SO_LINGER, linger);
 
     m_listeners.emplace_back(std::move(socket));
+
+    return true;
 }

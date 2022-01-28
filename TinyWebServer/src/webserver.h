@@ -41,7 +41,7 @@ public:
     /**
      * @note should run before WebServer::exec
      */
-    void listen(const std::string& hostName, const std::string& port,
+    bool listen(const std::string& hostName, const std::string& port,
                 bool sslEnable = false, std::pair<int, int> linger = {false, 0});
 
     int start();
