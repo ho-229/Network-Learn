@@ -60,7 +60,8 @@ void WebServer::requestQuit()
     for(auto &pool : m_pools)
         pool->unregisterListeners(m_listeners.begin(), m_listeners.end());
 
-    m_listeners.clear();
+    for(auto &listener : m_listeners)
+        listener->close();
 }
 
 void WebServer::waitForFinished()
