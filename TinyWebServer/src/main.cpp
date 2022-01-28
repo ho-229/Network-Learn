@@ -169,7 +169,7 @@ int main(int argc, char** argv)
                 size_t offset = 0, count = file.fileSize;
 
                 resp->setRawHeader<true>("Accept-Ranges", "bytes");
-                if(const auto value = req->rawHeader("Range"); !value.empty())
+                if(const auto value = req->rawHeader("Range"); value.empty())
                 {
                     // Cache control
                     resp->setRawHeader<true>("Last-Modified", file.lastModified);
