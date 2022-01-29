@@ -41,17 +41,27 @@ private:
 template <typename T, typename TimeType>
 using TimerItem = std::unique_ptr<Timer<T, TimeType>>;
 
+template<typename _Tp>
+  struct isDuration
+  : std::false_type
+  { };
+
+template<typename _Rep, typename _Period>
+  struct isDuration<std::chrono::duration<_Rep, _Period>>
+  : std::true_type
+  { };
+
 template <typename T, typename TimeType = std::chrono::milliseconds>
 
 #if __cplusplus > 201703L   // C++20
-#include <type_traits>
-requires requires
-{ typename std::common_type<TimeType, std::chrono::milliseconds>::type; }
+requires isDuration<TimeType>::value
 #endif
 
 class TimerManager
 {
 public:
+    static_assert(isDuration<TimeType>::value, "TimeType must be duration.");
+
     using TimerType = Timer<T, TimeType>;
 
     explicit TimerManager() {}

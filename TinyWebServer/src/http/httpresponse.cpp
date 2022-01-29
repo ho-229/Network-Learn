@@ -48,11 +48,6 @@ void HttpResponse::setBody(const FileBody &file)
 
 void HttpResponse::reset()
 {
-    this->visitBody(Util::overloaded {
-                        [](StringBody &text) { text.clear(); },
-                        [](StreamBody &stream) { stream.reset(); },
-                        [](FileBody &file) { file = {}; }
-                    });
     new (&m_body) Body();
 
     m_headers.clear();
