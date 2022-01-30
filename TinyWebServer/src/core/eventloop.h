@@ -3,8 +3,8 @@
  * @date 2021/10/3
  */
 
-#ifndef CONNECTIONPOOL_H
-#define CONNECTIONPOOL_H
+#ifndef EVENTLOOP_H
+#define EVENTLOOP_H
 
 #include "epoll.h"
 #include "../util/event.h"
@@ -16,14 +16,14 @@
 
 class AbstractServices;
 
-class ConnectionPool
+class EventLoop
 {
 public:
-    explicit ConnectionPool(const volatile bool &runnable,
-                            const std::chrono::milliseconds &timeout,
-                            AbstractServices *const services,
-                            const EventHandler &handler);
-    ~ConnectionPool();
+    explicit EventLoop(const volatile bool &runnable,
+                       const std::chrono::milliseconds &timeout,
+                       AbstractServices *const services,
+                       const EventHandler &handler);
+    ~EventLoop();
 
     size_t count() const { return m_epoll.count(); }
 
@@ -42,7 +42,7 @@ public:
     }
 
     inline void start()
-    { m_thread = std::thread(std::bind(&ConnectionPool::exec, this)); }
+    { m_thread = std::thread(std::bind(&EventLoop::exec, this)); }
 
     inline void waitForFinished()
     {
@@ -75,4 +75,4 @@ private:
     std::thread m_thread;
 };
 
-#endif // CONNECTIONPOOL_H
+#endif // EVENTLOOP_H

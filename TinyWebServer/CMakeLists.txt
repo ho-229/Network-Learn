@@ -1,13 +1,8 @@
-﻿file(GLOB SOURCES
-   "src/*.h" "src/*.cpp"
-   "src/abstract/*.h" "src/abstract/*.cpp"
-   "src/core/*.h" "src/core/*.cpp"
-   "src/http/*.h" "src/http/*.cpp"
-   "src/util/*.h" "src/util/*.cpp")
+﻿file(GLOB_RECURSE ALL_CLANG_FORMAT_SOURCE_FILES *.cpp *.h)
 
 set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
 
-add_executable(TinyWebServer ${SOURCES})
+add_executable(TinyWebServer ${ALL_CLANG_FORMAT_SOURCE_FILES})
 
 set(DEP_LIBS
     OpenSSL::SSL  # modern

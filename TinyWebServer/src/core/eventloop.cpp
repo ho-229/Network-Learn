@@ -5,13 +5,13 @@
 
 #include "tcpsocket.h"
 #include "sslsocket.h"
-#include "connectionpool.h"
+#include "eventloop.h"
 #include "../abstract/abstractservices.h"
 
-ConnectionPool::ConnectionPool(const volatile bool &runnable,
-                               const std::chrono::milliseconds &timeout,
-                               AbstractServices *const services,
-                               const EventHandler &handler) :
+EventLoop::EventLoop(const volatile bool &runnable,
+                     const std::chrono::milliseconds &timeout,
+                     AbstractServices *const services,
+                     const EventHandler &handler) :
     m_runnable(runnable),
     m_timeout(timeout),
     m_services(services),
@@ -21,12 +21,12 @@ ConnectionPool::ConnectionPool(const volatile bool &runnable,
     m_errorQueue.reserve(512);
 }
 
-ConnectionPool::~ConnectionPool()
+EventLoop::~EventLoop()
 {
 
 }
 
-void ConnectionPool::exec()
+void EventLoop::exec()
 {
     while(m_runnable && m_epoll.count())
     {
@@ -46,7 +46,7 @@ void ConnectionPool::exec()
     }
 }
 
-void ConnectionPool::processQueue()
+void EventLoop::processQueue()
 {
     for(auto& socket : m_queue)
     {
@@ -89,7 +89,7 @@ void ConnectionPool::processQueue()
     m_queue.resize(0);
 }
 
-void ConnectionPool::processErrorQueue()
+void EventLoop::processErrorQueue()
 {
     for(auto& socket : m_errorQueue)
     {
@@ -115,7 +115,7 @@ void ConnectionPool::processErrorQueue()
     m_errorQueue.resize(0);
 }
 
-void ConnectionPool::processTimeoutQueue()
+void EventLoop::processTimeoutQueue()
 {
     for(auto& socket : m_errorQueue)
     {

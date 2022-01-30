@@ -8,7 +8,7 @@
 #include "util/util.h"
 #include "core/tcpsocket.h"
 #include "core/sslsocket.h"
-#include "core/connectionpool.h"
+#include "core/eventloop.h"
 
 #include <signal.h>
 
@@ -42,10 +42,10 @@ int WebServer::start()
 
     m_runnable = true;
 
-    ConnectionPool *pool = nullptr;
+    EventLoop *pool = nullptr;
     for(size_t i = 0; i < m_loopCount; ++i)
     {
-        m_pools.emplace_back(pool = new ConnectionPool(
+        m_pools.emplace_back(pool = new EventLoop(
             m_runnable, m_timeout, m_services.get(), m_handler));
 
         pool->registerListeners(m_listeners.begin(), m_listeners.end());
