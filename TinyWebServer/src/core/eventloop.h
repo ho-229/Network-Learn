@@ -25,8 +25,6 @@ public:
                        const EventHandler &handler);
     ~EventLoop();
 
-    size_t count() const { return m_epoll.count(); }
-
     template <typename Iter>
     void registerListeners(const Iter begin, const Iter end)
     {
