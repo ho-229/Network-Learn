@@ -52,6 +52,8 @@ void EventLoop::processQueue()
     {
         if(socket->isListener())
         {
+            AbstractSocket *client = nullptr;
+
             while(socket->isValid())
             {
                 const Socket descriptor = socket->accept();
@@ -59,14 +61,20 @@ void EventLoop::processQueue()
                 if(!AbstractSocket::isValid(descriptor))
                     break;
 
-                AbstractSocket *newSocket = socket->sslEnable() ?
-                                                static_cast<AbstractSocket *>(new SslSocket(descriptor)) :
-                                                static_cast<AbstractSocket *>(new TcpSocket(descriptor));
+                client = socket->sslEnable() ?
+                            static_cast<AbstractSocket *>(new SslSocket(descriptor)) :
+                            static_cast<AbstractSocket *>(new TcpSocket(descriptor));
 
-                newSocket->setTimer(m_manager.addTimer(m_timeout, newSocket));
-                m_epoll.insert(newSocket);
+                if(!client->isValid())
+                {
+                    delete client;
+                    continue;
+                }
 
-                m_handler(new ConnectEvent(newSocket, ConnectEvent::Accpet));
+                client->setTimer(m_manager.addTimer(m_timeout, client));
+                m_epoll.insert(client);
+
+                m_handler(new ConnectEvent(client, ConnectEvent::Accpet));
             }
         }
         else
