@@ -10,7 +10,8 @@
 
 HttpServices::HttpServices()
 {
-
+    m_defaultHandler = [](HttpRequest *, HttpResponse *resp)
+    { resp->setHttpState({405, "Method Not Allowed"}); };
 }
 
 HttpServices::~HttpServices()
@@ -123,5 +124,5 @@ void HttpServices::callHandler(HttpRequest *const request,
     }
 
     // Method not found
-    response->setHttpState({405, "Method Not Allowed"});
+    m_defaultHandler(request, response);
 }

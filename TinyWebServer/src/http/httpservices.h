@@ -21,8 +21,17 @@ public:
     void addService(const std::string &method, const std::string& uri,
                     const Handler& handler);
 
+    /**
+     * @brief Set method default service
+     */
     void setDefaultService(const std::string& method,
                            const Handler& handler);
+
+    /**
+     * @brief Set default service
+     */
+    void setDefaultService(const Handler& handler)
+    { m_defaultHandler = handler; }
 
     void setAutoKeepAlive(bool isEnable) { m_isAutoKeepAlive = isEnable; }
     bool isAutoKeepAlive() const { return m_isAutoKeepAlive; }
@@ -61,6 +70,9 @@ protected:
     bool process(AbstractSocket *const socket) const override;
 
 private:
+    void callHandler(HttpRequest *const request,
+                     HttpResponse *const response) const;
+
     struct UriHandler
     {
         std::unordered_map<std::string, // URI
@@ -70,8 +82,7 @@ private:
         Handler defaultHandler;
     };
 
-    void callHandler(HttpRequest *const request,
-                     HttpResponse *const response) const;
+    Handler m_defaultHandler;
 
     std::unordered_map<std::string,     // Method -> {URI -> Handler}
                        UriHandler>      // URI -> Handler
