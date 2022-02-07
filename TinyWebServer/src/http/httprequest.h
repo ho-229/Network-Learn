@@ -74,6 +74,8 @@ private:
     void parse();
     bool parseRequestLine(std::string::size_type &offset,
                           const std::string &data);
+    bool parseRequestHeaders(std::string::size_type &offset,
+                             const std::string &data);
 
     bool m_isValid = false;
 

@@ -18,31 +18,13 @@ void HttpRequest::parse()
     std::string::size_type offset = 0;
     const size_t size = m_rawData.size();
 
+    // Request line
     if(m_rawData.empty() || !this->parseRequestLine(offset, m_rawData))
         return;
 
-    // Parse headers
-    while(offset < size && m_rawData.at(offset) != '\r')
-    {
-        std::pair<std::string_view, std::string_view> item;
-
-        if(!Util::referTil(offset, item.first, m_rawData, [](const char &ch)
-        { return ch == ':'; }))
-            return;
-        ++offset;
-
-        // Ignore spaces
-        while(offset < size && m_rawData.at(offset) == ' ')
-            ++offset;
-
-        if(!Util::referTil(offset, item.second, m_rawData, [](const char &ch)
-        { return ch == '\r'; }))
-            return;
-        offset += 2;
-
-        m_headers.emplace(item);
-    }
-    offset += 2;
+    // Headers
+    if(!this->parseRequestHeaders(offset, m_rawData))
+        return;
 
     // Body
     if(offset < size)
@@ -127,5 +109,34 @@ bool HttpRequest::parseRequestLine(std::string::size_type &offset,
         return false;
     offset += 2;
 
+    return true;
+}
+
+bool HttpRequest::parseRequestHeaders(std::string::size_type &offset,
+                                      const std::string &data)
+{
+    const auto size = data.size();
+    while(offset < size && m_rawData.at(offset) != '\r')
+    {
+        std::pair<std::string_view, std::string_view> item;
+
+        if(!Util::referTil(offset, item.first, m_rawData, [](const char &ch)
+        { return ch == ':'; }))
+            return false;
+        ++offset;
+
+        // Ignore spaces
+        while(offset < size && m_rawData.at(offset) == ' ')
+            ++offset;
+
+        if(!Util::referTil(offset, item.second, m_rawData, [](const char &ch)
+        { return ch == '\r'; }))
+            return false;
+        offset += 2;
+
+        m_headers.emplace(item);
+    }
+
+    offset += 2;
     return true;
 }
