@@ -15,7 +15,7 @@ The idea of doing this project originated from the TinyWebServer of CS:APP, I ho
 * Use `POSIX` thread-safety methods to reduce lock usage
 * Using Epoll(Linux) edge-triggered IO multiplex, non-blocking IO, multithreading
 
-See my chinese [blog](https://ho-229.github.io/) for more details.
+See my chinese [blog](https://ho-229.github.io/code/network/server/tiny-web-server/) for more details.
 
 ## Usage
 
