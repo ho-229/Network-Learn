@@ -50,8 +50,8 @@ int main(int argc, char** argv)
     if(argc <= 2 || std::string_view("-help") == argv[1])
     {
         std::cerr << "Usage: " << argv[0] <<
-            "[http-port] [https-port] [shared-directory] "
-            "[certificate-file] [privateKey-file]\n\n"
+            " [http-port] [https-port] [shared-directory]"
+            " [certificate-file] [privateKey-file]\n\n"
             "example: ./TinyWebServer 80 443 ./shared_files";
         return 1;
     }

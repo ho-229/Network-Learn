@@ -23,17 +23,18 @@ Epoll::~Epoll()
 #endif
 }
 
-void Epoll::insert(AbstractSocket * const socket, bool once)
+void Epoll::insert(AbstractSocket * const socket, bool exclusive)
 {
 #ifdef _WIN32
+    static_cast<void>(exclusive);   // Unused
+
     std::unique_lock<std::mutex> lock(m_mutex);
 
     m_events.emplace_back(pollfd{socket->descriptor(), POLLIN, 0});
 
-    m_connections.insert(ConnectionItem(socket->descriptor(),
-                                        Connection(once, socket)));
+    m_connections.insert(ConnectionItem(socket->descriptor(), socket));
 #else
-    epoll_event event{EPOLLIN | (once ? EPOLLONESHOT : EPOLLET), socket};
+    epoll_event event{(exclusive ? EPOLLEXCLUSIVE | EPOLLIN : EPOLLIN) | EPOLLET, socket};
     epoll_ctl(m_epoll, EPOLL_CTL_ADD, socket->descriptor(), &event);
 
     ++m_count;
@@ -86,14 +87,9 @@ void Epoll::epoll(std::vector<AbstractSocket *> &events,
             continue;
 
         if(item.revents & POLLIN)
-        {
-            events.emplace_back(it->second.second);
-
-            if(it->second.first)
-                this->erase(it->second.second);
-        }
+            events.emplace_back(it->second);
         else if(item.revents & POLLERR || item.revents & POLLHUP)
-            errorEvents.emplace_back(it->second.second);
+            errorEvents.emplace_back(it->second);
     }
 #else   // Unix
     int ret = -1;

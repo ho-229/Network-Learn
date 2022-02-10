@@ -29,7 +29,7 @@ public:
     explicit Epoll();
     ~Epoll();
 
-    void insert(AbstractSocket *const socket, bool once = false);
+    void insert(AbstractSocket *const socket, bool exclusive = false);
     void erase(AbstractSocket *const socket);
 
     void epoll(std::vector<AbstractSocket *> &events,
@@ -48,11 +48,7 @@ private:
 #ifdef _WIN32
     inline void eraseEvent(AbstractSocket *const socket);
 
-    typedef std::pair<bool,                 // Once
-                      AbstractSocket *>     // Socket
-        Connection;
-
-    std::unordered_map<Socket, Connection> m_connections;
+    std::unordered_map<Socket, AbstractSocket *> m_connections;
 
     using ConnectionItem = decltype (m_connections)::value_type;
 

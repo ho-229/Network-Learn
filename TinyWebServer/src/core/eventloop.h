@@ -29,7 +29,7 @@ public:
     void registerListeners(const Iter begin, const Iter end)
     {
         for(auto it = begin; it < end; ++it)
-            m_epoll.insert(it->get());
+            m_epoll.insert(it->get(), true);
     }
 
     template <typename Iter>
