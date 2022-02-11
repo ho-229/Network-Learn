@@ -23,7 +23,8 @@ EventLoop::EventLoop(const volatile bool &runnable,
 
 EventLoop::~EventLoop()
 {
-
+    while(auto socket = m_manager.takeFirst())
+        delete socket;
 }
 
 void EventLoop::exec()

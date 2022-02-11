@@ -37,7 +37,7 @@ WebServer::~WebServer()
 
 int WebServer::start()
 {
-    if(m_listeners.empty() || !m_services || !m_pools.empty())
+    if(m_listeners.empty() || !m_services || !m_loops.empty())
         return -1;
 
     m_runnable = true;
@@ -45,7 +45,7 @@ int WebServer::start()
     EventLoop *pool = nullptr;
     for(size_t i = 0; i < m_loopCount; ++i)
     {
-        m_pools.emplace_back(pool = new EventLoop(
+        m_loops.emplace_back(pool = new EventLoop(
             m_runnable, m_timeout, m_services.get(), m_handler));
 
         pool->registerListeners(m_listeners.begin(), m_listeners.end());
@@ -57,8 +57,8 @@ int WebServer::start()
 
 void WebServer::requestQuit()
 {
-    for(auto &pool : m_pools)
-        pool->unregisterListeners(m_listeners.begin(), m_listeners.end());
+    for(auto &loop : m_loops)
+        loop->unregisterListeners(m_listeners.begin(), m_listeners.end());
 
     for(auto &listener : m_listeners)
         listener->close();
@@ -66,11 +66,11 @@ void WebServer::requestQuit()
 
 void WebServer::waitForFinished()
 {
-    for(auto &pool : m_pools)
-        pool->waitForFinished();
+    for(auto &loop : m_loops)
+        loop->waitForFinished();
 
     m_listeners.clear();
-    m_pools.clear();
+    m_loops.clear();
 }
 
 bool WebServer::listen(const std::string &hostName, const std::string &port,

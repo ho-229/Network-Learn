@@ -69,7 +69,7 @@ private:
 
     std::chrono::milliseconds m_timeout = 30s;
 
-    std::vector<std::unique_ptr<EventLoop>> m_pools;
+    std::vector<std::unique_ptr<EventLoop>> m_loops;
     std::vector<std::unique_ptr<AbstractSocket>> m_listeners;
 
     std::unique_ptr<AbstractServices> m_services;

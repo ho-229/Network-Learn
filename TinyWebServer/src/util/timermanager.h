@@ -102,6 +102,25 @@ public:
         }
     }
 
+    bool isEmpty() const { return m_queue.empty(); }
+
+    T takeFirst()
+    {
+        while(true)
+        {
+            if(m_queue.empty())
+                return {};
+            else if(m_queue.top()->isDisable())
+                m_queue.pop();
+            else
+                break;
+        }
+
+        T ret = m_queue.top()->userData();
+        m_queue.pop();
+        return ret;
+    }
+
 private:
 #if TIMER_THREAD_SAFE
     std::mutex m_mutex;

@@ -240,5 +240,7 @@ int main(int argc, char** argv)
     ProfilerStop();
 #endif
 
+    std::cout << "\nExit.\n";
+
     return ret;
 }
