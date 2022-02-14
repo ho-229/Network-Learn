@@ -6,8 +6,9 @@
 #ifndef TIMERMANAGER_H
 #define TIMERMANAGER_H
 
+#include <list>
 #include <mutex>
-#include <queue>
+#include <vector>
 #include <atomic>
 #include <chrono>
 #include <memory>
@@ -18,36 +19,35 @@ template <typename T, typename TimeType>
 class Timer
 {
 public:
-    Timer(const TimeType& timeout, const T& data) :
-        m_userData(data),
+    explicit Timer(const TimeType& timeout, const T& data) :
+        m_userData(std::move(data)),
+        m_timeout(timeout),
         m_deadline(std::chrono::system_clock::now() + timeout)
     {}
 
-    inline void deleteLater() { m_isDisable = true; }
-
-    inline bool isDisable() const { return m_isDisable; }
+    inline void reset()
+    { m_deadline = std::chrono::system_clock::now() + m_timeout; }
 
     inline const auto& deadline() const { return m_deadline; }
 
-    inline const T userData() const { return m_userData; }
+    inline const T& userData() const { return m_userData; }
+
+    inline bool operator<(const Timer<T, TimeType> &right)
+    { return this->m_deadline < right.m_deadline; }
 
 private:
-    volatile bool m_isDisable = false;
-
     const T m_userData;
-    const std::chrono::system_clock::time_point m_deadline;
+    const TimeType& m_timeout;
+    std::chrono::system_clock::time_point m_deadline;
 };
 
-template <typename T, typename TimeType>
-using TimerItem = std::unique_ptr<Timer<T, TimeType>>;
-
-template<typename _Tp>
+template<typename Tp>
   struct isDuration
   : std::false_type
   { };
 
-template<typename _Rep, typename _Period>
-  struct isDuration<std::chrono::duration<_Rep, _Period>>
+template<typename Rep, typename Period>
+  struct isDuration<std::chrono::duration<Rep, Period>>
   : std::true_type
   { };
 
@@ -62,19 +62,42 @@ class TimerManager
 public:
     static_assert(isDuration<TimeType>::value, "TimeType must be duration.");
 
-    using TimerType = Timer<T, TimeType>;
+    using TimerItem = Timer<T, TimeType>;
+    using iterator = typename std::list<TimerItem>::iterator;
 
     explicit TimerManager() {}
 
-    TimerType* addTimer(const TimeType& timeout, const T& data)
+    iterator start(const TimeType& timeout, const T& data)
     {
 #if TIMER_THREAD_SAFE
         std::unique_lock<std::mutex> lock(m_mutex);
 #endif
-        auto timer = new TimerType(timeout, data);
-        m_queue.emplace(timer);
-        return timer;
+        TimerItem timer(timeout, data);
+
+        for(auto it = m_list.end(); it != m_list.begin(); --it)
+        {
+            if(*std::prev(it) < timer)
+                return m_list.emplace(it, timer);
+        }
+
+        return m_list.emplace(m_list.begin(), timer);
     }
+
+    void restart(iterator timerIt)
+    {
+#if TIMER_THREAD_SAFE
+        std::unique_lock<std::mutex> lock(m_mutex);
+#endif
+        timerIt->reset();
+
+        for(auto it = m_list.end(); it != m_list.begin(); --it)
+        {
+            if(*std::prev(it) < *timerIt)
+                return m_list.splice(it, m_list, timerIt);
+        }
+    }
+
+    void destory(iterator it) { m_list.erase(it); }
 
     void checkout(std::vector<T>& list)
     {
@@ -83,41 +106,24 @@ public:
 #endif
         const auto now = std::chrono::system_clock::now();
 
-        while(!m_queue.empty())
+        while(!m_list.empty() && m_list.front().deadline() <= now)
         {
-            const auto &top = m_queue.top();
-
-            if(top->isDisable())
-            {
-                m_queue.pop();
-                continue;
-            }
-            else if(top->deadline() <= now)
-            {
-                list.emplace_back(top->userData());
-                m_queue.pop();
-            }
-            else
-                break;
+            list.emplace_back(m_list.front().userData());
+            m_list.pop_front();
         }
     }
 
-    bool isEmpty() const { return m_queue.empty(); }
+    bool isEmpty() const { return m_list.empty(); }
 
     T takeFirst()
     {
-        while(true)
-        {
-            if(m_queue.empty())
-                return {};
-            else if(m_queue.top()->isDisable())
-                m_queue.pop();
-            else
-                break;
-        }
+#if TIMER_THREAD_SAFE
+        std::unique_lock<std::mutex> lock(m_mutex);
+#endif
+        if(m_list.empty())
+            return {};
 
-        T ret = m_queue.top()->userData();
-        m_queue.pop();
+        T ret = m_list.front().userData();
         return ret;
     }
 
@@ -126,17 +132,7 @@ private:
     std::mutex m_mutex;
 #endif
 
-    struct TimerCompare
-    {
-        inline bool operator() (const TimerItem<T, TimeType>& left,
-                                const TimerItem<T, TimeType>& right)
-        { return left->deadline() > right->deadline(); }
-    };
-
-    std::priority_queue<TimerItem<T, TimeType>,
-                        std::deque<TimerItem<T, TimeType>>,
-                        TimerCompare>
-        m_queue;
+    std::list<TimerItem> m_list;
 };
 
 #endif // TIMERMANAGER_H

@@ -11,6 +11,7 @@
 #include <istream>
 
 #include "../define.h"
+#include "../util/timermanager.h"
 
 extern "C"
 {
@@ -28,6 +29,8 @@ extern "C"
 class AbstractSocket
 {
 public:
+    using TimerIter = typename TimerManager<AbstractSocket *>::iterator;
+
     virtual ~AbstractSocket() = default;
 
     virtual ssize_t read(char *buf, size_t count) = 0;
@@ -73,8 +76,8 @@ public:
         return value;
     }
 
-    void setTimer(void *timer) { m_timer = timer; }
-    void *timer() const { return m_timer; }
+    void setTimer(TimerIter timer) { m_timer = timer; }
+    TimerIter timer() const { return m_timer; }
 
     void addTimes() { ++m_times; }
     size_t times() const { return m_times; }
@@ -131,7 +134,7 @@ protected:
 
     size_t m_times = 0;
 
-    void *m_timer = nullptr;
+    TimerIter m_timer;
 
     bool m_isListener = false;
 

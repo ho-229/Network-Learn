@@ -37,7 +37,7 @@ WebServer::~WebServer()
 
 int WebServer::start()
 {
-    if(m_listeners.empty() || !m_services || !m_loops.empty())
+    if(m_listeners.empty() || !m_services || !m_loops.empty() || !m_loopCount)
         return -1;
 
     m_runnable = true;

@@ -57,14 +57,13 @@ private:
     void processTimeoutQueue();
 
     Epoll m_epoll;
+    TimerManager<AbstractSocket *> m_manager;
 
     std::vector<AbstractSocket *> m_queue;
     std::vector<AbstractSocket *> m_errorQueue;
 
     const volatile bool &m_runnable;
     const std::chrono::milliseconds &m_timeout;
-
-    TimerManager<AbstractSocket *> m_manager;
 
     AbstractServices *const m_services;
 

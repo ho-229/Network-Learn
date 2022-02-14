@@ -72,7 +72,7 @@ void EventLoop::processQueue()
                     continue;
                 }
 
-                client->setTimer(m_manager.addTimer(m_timeout, client));
+                client->setTimer(m_manager.start(m_timeout, client));
                 m_epoll.insert(client);
 
                 m_handler(new ConnectEvent(client, ConnectEvent::Accpet));
@@ -80,16 +80,14 @@ void EventLoop::processQueue()
         }
         else
         {
-            if(auto timer = static_cast<decltype(m_manager)::TimerType *>(socket->timer()))
-                timer->deleteLater();
-
             if(m_services->process(socket))
-                socket->setTimer(m_manager.addTimer(m_timeout, socket));   // Reset timer
+                m_manager.restart(socket->timer());
             else    // Close
             {
                 m_handler(new ConnectEvent(socket, ConnectEvent::Close));
                 m_epoll.erase(socket);
 
+                m_manager.destory(socket->timer());
                 delete socket;
             }
         }
@@ -114,9 +112,7 @@ void EventLoop::processErrorQueue()
         {
             m_handler(new ConnectEvent(socket, ConnectEvent::Close));
 
-            if(auto timer = static_cast<decltype(m_manager)::TimerType *>(socket->timer()))
-                timer->deleteLater();
-
+            m_manager.destory(socket->timer());
             delete socket;
         }
     }
