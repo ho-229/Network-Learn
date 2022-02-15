@@ -32,7 +32,7 @@ public:
 
     inline const T& userData() const { return m_userData; }
 
-    inline bool operator<(const Timer<T, TimeType> &right)
+    inline bool operator<(const Timer<T, TimeType> &right) const
     { return this->m_deadline < right.m_deadline; }
 
 private:
@@ -54,18 +54,19 @@ template<typename Rep, typename Period>
 template <typename T, typename TimeType = std::chrono::milliseconds>
 
 #if __cplusplus > 201703L   // C++20
-requires isDuration<TimeType>::value
+requires isDuration<TimeType>::value && std::is_copy_constructible_v<T>
 #endif
 
 class TimerManager
 {
 public:
-    static_assert(isDuration<TimeType>::value, "TimeType must be duration.");
+    static_assert(isDuration<TimeType>::value, "TimeType must be std::duration.");
+    static_assert(std::is_copy_constructible_v<T>, "T must be copyable.");
 
     using TimerItem = Timer<T, TimeType>;
     using iterator = typename std::list<TimerItem>::iterator;
 
-    explicit TimerManager() {}
+    explicit TimerManager() = default;
 
     iterator start(const TimeType& timeout, const T& data)
     {
@@ -114,6 +115,8 @@ public:
     }
 
     bool isEmpty() const { return m_list.empty(); }
+
+    size_t size() const { return m_list.size(); }
 
     T takeFirst()
     {
