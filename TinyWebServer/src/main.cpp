@@ -52,7 +52,7 @@ int main(int argc, char** argv)
         std::cerr << "Usage: " << argv[0] <<
             " [http-port] [https-port] [shared-directory]"
             " [certificate-file] [privateKey-file]\n\n"
-            "example: ./TinyWebServer 80 443 ./shared_files";
+            "example: ./TinyWebServer 80 443 ./shared_files\n";
         return 1;
     }
 

@@ -37,7 +37,7 @@ std::string uriEscape(const String &src)
 
     char szHex[4] = "%00";
 
-    while(it != src.end())
+    while(it != src.cend())
     {
         if(isUnambiguous(*it))
             ostr += char(*it);
@@ -59,7 +59,7 @@ std::string uriUnescape(const String &src)
     std::string ostr;
     auto it = src.cbegin();
 
-    while(it != src.end())
+    while(it != src.cend())
     {
         if(*it == '%' && IS_HEX(it[1]) && IS_HEX(it[2]))
         {

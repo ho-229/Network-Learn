@@ -18,7 +18,7 @@ public:
     explicit HttpServices();
     ~HttpServices() override;
 
-    void addService(const std::string &method, const std::string& uri,
+    void addService(const std::string& method, const std::string& uri,
                     const Handler& handler);
 
     /**

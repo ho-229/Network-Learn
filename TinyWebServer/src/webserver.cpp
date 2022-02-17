@@ -42,14 +42,14 @@ int WebServer::start()
 
     m_runnable = true;
 
-    EventLoop *pool = nullptr;
+    EventLoop *loop = nullptr;
     for(size_t i = 0; i < m_loopCount; ++i)
     {
-        m_loops.emplace_back(pool = new EventLoop(
+        m_loops.emplace_back(loop = new EventLoop(
             m_runnable, m_timeout, m_services.get(), m_handler));
 
-        pool->registerListeners(m_listeners.begin(), m_listeners.end());
-        pool->start();
+        loop->registerListeners(m_listeners.begin(), m_listeners.end());
+        loop->start();
     }
 
     return 0;
