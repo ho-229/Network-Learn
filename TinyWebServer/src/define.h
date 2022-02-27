@@ -8,10 +8,17 @@
 typedef unsigned int Socket;    // Socket handle
 typedef void* File;             // File handle
 # define ssize_t SSIZE_T
-#else   // Unix
+# define OS_WINDOWS
+#else   // *nix
 typedef int Socket;             // Socket descriptor
 typedef int File;               // File descriptor
+
 # define INVALID_SOCKET -1
+# ifdef __linux
+#  define OS_LINUX
+# else
+#  define OS_UNIX
+# endif
 #endif
 
 /**********************
@@ -23,9 +30,7 @@ typedef int File;               // File descriptor
 #define EPOLL_WAIT_TIMEOUT 500
 #define EPOLL_MAX_EVENTS 256
 
-#define TCP_CORK_ENABLE 0
-
-#define MAX_REQUEST_SIZE 32768  // 32 KiB
+#define TCP_CORK_ENABLE 0       // Only for Linux
 /**********************
  *  User definitions  *
  **********************/

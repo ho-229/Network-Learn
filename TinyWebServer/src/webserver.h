@@ -12,6 +12,7 @@
 #include <atomic>
 #include <thread>
 #include <memory>
+#include <vector>
 
 using namespace std::chrono_literals;
 

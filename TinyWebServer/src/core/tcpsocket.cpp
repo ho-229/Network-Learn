@@ -7,9 +7,10 @@
 
 extern "C"
 {
-#ifdef _WIN32
-#else   // Unix
+#if defined (OS_LINUX)  // Linux
 # include <sys/sendfile.h>
+#elif defined (OS_UNIX) // Unix
+# include <sys/uio.h>
 #endif
 }
 
@@ -96,7 +97,7 @@ void TcpSocket::close()
 
 ssize_t TcpSocket::sendFile(File file, off_t offset, size_t count)
 {
-#ifdef _WIN32
+#if defined (OS_WINDOWS)    // Windows
     // Create a page space
     HANDLE page = CreateFileMapping(file, nullptr, PAGE_READONLY,
                                     static_cast<DWORD>(uint64_t(count) >> 32),
@@ -120,14 +121,19 @@ ssize_t TcpSocket::sendFile(File file, off_t offset, size_t count)
     CloseHandle(page);
 
     return ret;
-#else   // Unix
-    ssize_t ret = 0;
+#else   // *nix
     size_t leftSize = count;
 
     do
     {
+# if defined (OS_LINUX)     // Linux
+        ssize_t ret = 0;
         if(ret = sendfile64(m_descriptor, file, &offset, leftSize);
                 ret <= 0)
+# else                      // Unix
+        off_t ret = leftSize;
+        if(sendfile(m_descriptor, file, offset, &ret, nullptr, 0) < 0 || !ret)
+# endif
             return count - leftSize;
 
         leftSize -= size_t(ret);

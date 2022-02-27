@@ -85,7 +85,7 @@ namespace Util
 
         for(; offset < srcSize; ++offset, ++count)
         {
-            if constexpr(maxCount)
+            if constexpr(maxCount > 0)
             {
                 if(maxCount <= count)
                     break;

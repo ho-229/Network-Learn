@@ -98,7 +98,11 @@ public:
         }
     }
 
-    void destory(iterator it) { m_list.erase(it); }
+    void destory(iterator it)
+    {
+        if(!m_list.empty())
+            m_list.erase(it);
+    }
 
     void checkout(std::vector<T>& list)
     {

@@ -11,6 +11,8 @@
 #include <vector>
 #include <ostream>
 
+#define MAX_REQUEST_SIZE 32768  // 32 KiB
+
 class HttpRequest
 {
 public:

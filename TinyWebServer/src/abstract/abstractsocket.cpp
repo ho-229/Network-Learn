@@ -115,7 +115,7 @@ bool AbstractSocket::listen(const std::string &hostName, const std::string &port
     }
 
 // Set non-blocking
-#ifdef _WIN32
+#ifdef OS_WINDOWS
     u_long mode = 1;
     ioctlsocket(m_descriptor, FIONBIO, &mode);
 #else
@@ -144,12 +144,20 @@ Socket AbstractSocket::accept() const
     sockaddr_storage addr;
     socklen_t len = sizeof(addr);
 
-#ifdef _WIN32
+#if defined (OS_WINDOWS)   // Windows
     const Socket socket = ::accept(
         m_descriptor, reinterpret_cast<sockaddr *>(&addr), &len);
-#else
+#elif defined (OS_LINUX)   // Linux
     const Socket socket = ::accept4(
         m_descriptor, reinterpret_cast<sockaddr *>(&addr), &len, O_NONBLOCK);
+#else                      // Unix
+    const Socket socket = ::accept(
+        m_descriptor, reinterpret_cast<sockaddr *>(&addr), &len);
+
+    int flags;
+    if((flags = fcntl(m_descriptor, F_GETFL, nullptr)) < 0 ||
+        fcntl(m_descriptor, F_SETFL, flags | O_NONBLOCK) == -1)
+        return INVALID_SOCKET;
 #endif
 
     return socket;
