@@ -65,7 +65,6 @@ private:
     epoll_event m_eventBuf[EPOLL_MAX_EVENTS];
 # else                      // Unix kqueue
     int m_kqueue = 0;
-    std::vector<struct kevent> m_changes;
     struct kevent m_eventBuf[EPOLL_MAX_EVENTS];
 # endif
 #endif

@@ -122,7 +122,7 @@ void Epoll::epoll(std::vector<AbstractSocket *> &events,
         else if(item->events & EPOLLERR || item->events & EPOLLHUP)
             errorEvents.emplace_back(socket);
     }
-# else                  // Unix
+# else                      // Unix
     const timespec timeout{0, EPOLL_WAIT_TIMEOUT * 1000'000};
     int ret = -1;
     if((ret = kevent(m_kqueue, nullptr, 0, m_eventBuf, EPOLL_MAX_EVENTS, &timeout)) <= 0)
@@ -138,8 +138,6 @@ void Epoll::epoll(std::vector<AbstractSocket *> &events,
         else if(item->filter == EVFILT_READ)
             events.emplace_back(reinterpret_cast<AbstractSocket *>(item->udata));
     }
-
-    m_changes.resize(0);
 # endif
 #endif
 }

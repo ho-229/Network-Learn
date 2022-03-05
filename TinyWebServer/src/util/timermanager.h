@@ -131,6 +131,8 @@ public:
             return {};
 
         T ret = m_list.front().userData();
+        m_list.pop_front();
+
         return ret;
     }
 
