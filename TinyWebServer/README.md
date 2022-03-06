@@ -6,14 +6,14 @@ The idea of doing this project originated from the TinyWebServer of CS:APP, I ho
 
 ## Features
 
-* Cross-platform: works on Windows and Linux
-* Support SSL/TLS
-* Basic `HTTP 1.1` support and some other features like `keep-alive`, `range` and `cache-control`
-* Support gracefully closing of connections
-* Support slow close like `Nginx` smooth upgrade
-* Use timer to close timeout connections
-* Use `POSIX` thread-safety methods to reduce lock usage
-* Using Epoll(Linux) edge-triggered IO multiplex, non-blocking IO, multithreading
+* Cross-platform: works on Windows, Linux and MacOS.
+* Support SSL/TLS.
+* Basic `HTTP 1.1` support and some other features like `keep-alive`, `range` and `cache-control`.
+* Support gracefully closing of connections.
+* Support slow close like `Nginx` smooth upgrade.
+* Use timer to close timeout connections.
+* Use `POSIX` thread-safety methods to reduce lock usage.
+* Using Epoll(Linux) edge-triggered IO multiplex, non-blocking IO, multithreading.
 
 See my chinese [blog](https://ho-229.github.io/code/network/server/tiny-web-server/) for more details.
 

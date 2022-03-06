@@ -15,11 +15,21 @@ Welcome to try it out and leave your comments.
 Use `cmake` to build your project.  
 Require `C++17` support and `OpenSSL`.
 
-* Install OpenSSL in Windows(run in `PowerShell`).
-  
-  ```shell
-  choco install openssl
-  ```
+* Install OpenSSL 1.1.
+
+  * Windows(run in `PowerShell`)
+
+    ```shell
+    choco install openssl
+    ```
+
+  * MacOS
+
+    ```shell
+    brew install openssl@1.1
+    ```
+
+* Configure and build
 
 ```shell
 mkdir build && cd build
