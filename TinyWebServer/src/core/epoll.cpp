@@ -111,16 +111,14 @@ void Epoll::epoll(std::vector<AbstractSocket *> &events,
         return;
 
     epoll_event *item = nullptr;
-    AbstractSocket *socket = nullptr;
     for(int i = 0; i < ret; ++i)
     {
         item = m_eventBuf + i;
-        socket = reinterpret_cast<AbstractSocket *>(item->data.ptr);
 
         if(item->events & EPOLLIN)
-            events.emplace_back(socket);
+            events.emplace_back(reinterpret_cast<AbstractSocket *>(item->data.ptr));
         else if(item->events & EPOLLERR || item->events & EPOLLHUP)
-            errorEvents.emplace_back(socket);
+            errorEvents.emplace_back(reinterpret_cast<AbstractSocket *>(item->data.ptr));
     }
 # else                      // Unix
     const timespec timeout{0, EPOLL_WAIT_TIMEOUT * 1000'000};
