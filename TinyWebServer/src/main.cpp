@@ -18,6 +18,7 @@
 #include "webserver.h"
 #include "util/util.h"
 #include "core/sslsocket.h"
+#include "util/backtrace.h"
 #include "http/httpservices.h"
 #include "util/sharedfilepool.h"
 
@@ -63,6 +64,10 @@ int main(int argc, char** argv)
         else
             std::cerr << "OpenSSL initializat failed.\n";
     }
+
+    BackTrace::installHandler([](const std::stringstream &stream) {
+        std::cerr << stream.rdbuf();
+    });
 
     auto services = new HttpServices;
     server->setServices(services);
