@@ -41,7 +41,8 @@ void Epoll::insert(AbstractSocket * const socket, bool exclusive)
     epoll_ctl(m_epoll, EPOLL_CTL_ADD, socket->descriptor(), &event);
 # else                      // Unix
     struct kevent event;
-    EV_SET(&event, socket->descriptor(), EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, socket);
+    EV_SET(&event, socket->descriptor(), EVFILT_READ,
+           exclusive ? EV_ADD | EV_CLEAR : EV_ADD, 0, 0, socket);
     kevent(m_kqueue, &event, 1, nullptr, 0, nullptr);
 # endif
     ++m_count;
