@@ -29,9 +29,9 @@ void Epoll::insert(AbstractSocket * const socket, bool exclusive)
 {
 #if defined (OS_WINDOWS)
     static_cast<void>(exclusive);   // Unused
-
+# if EPOLL_THREAD_SAFE
     std::unique_lock<std::mutex> lock(m_mutex);
-
+# endif
     m_events.emplace_back(pollfd{socket->descriptor(), POLLIN, 0});
 
     m_connections.insert(ConnectionItem(socket->descriptor(), socket));
@@ -52,9 +52,17 @@ void Epoll::insert(AbstractSocket * const socket, bool exclusive)
 void Epoll::erase(AbstractSocket * const socket)
 {
 #if defined (OS_WINDOWS)    // Windows
+# if EPOLL_THREAD_SAFE
     std::unique_lock<std::mutex> lock(m_mutex);
+# endif
+    // Remove socket from pollfd queue
+    const auto it = std::find_if(m_events.cbegin(), m_events.cend(),
+                                 [socket](const pollfd &event) -> bool {
+                                     return socket->descriptor() == event.fd;
+                                 });
+    if(it != m_events.cend())
+        m_events.erase(it);
 
-    this->eraseEvent(socket);
     m_connections.erase(socket->descriptor());
 #else   // *nix
 # if defined (OS_LINUX)     // Linux
@@ -68,18 +76,6 @@ void Epoll::erase(AbstractSocket * const socket)
 #endif
 }
 
-#if defined (OS_WINDOWS)
-void Epoll::eraseEvent(AbstractSocket * const socket)
-{
-    const auto it = std::find_if(m_events.cbegin(), m_events.cend(),
-                                 [socket](const pollfd &event) -> bool {
-                                     return socket->descriptor() == event.fd;
-                                 });
-    if(it != m_events.cend())
-        m_events.erase(it);
-}
-#endif
-
 void Epoll::epoll(std::vector<AbstractSocket *> &events,
                   std::vector<AbstractSocket *> &errorEvents)
 {
@@ -87,9 +83,13 @@ void Epoll::epoll(std::vector<AbstractSocket *> &events,
     if(m_events.empty())
         return;
 
+# if EPOLL_THREAD_SAFE
     m_mutex.lock();
+# endif
     auto temp = m_events;
+# if EPOLL_THREAD_SAFE
     m_mutex.unlock();
+# endif
 
     if(WSAPoll(&temp[0], ULONG(temp.size()), EPOLL_WAIT_TIMEOUT) <= 0)
         return;

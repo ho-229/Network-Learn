@@ -11,6 +11,8 @@
 
 #include <vector>
 
+#define EPOLL_THREAD_SAFE 0
+
 #if defined (OS_WINDOWS)
 # include <mutex>
 # include <unordered_map>
@@ -50,14 +52,15 @@ public:
 
 private:
 #if defined (OS_WINDOWS)    // Windows poll
-    inline void eraseEvent(AbstractSocket *const socket);
-
     std::unordered_map<Socket, AbstractSocket *> m_connections;
 
     using ConnectionItem = decltype (m_connections)::value_type;
 
     std::vector<pollfd> m_events;
+
+# if EPOLL_THREAD_SAFE
     std::mutex m_mutex;
+# endif
 #else
     std::atomic_uint m_count = 0;
 # if defined (OS_LINUX)     // Linux epoll
