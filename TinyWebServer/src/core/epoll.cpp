@@ -20,13 +20,11 @@ Epoll::Epoll()
 
 Epoll::~Epoll()
 {
-    close(
 #if defined (OS_LINUX)
-        m_epoll
+        close(m_epoll);
 #elif defined (OS_UNIX)
-        m_kqueue
+        close(m_kqueue);
 #endif
-    );
 }
 
 void Epoll::insert(AbstractSocket * const socket, bool exclusive)
