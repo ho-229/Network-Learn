@@ -1,6 +1,7 @@
 # Network-Learn
 
 ![license](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)
+![lines](https://tokei.rs/b1/github/ho-229/Network-Learn)
 ![windows](https://github.com/ho229v3666/Network-Learn/workflows/Windows/badge.svg?style=flat-square)
 ![linux](https://github.com/ho229v3666/Network-Learn/workflows/Linux/badge.svg?style=flat-square)  
 A cross-platform network learning ~~demos~~(toys). And I try ~~not~~ to use 3rd-party libraries.  
