@@ -39,7 +39,8 @@ void Epoll::insert(AbstractSocket * const socket, bool exclusive)
     m_connections.insert(ConnectionItem(socket->descriptor(), socket));
 #else   // *nix
 # if defined (OS_LINUX)     // Linux
-    epoll_event event{(exclusive ? EPOLLEXCLUSIVE | EPOLLIN : EPOLLIN) | EPOLLET, socket};
+    epoll_event event{(exclusive ? EPOLLEXCLUSIVE | EPOLLIN : EPOLLIN | EPOLLRDHUP)
+                | EPOLLET, socket};
     epoll_ctl(m_epoll, EPOLL_CTL_ADD, socket->descriptor(), &event);
 # else                      // Unix
     struct kevent event;
@@ -117,10 +118,10 @@ void Epoll::epoll(std::vector<AbstractSocket *> &events,
     {
         item = m_eventBuf + i;
 
-        if(item->events & EPOLLIN)
-            events.emplace_back(reinterpret_cast<AbstractSocket *>(item->data.ptr));
-        else if(item->events & EPOLLERR || item->events & EPOLLHUP)
+        if(item->events & EPOLLERR || item->events & EPOLLHUP || item->events & EPOLLRDHUP)
             errorEvents.emplace_back(reinterpret_cast<AbstractSocket *>(item->data.ptr));
+        else if(item->events & EPOLLIN)
+            events.emplace_back(reinterpret_cast<AbstractSocket *>(item->data.ptr));
     }
 # else                      // Unix
     const timespec timeout{0, EPOLL_WAIT_TIMEOUT * 1000'000};
