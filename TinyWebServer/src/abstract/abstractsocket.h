@@ -76,7 +76,7 @@ public:
         return value;
     }
 
-    void setTimer(TimerIter timer) { m_timer = timer; }
+    void setTimer(const TimerIter &timer) { m_timer = timer; }
     TimerIter timer() const { return m_timer; }
 
     void addTimes() { ++m_times; }
