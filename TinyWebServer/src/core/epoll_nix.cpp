@@ -5,15 +5,13 @@
 
 #include "epoll.h"
 
-#include <algorithm>
+#if defined (OS_UNIX) || defined (OS_LINUX)
 
 Epoll::Epoll()
 {
-#if defined (OS_WINDOWS)
-    m_connections.reserve(512);
-#elif defined (OS_LINUX)
+#if defined (OS_LINUX)
     m_epoll = epoll_create1(0);
-#else
+#elif defined (OS_UNIX)
     m_kqueue = kqueue();
 #endif
 }
@@ -21,94 +19,42 @@ Epoll::Epoll()
 Epoll::~Epoll()
 {
 #if defined (OS_LINUX)
-        close(m_epoll);
+    close(m_epoll);
 #elif defined (OS_UNIX)
-        close(m_kqueue);
+    close(m_kqueue);
 #endif
 }
 
 void Epoll::insert(AbstractSocket * const socket, bool exclusive)
 {
-#if defined (OS_WINDOWS)
-    static_cast<void>(exclusive);   // Unused
-# if EPOLL_THREAD_SAFE
-    std::unique_lock<std::mutex> lock(m_mutex);
-# endif
-    m_events.emplace_back(pollfd{socket->descriptor(), POLLIN, 0});
-
-    m_connections.insert(ConnectionItem(socket->descriptor(), socket));
-#else   // *nix
-# if defined (OS_LINUX)     // Linux
+#if defined (OS_LINUX)     // Linux
     epoll_event event{(exclusive ? EPOLLEXCLUSIVE | EPOLLIN : EPOLLIN | EPOLLRDHUP)
                 | EPOLLET, socket};
     epoll_ctl(m_epoll, EPOLL_CTL_ADD, socket->descriptor(), &event);
-# else                      // Unix
+#elif defined (OS_UNIX)                     // Unix
     struct kevent event;
     EV_SET(&event, socket->descriptor(), EVFILT_READ, EV_ADD | EV_CLEAR, 0, 0, socket);
     kevent(m_kqueue, &event, 1, nullptr, 0, nullptr);
 # endif
     ++m_count;
-#endif
 }
 
 void Epoll::erase(AbstractSocket * const socket)
 {
-#if defined (OS_WINDOWS)    // Windows
-# if EPOLL_THREAD_SAFE
-    std::unique_lock<std::mutex> lock(m_mutex);
-# endif
-    // Remove socket from pollfd queue
-    const auto it = std::find_if(m_events.cbegin(), m_events.cend(),
-                                 [socket](const pollfd &event) -> bool {
-                                     return socket->descriptor() == event.fd;
-                                 });
-    if(it != m_events.cend())
-        m_events.erase(it);
-
-    m_connections.erase(socket->descriptor());
-#else   // *nix
-# if defined (OS_LINUX)     // Linux
+#if defined (OS_LINUX)     // Linux
     epoll_ctl(m_epoll, EPOLL_CTL_DEL, socket->descriptor(), nullptr);
-# else                      // Unix
+#elif defined (OS_UNIX)                      // Unix
     struct kevent event;
     EV_SET(&event, socket->descriptor(), EVFILT_READ, EV_DELETE | EV_DISABLE, 0, 0, socket);
     kevent(m_kqueue, &event, 1, nullptr, 0, nullptr);
 # endif
     --m_count;
-#endif
 }
 
 void Epoll::epoll(std::vector<AbstractSocket *> &events,
                   std::vector<AbstractSocket *> &errorEvents)
 {
-#if defined (OS_WINDOWS)    // Windows
-    if(m_events.empty())
-        return;
-
-# if EPOLL_THREAD_SAFE
-    m_mutex.lock();
-# endif
-    auto temp = m_events;
-# if EPOLL_THREAD_SAFE
-    m_mutex.unlock();
-# endif
-
-    if(WSAPoll(&temp[0], ULONG(temp.size()), EPOLL_WAIT_TIMEOUT) <= 0)
-        return;
-
-    for(const auto &item : temp)
-    {
-        const auto it = m_connections.find(item.fd);
-        if(it == m_connections.end())
-            continue;
-
-        if(item.revents & POLLIN)
-            events.emplace_back(it->second);
-        else if(item.revents & POLLERR || item.revents & POLLHUP)
-            errorEvents.emplace_back(it->second);
-    }
-#else   // *nix
-# if defined (OS_LINUX)     // Linux
+#if defined (OS_LINUX)     // Linux
     int ret = -1;
     if((ret = epoll_wait(m_epoll, m_eventBuf, EPOLL_MAX_EVENTS, EPOLL_WAIT_TIMEOUT)) <= 0)
         return;
@@ -123,7 +69,7 @@ void Epoll::epoll(std::vector<AbstractSocket *> &events,
         else if(item->events & EPOLLIN)
             events.emplace_back(reinterpret_cast<AbstractSocket *>(item->data.ptr));
     }
-# else                      // Unix
+#elif defined (OS_UNIX)                      // Unix
     const timespec timeout{0, EPOLL_WAIT_TIMEOUT * 1000'000};
     int ret = -1;
     if((ret = kevent(m_kqueue, nullptr, 0, m_eventBuf, EPOLL_MAX_EVENTS, &timeout)) <= 0)
@@ -139,6 +85,7 @@ void Epoll::epoll(std::vector<AbstractSocket *> &events,
         else if(item->filter == EVFILT_READ)
             events.emplace_back(reinterpret_cast<AbstractSocket *>(item->udata));
     }
-# endif
 #endif
 }
+
+#endif
