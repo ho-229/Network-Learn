@@ -18,6 +18,9 @@
 #if defined (OS_WINDOWS)
 # include <unordered_map>
 # include <mutex>
+extern "C" {
+# include "wepoll.h"
+}
 #elif defined (OS_LINUX)
 # include <sys/epoll.h>
 #else
@@ -39,48 +42,52 @@ public:
     void epoll(std::vector<AbstractSocket *> &events,
                std::vector<AbstractSocket *> &errorEvents);
 
-    size_t count() const { return m_count; }
+    size_t count() const;
 
 private:
-    std::atomic_uint m_count = 0;
 #if defined (OS_WINDOWS)    // Windows IOCP
-    struct AfdPollInfo
-    {
-        LARGE_INTEGER timeout;
-        ULONG handleNumber;
-        ULONG exclusive;
-        struct AfdPollHandleInfo
-        {
-            HANDLE handle;
-            ULONG event;
-            NTSTATUS status;
-        } handles[1];
-    };
+//    struct AfdPollInfo
+//    {
+//        LARGE_INTEGER timeout;
+//        ULONG handleNumber;
+//        ULONG exclusive;
+//        struct AfdPollHandleInfo
+//        {
+//            HANDLE handle;
+//            ULONG event;
+//            NTSTATUS status;
+//        } handles[1];
+//    };
 
-    enum class EpollStatus
-    {
-        IDLE,
-        PENDING,
-        CANCELLED
-    };
+//    enum class EpollStatus
+//    {
+//        IDLE,
+//        PENDING,
+//        CANCELLED
+//    };
 
-    struct EpollInfo
-    {
-        OVERLAPPED overlapped;
-        AfdPollInfo pollInfo;
-        EpollStatus pollStatus;
-        UINT32 pendingEvents;
-        bool pendingDelete;
-        Socket peerSocket;
-    };
+//    struct EpollInfo
+//    {
+//        OVERLAPPED overlapped;
+//        AfdPollInfo pollInfo;
+//        EpollStatus pollStatus;
+//        UINT32 pendingEvents;
+//        bool pendingDelete;
+//        Socket peerSocket;
+//    };
 
-    HANDLE m_iocp = INVALID_HANDLE_VALUE;
-    std::unordered_map<AbstractSocket *, EpollInfo> m_info;
+//    HANDLE m_iocp = INVALID_HANDLE_VALUE;
+//    std::unordered_map<AbstractSocket *, EpollInfo> m_info;
+    HANDLE m_wepoll = INVALID_HANDLE_VALUE;
+    std::atomic_uint m_count = 0;
+    epoll_event m_eventBuf[EPOLL_MAX_EVENTS];
 #elif defined (OS_LINUX)    // Linux epoll
     int m_epoll = 0;
+    std::atomic_uint m_count = 0;
     epoll_event m_eventBuf[EPOLL_MAX_EVENTS];
 #elif define (OS_UNIX)      // Unix kqueue
     int m_kqueue = 0;
+    std::atomic_uint m_count = 0;
     struct kevent m_eventBuf[EPOLL_MAX_EVENTS];
 #endif
 };

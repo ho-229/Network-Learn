@@ -88,4 +88,9 @@ void Epoll::epoll(std::vector<AbstractSocket *> &events,
 #endif
 }
 
+size_t Epoll::count() const
+{
+    return m_count;
+}
+
 #endif
