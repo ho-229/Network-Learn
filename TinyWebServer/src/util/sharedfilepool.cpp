@@ -31,7 +31,7 @@ std::optional<FileInfo> SharedFilePool::get(const std::string &fileName)
     if(it == m_pool.end())  // Open file
     {
         File file = {};
-        fs::path filePath(m_root + fileName);
+        fs::path filePath = fs::u8path(m_root + fileName);
 
         {
             ReadLock lock(m_mutex);
@@ -40,7 +40,7 @@ std::optional<FileInfo> SharedFilePool::get(const std::string &fileName)
         }
 
 #ifdef _WIN32
-        if((file = CreateFileW(filePath.wstring().c_str(),
+        if((file = CreateFileW(filePath.c_str(),
                                GENERIC_READ, FILE_SHARE_READ, nullptr,
                                OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL,
                                nullptr)) == INVALID_HANDLE_VALUE)
